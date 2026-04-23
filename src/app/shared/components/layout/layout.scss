@@ -1,0 +1,70 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.top-bar {
+  background: #2c3e50;
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.2rem;
+}
+
+.main-wrapper {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar {
+  width: 250px;
+  background: #ecf0f1;
+  border-right: 1px solid #bdc3c7;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+
+  .nav-item {
+    padding: 1.5rem 1rem;
+    margin-bottom: 0.5rem;
+    text-decoration: none;
+    color: #2c3e50;
+    font-weight: bold;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    transition: background 0.3s;
+
+    &:hover { background: #dce4e6; }
+    &.active {
+      background: #3498db;
+      color: white;
+    }
+    .icon { margin-right: 10px; font-size: 1.5rem; }
+  }
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+  background: #f9f9f9;
+  overflow-y: auto;
+}
+
+.btn-logout {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-left: 1rem;
+}
+
+.btn-logout:hover {
+  background: #c0392b; /* Se oscurece un poco al pasar el ratón */
+}

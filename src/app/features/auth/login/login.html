@@ -1,0 +1,23 @@
+<div class="login-container">
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <h2>👟 ERP Zapatero - Acceso</h2>
+
+    @if (errorMessage()) {
+      <div class="error-banner">{{ errorMessage() }}</div>
+    }
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" formControlName="email" placeholder="ejemplo@zapateria.com">
+    </div>
+
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" formControlName="password" placeholder="****">
+    </div>
+
+    <button type="submit" [disabled]="loginForm.invalid">
+      Entrar al Sistema
+    </button>
+  </form>
+</div>

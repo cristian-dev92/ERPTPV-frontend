@@ -1,0 +1,45 @@
+<div class="header-section">
+  <h1>📦 Inventario / Catálogo</h1>
+  <button class="btn-primary">+ Nuevo Artículo</button>
+</div>
+
+@if (loading()) {
+  <p>Cargando catálogo de zapatos...</p>
+} @else {
+  <table class="zapatero-table">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Precio</th>
+        <th>Stock</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of articulos(); track item.id) {
+        <tr>
+          <td><strong>{{ item.nombre }}</strong></td>
+          <td>
+            <span class="badge" [class.badge-serv]="item.tipo === 'SERVICIO'">
+              {{ item.tipo }}
+            </span>
+          </td>
+          <td>{{ item.precio | currency:'EUR' }}</td>
+          <td>
+            <span [style.color]="item.stock < 5 && item.tipo === 'PRODUCTO' ? 'red' : 'inherit'">
+              {{ item.tipo === 'PRODUCTO' ? item.stock : 'N/A' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn-edit">Editar</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="5">No hay artículos en el inventario. ¡Añade el primero!</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

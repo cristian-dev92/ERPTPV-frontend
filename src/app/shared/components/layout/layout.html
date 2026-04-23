@@ -1,0 +1,27 @@
+<div class="app-container">
+  <header class="top-bar">
+    <div class="brand">👞 ERP ZAPATERO</div>
+    <div class="user-info">
+      <span>Bienvenido, <strong>Empleado</strong></span>
+      <button (click)="onLogout()" class="btn-logout">Cerrar Sesión</button>
+    </div>
+  </header>
+
+  <div class="main-wrapper">
+    <nav class="sidebar">
+      <a routerLink="/ventas" routerLinkActive="active" class="nav-item">
+        <span class="icon">💰</span> VENTAS / TPV
+      </a>
+      <a routerLink="/inventario" routerLinkActive="active" class="nav-item">
+        <span class="icon">📦</span> INVENTARIO
+      </a>
+      <a routerLink="/caja" routerLinkActive="active" class="nav-item">
+        <span class="icon">🏧</span> CAJA
+      </a>
+    </nav>
+
+    <main class="content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
