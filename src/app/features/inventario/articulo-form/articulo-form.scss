@@ -1,0 +1,95 @@
+.form-card {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #edf2f7;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); // Dos columnas para campos rápidos
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr; // En móviles, una sola columna
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+
+  label {
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  input, select, textarea {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+    background-color: #fff;
+
+    &:focus {
+      outline: none;
+      border-color: #3182ce;
+      box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+    }
+
+    &[readonly] {
+      background-color: #f7fafc;
+      cursor: not-allowed;
+    }
+  }
+
+  &.full-width {
+    grid-column: span 2;
+    @media (max-width: 600px) { grid-column: span 1; }
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #edf2f7;
+
+  button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cancel {
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    color: #718096;
+    &:hover { background: #edf2f7; }
+  }
+
+  .btn-save {
+    background: #3182ce;
+    border: none;
+    color: white;
+    &:hover:not(:disabled) { background: #2b6cb0; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}

@@ -2,7 +2,11 @@
   <header class="top-bar">
     <div class="brand">👞 ERP ZAPATERO</div>
     <div class="user-info">
-      <span>Bienvenido, <strong>Empleado</strong></span>
+      @if (authService.usuarioNombre()) {
+      <span>Bienvenido, <strong>{{ authService.usuarioNombre() }}</strong></span>
+      } @else {
+    <span>Bienvenido, <strong>Usuario</strong></span>
+      }
       <button (click)="onLogout()" class="btn-logout">Cerrar Sesión</button>
     </div>
   </header>

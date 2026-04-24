@@ -1,6 +1,6 @@
 <div class="header-section">
   <h1>📦 Inventario / Catálogo</h1>
-  <button class="btn-primary">+ Nuevo Artículo</button>
+  <button class="btn-primary" routerLink="nuevo">+ Nuevo Artículo</button>
 </div>
 
 @if (loading()) {
@@ -32,7 +32,7 @@
             </span>
           </td>
           <td>
-            <button class="btn-edit">Editar</button>
+            <button class="btn-edit" [routerLink]="['editar', item.id]">Editar</button>
           </td>
         </tr>
       } @empty {

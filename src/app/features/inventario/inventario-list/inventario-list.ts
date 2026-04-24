@@ -2,12 +2,13 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { Articulo } from '../../../core/models/articulo.model';
 import { CurrencyPipe } from '@angular/common';
+import { RouterLink } from "@angular/router";
 
 @Component({
   selector: 'app-inventario-list',
   standalone: true,
   // Usamos CurrencyPipe para mostrar los precios bonitos (€)
-  imports: [CurrencyPipe], 
+  imports: [CurrencyPipe, RouterLink], 
   templateUrl: './inventario-list.html',
   styleUrl: './inventario-list.scss'
 })

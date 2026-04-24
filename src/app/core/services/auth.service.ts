@@ -20,16 +20,24 @@ export class AuthService {
    */
   isAuthenticated = signal<boolean>(this.hasToken());
 
+  // Nueva Signal para el nombre (leemos del localStorage si ya existía)
+  usuarioNombre = signal<string | null>(localStorage.getItem('nombre_zapatero'));
+
   /**
    * Intenta iniciar sesión con las credenciales proporcionadas.
    */
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/login`, credentials).pipe(
       tap(response => {
+        console.log('Lo que llega del servidor:', response);
         // Al recibir respuesta, guardamos el token
         localStorage.setItem('token_zapatero', response.token);
+        // GUARDAMOS EL NOMBRE
+        localStorage.setItem('nombre_zapatero', response.nombre);
         // Actualizamos el estado global
         this.isAuthenticated.set(true);
+        // ACTUALIZAMOS LA SIGNAL
+        this.usuarioNombre.set(response.nombre);
       })
     );
   }
@@ -39,7 +47,9 @@ export class AuthService {
    */
   logout(): void {
     localStorage.removeItem('token_zapatero');
+    localStorage.removeItem('nombre_zapatero'); // LIMPIAMOS EL NOMBRE
     this.isAuthenticated.set(false);
+    this.usuarioNombre.set(null); // RESETEAMOS LA SIGNAL
     this.router.navigate(['/login']);
   }
 

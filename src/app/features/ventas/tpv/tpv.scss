@@ -1,0 +1,85 @@
+.tpv-container {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 20px;
+  height: calc(100vh - 120px);
+}
+
+// Catálogo
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 15px;
+  overflow-y: auto;
+}
+
+.item-card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  position: relative;
+
+  &:hover { transform: translateY(-5px); border: 2px solid #3498db; }
+
+  .price {
+    display: block;
+    font-weight: bold;
+    color: #27ae60;
+    font-size: 1.2rem;
+  }
+}
+
+// Ticket
+.ticket {
+  background: #fdfdfd;
+  border: 2px solid #bdc3c7;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+
+  .ticket-items {
+    flex: 1;
+    overflow-y: auto;
+    border-bottom: 1px dashed #ccc;
+  }
+
+  .linea {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    font-size: 0.9rem;
+    button { background: none; border: none; cursor: pointer; }
+  }
+}
+
+.payment-zone {
+  padding-top: 15px;
+
+  .total-big { font-size: 2rem; font-weight: 900; color: #2c3e50; }
+
+  .config-venta {
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    input, select { padding: 5px; width: 120px; }
+  }
+
+  .btn-pay {
+    width: 100%;
+    padding: 15px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    &:disabled { background: #bdc3c7; }
+  }
+}

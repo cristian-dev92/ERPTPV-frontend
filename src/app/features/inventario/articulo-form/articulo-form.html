@@ -1,0 +1,42 @@
+<div class="form-card">
+  <h2>{{ isEditMode() ? '📝 Editar Artículo' : '➕ Nuevo Artículo' }}</h2>
+
+  <form [formGroup]="articuloForm" (ngSubmit)="guardar()">
+    <div class="grid">
+      <div class="field">
+        <label>Nombre del Producto / Servicio</label>
+        <input type="text" formControlName="nombre" placeholder="Ej: Suela de goma o Zapato Oxford">
+      </div>
+
+      <div class="field">
+        <label>Tipo</label>
+        <select formControlName="tipo">
+          <option value="PRODUCTO">PRODUCTO (Tiene stock)</option>
+          <option value="SERVICIO">SERVICIO (Mano de obra / Reparación)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Precio (€)</label>
+        <input type="number" formControlName="precio" step="0.01">
+      </div>
+
+      <div class="field">
+        <label>Stock Inicial</label>
+        <input type="number" formControlName="stock" [readonly]="articuloForm.get('tipo')?.value === 'SERVICIO'">
+      </div>
+    </div>
+
+    <div class="field full-width">
+      <label>Descripción (Opcional)</label>
+      <textarea formControlName="descripcion" rows="3"></textarea>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-cancel" (click)="articuloForm.reset()">Cancelar</button>
+      <button type="submit" class="btn-save" [disabled]="articuloForm.invalid">
+        {{ isEditMode() ? 'Actualizar' : 'Crear Artículo' }}
+      </button>
+    </div>
+  </form>
+</div>

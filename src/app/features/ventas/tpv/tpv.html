@@ -1,0 +1,57 @@
+<div class="tpv-container">
+  <section class="catalog">
+    <div class="search-bar">
+      <input type="text" placeholder="🔍 Buscar zapato o servicio...">
+    </div>
+    
+    <div class="items-grid">
+      @for (art of articulos(); track art.id) {
+        <div class="item-card" (click)="agregarAlCarrito(art)">
+          <span class="price">{{ art.precio | currency:'EUR' }}</span>
+          <p>{{ art.nombre }}</p>
+          <small>{{ art.tipo }}</small>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="ticket">
+    <h3>🛒 Ticket Actual</h3>
+    
+    <div class="ticket-items">
+      @for (linea of carrito(); track $index) {
+        <div class="linea">
+          <span>{{ linea.cantidad }}x {{ linea.nombreArticulo }}</span>
+          <span>{{ linea.subtotal | currency:'EUR' }}</span>
+          <button (click)="eliminarLinea($index)">❌</button>
+        </div>
+      } @empty {
+        <p class="empty-msg">Ticket vacío</p>
+      }
+    </div>
+
+    <div class="payment-zone">
+      <div class="row">
+        <span>TOTAL:</span>
+        <span class="total-big">{{ totalTicket() | currency:'EUR' }}</span>
+      </div>
+
+      <div class="config-venta">
+        <label>Tipo:</label>
+        <select [(ngModel)]="tipoOrden" (change)="importePagado.set(totalTicket())">
+          <option value="VENTA">Venta Directa</option>
+          <option value="REPARACION">Reparación (Anticipo)</option>
+        </select>
+      </div>
+
+      <div class="config-venta">
+        <label>Entrega Cliente (€):</label>
+        <input type="number" [(ngModel)]="importePagado">
+      </div>
+
+      <button class="btn-pay" [disabled]="carrito().length === 0" (click)="finalizarVenta()">
+        COBRAR E IMPRIMIR
+      </button>
+    </div>
+  </section>
+</div>

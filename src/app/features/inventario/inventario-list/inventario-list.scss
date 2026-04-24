@@ -1,0 +1,93 @@
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+
+  h1 {
+    color: #2c3e50;
+    margin: 0;
+    font-size: 1.8rem;
+  }
+}
+
+.btn-primary {
+  background-color: #27ae60; // Verde "nuevo" para diferenciar del login azul
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+
+  &:hover { background-color: #219150; }
+}
+
+.zapatero-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+
+  thead {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #edf2f7;
+    
+    th {
+      padding: 1rem;
+      text-align: left;
+      color: #718096;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #edf2f7;
+      transition: background 0.2s;
+      &:hover { background-color: #f7fafc; }
+    }
+
+    td {
+      padding: 1rem;
+      color: #2d3748;
+      vertical-align: middle;
+    }
+  }
+}
+
+// Estilo para las etiquetas de tipo
+.badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  background-color: #ebf8ff;
+  color: #3182ce; // Azul para Productos
+
+  &.badge-serv {
+    background-color: #faf5ff;
+    color: #805ad5; // Morado para Servicios/Reparaciones
+  }
+}
+
+.btn-edit {
+  background: transparent;
+  border: 1px solid #3182ce;
+  color: #3182ce;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #3182ce;
+    color: white;
+  }
+}
