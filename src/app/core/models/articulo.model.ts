@@ -13,9 +13,6 @@ export interface Articulo {
   /** Nombre comercial del producto o servicio (ej: "Suela de Goma", "Mocasín") */
   nombre: string;
 
-  /** Precio de venta al público en euros */
-  precio: number;
-
   /** * Discriminador estricto del backend.
    * PRODUCTO: Se le aplica control de stock.
    * SERVICIO: No tiene stock, es mano de obra.
@@ -29,4 +26,14 @@ export interface Articulo {
 
   /** Descripción ampliada de los materiales o el trabajo a realizar */
   descripcion?: string;
+
+  //Lo que pide el backend
+  precioBase: number;       // Precio antes de impuestos
+  porcentajeIva: number;    // Ej: 21
+
+  /** Precio final */
+  precio: number;
+
+  activo?: boolean;
+  empresaId?: number;
 }

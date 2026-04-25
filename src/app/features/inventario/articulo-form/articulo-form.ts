@@ -48,7 +48,20 @@ export class ArticuloFormComponent {
   guardar() {
     if (this.articuloForm.invalid) return;
 
-    const articuloData: Articulo = this.articuloForm.getRawValue();
+    const formVal = this.articuloForm.getRawValue();
+
+    // Construimos el objeto EXACTO que pide el backend
+    const articuloData: any = {
+    nombre: formVal.nombre,
+    tipo: formVal.tipo,
+    stock: formVal.stock,
+    porcentajeIva: 21, // Valor por defecto para España, por ejemplo
+    precio: formVal.precio,
+    precioBase: Number((formVal.precio / 1.21).toFixed(2)), // Calculamos la base
+    activo: true
+    // El empresaId lo debería sacar el backend del Token, 
+    // pero si sigue fallando, lo añadiremos aquí.
+  };
 
     if (this.isEditMode()) {
       this.articuloService.actualizarArticulo(this.articuloId()!, articuloData).subscribe(() => {

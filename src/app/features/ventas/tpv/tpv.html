@@ -36,6 +36,13 @@
         <span class="total-big">{{ totalTicket() | currency:'EUR' }}</span>
       </div>
 
+      @if (cambio() > 0) {
+    <div class="row cambio">
+      <span>CAMBIO A DEVOLVER:</span>
+      <span class="total-cambio">{{ cambio() | currency:'EUR' }}</span>
+    </div>
+  }
+
       <div class="config-venta">
         <label>Tipo:</label>
         <select [(ngModel)]="tipoOrden" (change)="importePagado.set(totalTicket())">
@@ -47,6 +54,7 @@
       <div class="config-venta">
         <label>Entrega Cliente (€):</label>
         <input type="number" [(ngModel)]="importePagado">
+        <button type="button" (click)="importePagado.set(totalTicket())">🎯</button>
       </div>
 
       <button class="btn-pay" [disabled]="carrito().length === 0" (click)="finalizarVenta()">

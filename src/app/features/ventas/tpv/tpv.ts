@@ -28,6 +28,13 @@ export class TpvComponent implements OnInit {
     this.carrito().reduce((acc, item) => acc + item.subtotal, 0)
   );
 
+  // Calcula el cambio a devolver
+  cambio = computed(() => {
+  const entrega = this.importePagado();
+  const total = this.totalTicket();
+  return entrega > total ? entrega - total : 0;
+  });
+
   ngOnInit() {
     this.articuloService.getArticulos().subscribe(data => this.articulos.set(data));
   }

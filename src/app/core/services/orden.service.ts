@@ -1,19 +1,35 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Orden } from '../models/orden.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrdenService {
   private http = inject(HttpClient);
   private readonly API_URL = 'http://localhost:8080/api/ordenes';
 
-  crearOrden(orden: Orden): Observable<Orden> {
-    return this.http.post<Orden>(this.API_URL, orden);
+  // 1. Crear el ticket (Carrito)
+  crearOrden(peticion: any): Observable<any> {
+    return this.http.post(this.API_URL, peticion);
   }
 
-  // Para el historial de ventas o cierres de caja
-  getOrdenesHoy(): Observable<Orden[]> {
-    return this.http.get<Orden[]>(`${this.API_URL}/hoy`);
+  // 2. Cobrar ticket completo
+  cobrar(id: number, metodoPago: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/${id}/cobrar`, null, {
+      params: { metodoPago }
+    });
+  }
+
+  // 3. Registrar señal/anticipo
+  registrarAnticipo(id: number, importe: number, metodoPago: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/${id}/anticipo`, null, {
+      params: { importe, metodoPago }
+    });
+  }
+
+  // 4. Cambiar estado (Taller, Listo, etc)
+  cambiarEstado(id: number, nuevoEstado: string): Observable<any> {
+    return this.http.patch(`${this.API_URL}/${id}/estado`, null, {
+      params: { nuevoEstado }
+    });
   }
 }
