@@ -1,65 +1,50 @@
+@if (!cajaAbierta()) {
+  <div class="alerta-caja">
+    ⚠️ <strong>CAJA CERRADA:</strong> Debes abrir la caja desde el menú de Caja para poder realizar ventas.
+  </div>
+}
+
 <div class="tpv-container">
-  <section class="catalog">
-    <div class="search-bar">
-      <input type="text" placeholder="🔍 Buscar zapato o servicio...">
-    </div>
+  
+  <div class="catalogo-section">
+    <input type="text" [(ngModel)]="filtro" placeholder="🔍 Buscar zapato o servicio...">
     
-    <div class="items-grid">
-      @for (art of articulos(); track art.id) {
-        <div class="item-card" (click)="agregarAlCarrito(art)">
-          <span class="price">{{ art.precio | currency:'EUR' }}</span>
-          <p>{{ art.nombre }}</p>
-          <small>{{ art.tipo }}</small>
+    <div class="grid-articulos">
+      @for (art of articulosFiltrados(); track art.id) {
+        <div class="card-articulo" (click)="agregarAlCarrito(art)">
+          <span class="nombre">{{ art.nombre }}</span>
+          <span class="precio">{{ art.precioBase | currency:'EUR' }}</span>
         </div>
       }
     </div>
-  </section>
+  </div>
 
-  <section class="ticket">
-    <h3>🛒 Ticket Actual</h3>
+  <div class="ticket-section">
+    <h2>📋 Ticket Actual</h2>
     
-    <div class="ticket-items">
-      @for (linea of carrito(); track $index) {
+    <div class="lineas-ticket">
+      @for (item of carrito(); track $index) {
         <div class="linea">
-          <span>{{ linea.cantidad }}x {{ linea.nombreArticulo }}</span>
-          <span>{{ linea.subtotal | currency:'EUR' }}</span>
-          <button (click)="eliminarLinea($index)">❌</button>
+          <span>{{ item.cantidad }}x {{ item.nombre }}</span>
+          <span>{{ item.precio * item.cantidad | currency:'EUR' }}</span>
+          <button (click)="quitarDelCarrito($index)">❌</button>
         </div>
       } @empty {
-        <p class="empty-msg">Ticket vacío</p>
+        <p class="empty-msg">El carrito está vacío</p>
       }
     </div>
 
-    <div class="payment-zone">
-      <div class="row">
+    <div class="footer-ticket">
+      <div class="total-row">
         <span>TOTAL:</span>
-        <span class="total-big">{{ totalTicket() | currency:'EUR' }}</span>
+        <span class="total-amount">{{ totalTicket() | currency:'EUR' }}</span>
       </div>
-
-      @if (cambio() > 0) {
-    <div class="row cambio">
-      <span>CAMBIO A DEVOLVER:</span>
-      <span class="total-cambio">{{ cambio() | currency:'EUR' }}</span>
-    </div>
-  }
-
-      <div class="config-venta">
-        <label>Tipo:</label>
-        <select [(ngModel)]="tipoOrden" (change)="importePagado.set(totalTicket())">
-          <option value="VENTA">Venta Directa</option>
-          <option value="REPARACION">Reparación (Anticipo)</option>
-        </select>
-      </div>
-
-      <div class="config-venta">
-        <label>Entrega Cliente (€):</label>
-        <input type="number" [(ngModel)]="importePagado">
-        <button type="button" (click)="importePagado.set(totalTicket())">🎯</button>
-      </div>
-
-      <button class="btn-pay" [disabled]="carrito().length === 0" (click)="finalizarVenta()">
-        COBRAR E IMPRIMIR
+      
+      <button class="btn-cobrar" 
+              [disabled]="carrito().length === 0"
+              (click)="finalizarVenta()">
+        💰 FINALIZAR Y COBRAR
       </button>
     </div>
-  </section>
+  </div>
 </div>

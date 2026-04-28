@@ -1,85 +1,212 @@
+/* Contenedor principal: Ocupa todo el alto disponible */
 .tpv-container {
   display: grid;
-  grid-template-columns: 1fr 350px;
+  grid-template-columns: 1fr 400px; // El catálogo es flexible, el ticket fijo
   gap: 20px;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 120px); // Ajusta según tu header
+  padding: 10px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-// Catálogo
-.items-grid {
+/* --- SECCIÓN CATÁLOGO (IZQUIERDA) --- */
+.catalogo-section {
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+
+  input[type="text"] {
+    padding: 12px 20px;
+    border-radius: 25px;
+    border: 2px solid #dee2e6;
+    margin-bottom: 20px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+
+    &:focus {
+      border-color: #007bff;
+    }
+  }
+}
+
+.grid-articulos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 15px;
-  overflow-y: auto;
+  overflow-y: auto; // Solo el catálogo hace scroll
+  padding-right: 5px;
 }
 
-.item-card {
+.card-articulo {
   background: white;
+  border-radius: 10px;
   padding: 15px;
-  border-radius: 10px;
-  text-align: center;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
-  position: relative;
-
-  &:hover { transform: translateY(-5px); border: 2px solid #3498db; }
-
-  .price {
-    display: block;
-    font-weight: bold;
-    color: #27ae60;
-    font-size: 1.2rem;
-  }
-}
-
-// Ticket
-.ticket {
-  background: #fdfdfd;
-  border: 2px solid #bdc3c7;
-  border-radius: 10px;
   display: flex;
   flex-direction: column;
-  padding: 15px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-height: 100px;
 
-  .ticket-items {
-    flex: 1;
-    overflow-y: auto;
-    border-bottom: 1px dashed #ccc;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #007bff;
   }
+
+  .nombre {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .precio {
+    color: #28a745;
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+}
+
+/* --- SECCIÓN TICKET (DERECHA) --- */
+.ticket-section {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #333; // Estilo "ticket de papel"
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+
+  h2 {
+    margin-top: 0;
+    text-align: center;
+    border-bottom: 2px dashed #ccc;
+    padding-bottom: 10px;
+    font-size: 1.4rem;
+  }
+}
+
+.lineas-ticket {
+  flex-grow: 1;
+  overflow-y: auto;
+  margin: 15px 0;
 
   .linea {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 10px 0;
-    font-size: 0.9rem;
-    button { background: none; border: none; cursor: pointer; }
+    border-bottom: 1px solid #f0f0f0;
+
+    span:first-child {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    button {
+      background: none;
+      border: none;
+      color: #dc3545;
+      cursor: pointer;
+      margin-left: 10px;
+      font-size: 1rem;
+      &:hover { transform: scale(1.2); }
+    }
+  }
+
+  .empty-msg {
+    text-align: center;
+    color: #999;
+    margin-top: 50px;
+    font-style: italic;
   }
 }
 
-.payment-zone {
+/* --- FOOTER DEL TICKET --- */
+.footer-ticket {
+  border-top: 2px solid #333;
   padding-top: 15px;
 
-  .total-big { font-size: 2rem; font-weight: 900; color: #2c3e50; }
-
-  .config-venta {
-    margin: 10px 0;
+  .total-row {
     display: flex;
     justify-content: space-between;
-    input, select { padding: 5px; width: 120px; }
+    align-items: center;
+    margin-bottom: 20px;
+    
+    span:first-child {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .total-amount {
+      font-size: 2rem;
+      color: #28a745;
+      font-weight: 800;
+    }
   }
 
-  .btn-pay {
+  .btn-cobrar {
     width: 100%;
-    padding: 15px;
-    background: #27ae60;
+    padding: 18px;
+    background: #28a745;
     color: white;
     border: none;
     border-radius: 8px;
     font-size: 1.2rem;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 10px;
-    &:disabled { background: #bdc3c7; }
+    transition: background 0.3s;
+
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    &:hover:not(:disabled) {
+      background: #218838;
+    }
+  }
+}
+
+/* --- ALERTA CAJA CERRADA --- */
+.alerta-caja {
+  background-color: #fff3cd; // Amarillo de advertencia
+  color: #856404;            // Texto marrón oscuro para contraste
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #ffeeba;
+  margin: 10px 10px 20px 10px; // Espaciado para que no pegue a los bordes
+  text-align: center;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  animation: slideInDown 0.4s ease-out;
+
+  strong {
+    font-weight: 800;
+    text-decoration: underline;
+  }
+}
+
+/* Animación para que aparezca suavemente desde arriba */
+@keyframes slideInDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

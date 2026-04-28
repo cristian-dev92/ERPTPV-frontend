@@ -2,9 +2,9 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { OrdenService } from '../../../core/services/orden.service';
 import { Articulo } from '../../../core/models/articulo.model';
-import { Orden, LineaOrden } from '../../../core/models/orden.model';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CajaService } from '../../../core/services/caja.service';
 
 @Component({
   selector: 'app-tpv',
@@ -16,64 +16,87 @@ import { FormsModule } from '@angular/forms';
 export class TpvComponent implements OnInit {
   private articuloService = inject(ArticuloService);
   private ordenService = inject(OrdenService);
+  private cajaService = inject(CajaService);
 
   // Datos
   articulos = signal<Articulo[]>([]);
-  carrito = signal<LineaOrden[]>([]);
-  tipoOrden = signal<'VENTA' | 'REPARACION'>('VENTA');
-  importePagado = signal<number>(0);
+  filtro = signal('');
+  carrito = signal<any[]>([]); // Aquí guardaremos { articuloId, nombre, cantidad, precio, notas }
 
-  // Cálculos automáticos (Signals)
-  totalTicket = computed(() => 
-    this.carrito().reduce((acc, item) => acc + item.subtotal, 0)
-  );
+  // UI State
+  cajaAbierta = computed(() => !!this.cajaService.cajaActual());
+  
+  // Totales automáticos
+  totalTicket = computed(() => {
+    return this.carrito().reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+  });
 
-  // Calcula el cambio a devolver
-  cambio = computed(() => {
-  const entrega = this.importePagado();
-  const total = this.totalTicket();
-  return entrega > total ? entrega - total : 0;
+  articulosFiltrados = computed(() => {
+    const f = this.filtro().toLowerCase();
+    return this.articulos().filter(a => a.nombre.toLowerCase().includes(f));
   });
 
   ngOnInit() {
+    // 1. Cargamos artículos
     this.articuloService.getArticulos().subscribe(data => this.articulos.set(data));
+    // 2. Comprobamos si la caja ya estaba abierta
+    this.cajaService.checkEstadoCaja().subscribe();
   }
 
-  agregarAlCarrito(art: Articulo) {
-    const existe = this.carrito().find(l => l.articuloId === art.id);
+  agregarAlCarrito(articulo: Articulo) {
+    const actual = this.carrito();
+    const existe = actual.find(item => item.articuloId === articulo.id);
+
     if (existe) {
-      this.carrito.update(items => items.map(l => 
-        l.articuloId === art.id ? { ...l, cantidad: l.cantidad + 1, subtotal: (l.cantidad + 1) * l.precioUnitario } : l
-      ));
+      existe.cantidad++;
+      this.carrito.set([...actual]);
     } else {
-      const nuevaLinea: LineaOrden = {
-        articuloId: art.id!,
-        nombreArticulo: art.nombre,
+      this.carrito.set([...actual, {
+        articuloId: articulo.id,
+        nombre: articulo.nombre,
         cantidad: 1,
-        precioUnitario: art.precio,
-        subtotal: art.precio
-      };
-      this.carrito.update(items => [...items, nuevaLinea]);
+        precio: articulo.precioBase * (1 + articulo.porcentajeIva / 100), // Precio PVP
+        notasReparacion: ''
+      }]);
     }
   }
 
-  eliminarLinea(index: number) {
-    this.carrito.update(items => items.filter((_, i) => i !== index));
+  quitarDelCarrito(index: number) {
+    const actual = this.carrito();
+    actual.splice(index, 1);
+    this.carrito.set([...actual]);
   }
 
+  // EL MOMENTO DE LA VERDAD: Enviar al Backend
   finalizarVenta() {
-    const nuevaOrden: Orden = {
-      tipo: this.tipoOrden(),
-      estado: this.importePagado() >= this.totalTicket() ? 'PAGADO' : 'PENDIENTE',
-      total: this.totalTicket(),
-      importePagado: this.importePagado(),
-      lineas: this.carrito()
+    if (!this.cajaAbierta()) {
+      alert('¡Atención! Debes abrir la caja antes de realizar una venta.');
+      return;
+    }
+
+    const request = {
+      clienteId: null, // De momento anónimo
+      tipo: 'VENTA_DIRECTA',
+      lineas: this.carrito().map(item => ({
+        articuloId: item.articuloId,
+        cantidad: item.cantidad,
+        notasReparacion: item.notasReparacion
+      }))
     };
 
-    this.ordenService.crearOrden(nuevaOrden).subscribe(() => {
-      alert('Venta realizada con éxito');
-      this.carrito.set([]);
-      this.importePagado.set(0);
+    this.ordenService.crearOrden(request).subscribe({
+      next: (ordenGuardada) => {
+        // Una vez creada la orden, la cobramos inmediatamente (Venta Directa)
+        this.cobrarTicket(ordenGuardada.id);
+      },
+      error: (err) => alert('Error al crear ticket: ' + err.error)
+    });
+  }
+
+  private cobrarTicket(id: number) {
+    this.ordenService.cobrar(id, 'EFECTIVO').subscribe(() => {
+      alert('Venta finalizada con éxito');
+      this.carrito.set([]); // Limpiamos TPV
     });
   }
 }

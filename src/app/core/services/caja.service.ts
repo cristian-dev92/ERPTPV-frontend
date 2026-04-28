@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, catchError, of } from 'rxjs';
 
 
 @Injectable({ providedIn: 'root' })
@@ -10,6 +10,17 @@ export class CajaService {
 
   // Signal para saber el estado de la caja en toda la App
   cajaActual = signal<any | null>(null);
+
+  // NUEVO: Método para recuperar la caja abierta al iniciar la app
+  checkEstadoCaja(): Observable<any> {
+    return this.http.get(`${this.API_URL}/actual`).pipe(
+      tap(res => this.cajaActual.set(res)),
+      catchError(() => {
+        this.cajaActual.set(null);
+        return of(null);
+      })
+    );
+  }
 
   abrirCaja(saldoInicial: number): Observable<any> {
     return this.http.post(`${this.API_URL}/abrir`, { saldoInicial }).pipe(
