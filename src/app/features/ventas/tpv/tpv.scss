@@ -76,24 +76,6 @@
 }
 
 /* --- SECCIÓN TICKET (DERECHA) --- */
-.ticket-section {
-  display: flex;
-  flex-direction: column;
-  background: white;
-  border-radius: 12px;
-  border: 2px solid #333; // Estilo "ticket de papel"
-  padding: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-
-  h2 {
-    margin-top: 0;
-    text-align: center;
-    border-bottom: 2px dashed #ccc;
-    padding-bottom: 10px;
-    font-size: 1.4rem;
-  }
-}
-
 .lineas-ticket {
   flex-grow: 1;
   overflow-y: auto;
@@ -103,22 +85,73 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
+    padding: 12px 0;
     border-bottom: 1px solid #f0f0f0;
 
-    span:first-child {
-      flex: 1;
-      font-weight: 500;
+    // Lado izquierdo: Nombre y Botones +/-
+    .info-producto {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+
+      .nombre {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .controles-cantidad {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .btn-qty {
+          background: #f0f0f0;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-weight: bold;
+          font-size: 14px;
+          
+          &:hover { background: #e0e0e0; }
+        }
+
+        .cantidad {
+          font-size: 0.9rem;
+          font-weight: bold;
+          min-width: 15px;
+          text-align: center;
+        }
+      }
     }
 
-    button {
-      background: none;
-      border: none;
-      color: #dc3545;
-      cursor: pointer;
-      margin-left: 10px;
-      font-size: 1rem;
-      &:hover { transform: scale(1.2); }
+    // Lado derecho: Precio y Basura
+    .precio-final {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+
+      span {
+        font-weight: 600;
+        color: #28a745;
+      }
+
+      .btn-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.85rem;
+        padding: 0;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+
+        &:hover { opacity: 1; }
+      }
     }
   }
 

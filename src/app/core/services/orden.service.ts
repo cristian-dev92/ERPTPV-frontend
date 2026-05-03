@@ -32,4 +32,8 @@ export class OrdenService {
       params: { nuevoEstado }
     });
   }
+
+  getOrdenesHoy(): Observable<any> {
+    return this.http.get(`${this.API_URL}/hoy`);
+  }
 }

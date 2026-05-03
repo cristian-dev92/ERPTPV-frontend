@@ -99,4 +99,19 @@ export class TpvComponent implements OnInit {
       this.carrito.set([]); // Limpiamos TPV
     });
   }
+
+  // Añadir esto dentro de la clase TpvComponent
+  ajustarCantidad(index: number, cambio: number) {
+  const actual = this.carrito();
+  const item = actual[index];
+  
+  item.cantidad += cambio;
+
+  if (item.cantidad <= 0) {
+    this.quitarDelCarrito(index);
+  } else {
+    // Actualizamos el signal para que la UI reaccione
+    this.carrito.set([...actual]);
+  }
+ }
 }

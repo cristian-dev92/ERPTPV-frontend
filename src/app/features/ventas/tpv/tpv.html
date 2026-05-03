@@ -23,12 +23,27 @@
     <h2>📋 Ticket Actual</h2>
     
     <div class="lineas-ticket">
-      @for (item of carrito(); track $index) {
-        <div class="linea">
-          <span>{{ item.cantidad }}x {{ item.nombre }}</span>
-          <span>{{ item.precio * item.cantidad | currency:'EUR' }}</span>
-          <button (click)="quitarDelCarrito($index)">❌</button>
+    @for (item of carrito(); track $index) {
+      <div class="linea">
+        <!-- Izquierda: Nombre y Controles de cantidad -->
+        <div class="info-producto">
+          <span class="nombre">{{ item.nombre }}</span>
+          
+          <div class="controles-cantidad">
+            <button (click)="ajustarCantidad($index, -1)" class="btn-qty" type="button">-</button>
+            <span class="cantidad">{{ item.cantidad }}</span>
+            <button (click)="ajustarCantidad($index, 1)" class="btn-qty" type="button">+</button>
+          </div>
         </div>
+
+        <!-- Derecha: Precio total de la línea y borrar -->
+        <div class="precio-final">
+          <span>{{ item.precio * item.cantidad | currency:'EUR' }}</span>
+          <button (click)="quitarDelCarrito($index)" class="btn-remove" title="Eliminar artículo">
+            🗑️
+          </button>
+        </div>
+      </div>
       } @empty {
         <p class="empty-msg">El carrito está vacío</p>
       }
