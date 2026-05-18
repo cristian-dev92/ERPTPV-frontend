@@ -20,22 +20,31 @@ export const routes: Routes = [
     path: 'inventario', 
     children: [
     { 
-      path: '', 
+      path: '', // Si entra a /inventario, se le abre el listado de artículos
       loadComponent: () => import('./features/inventario/inventario-list/inventario-list').then(m => m.InventarioListComponent) 
     },
     { 
-      path: 'nuevo', 
+      path: 'nuevo', // Si entra a /inventario/nuevo, se le abre el formulario para crear un nuevo artículo
       loadComponent: () => import('./features/inventario/articulo-form/articulo-form').then(m => m.ArticuloFormComponent) 
     },
     { 
-      path: 'editar/:id', 
+      path: 'editar/:id', // Si entra a /inventario/editar/1, se le abre el formulario para editar el artículo con id 1
       loadComponent: () => import('./features/inventario/articulo-form/articulo-form').then(m => m.ArticuloFormComponent) 
     }]
    },
    { 
-      path: 'ventas', 
-      loadComponent: () => import('./features/ventas/tpv/tpv').then(m => m.TpvComponent) 
-   },
+      path: 'ventas', // Todas las rutas de ventas abrirán el TPV, pero con diferentes estados (nuevo ticket, ticket abierto, etc)
+      children: [
+        {
+          path: '', // Si entra a /ventas, se le abre el TPV para facturar directo
+          loadComponent: () => import('./features/ventas/tpv/tpv').then(m => m.TpvComponent) 
+      },
+      {
+        path: 'historial', // Si entra a /ventas/historial, se le abre el historial de tickets
+        loadComponent: () => import('./features/ventas/orden-list/orden-list').then(m => m.OrdenListComponent) 
+      }
+    ]
+    },
    { 
       path: 'caja', 
       loadComponent: () => import('./features/caja/caja-resumen/caja-resumen').then(m => m.CajaResumenComponent) 

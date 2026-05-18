@@ -27,13 +27,18 @@
       </div>
     </div>
 
+    <div class="field">
+      <label>Stock Mínimo</label>
+      <input type="number" formControlName="stockMinimo" [readonly]="articuloForm.get('tipo')?.value === 'SERVICIO'">
+    </div>
+
     <div class="field full-width">
       <label>Descripción (Opcional)</label>
       <textarea formControlName="descripcion" rows="3"></textarea>
     </div>
 
     <div class="actions">
-      <button type="button" class="btn-cancel" (click)="articuloForm.reset()">Cancelar</button>
+      <button type="button" routerLink="/inventario" class="btn-cancel" (click)="articuloForm.reset()">Cancelar</button>
       <button type="submit" class="btn-save" [disabled]="articuloForm.invalid">
         {{ isEditMode() ? 'Actualizar' : 'Crear Artículo' }}
       </button>

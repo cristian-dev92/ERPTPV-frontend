@@ -13,8 +13,11 @@
 
   <div class="main-wrapper">
     <nav class="sidebar">
-      <a routerLink="/ventas" routerLinkActive="active" class="nav-item">
-        <span class="icon">💰</span> VENTAS / TPV
+      <a routerLink="/ventas" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="nav-item">
+        <span class="icon">💰</span> TPV
+      </a>
+      <a routerLink="/ventas/historial" routerLinkActive="active" class="nav-item">
+        <span class="icon">🧾</span> HISTORIAL
       </a>
       <a routerLink="/inventario" routerLinkActive="active" class="nav-item">
         <span class="icon">📦</span> INVENTARIO

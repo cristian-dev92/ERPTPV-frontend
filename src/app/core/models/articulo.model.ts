@@ -4,6 +4,7 @@
  * o un SERVICIO (como una reparación).
  */
 export interface Articulo {
+  
   /** * ID único del artículo. 
    * Es opcional (?) porque cuando creamos un zapato nuevo en el frontend, 
    * aún no tiene ID hasta que el backend lo guarda y nos lo devuelve.
@@ -23,6 +24,7 @@ export interface Articulo {
    * Solo es relevante si el tipo es 'PRODUCTO'.
    */
   stock: number;
+  stockMinimo: number;
 
   /** Descripción ampliada de los materiales o el trabajo a realizar */
   descripcion?: string;

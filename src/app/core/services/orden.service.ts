@@ -36,4 +36,9 @@ export class OrdenService {
   getOrdenesHoy(): Observable<any> {
     return this.http.get(`${this.API_URL}/hoy`);
   }
+
+  getOrdenesPorEstado(estado: string): Observable<any> {
+    return this.http.get<any[]>(`${this.API_URL}/estado/${estado}`);
+  }
+  
 }

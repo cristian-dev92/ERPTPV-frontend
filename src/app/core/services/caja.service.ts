@@ -13,8 +13,11 @@ export class CajaService {
 
   // NUEVO: Método para recuperar la caja abierta al iniciar la app
   checkEstadoCaja(): Observable<any> {
-    return this.http.get(`${this.API_URL}/actual`).pipe(
-      tap(res => this.cajaActual.set(res)),
+    return this.http.get<any | null>(`${this.API_URL}/actual`).pipe(
+      tap(res => {
+      // Si responde 200, res tendrá el JSON. Si responde 204, res será null.
+        this.cajaActual.set(res);
+      }),
       catchError(() => {
         this.cajaActual.set(null);
         return of(null);

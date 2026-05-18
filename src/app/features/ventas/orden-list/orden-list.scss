@@ -1,0 +1,168 @@
+// Contenedor principal de la pantalla
+.historial-container {
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+// Sección de Filtros superior
+.filtros {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background: #ffffff;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  label {
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.95rem;
+  }
+
+  select {
+    padding: 0.5rem 2rem 0.5rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #1e293b;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+    min-width: 220px;
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+  }
+}
+
+// Contenedor de la Tabla (para que tenga bordes redondeados y sombra)
+.table-container {
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+// Estilos de la Tabla
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  // Cabecera oscura elegante
+  thead {
+    background-color: #1e293b; // Slate 800
+    color: #f8fafc;
+
+    th {
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  // Cuerpo de la tabla
+  tbody {
+    tr {
+      border-bottom: 1px solid #e2e8f0;
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: #f1f5f9; // Efecto hover sutil al pasar el ratón
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: 1rem 1.25rem;
+      color: #334155;
+      font-size: 0.95rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+// Botón de Acción (Ver Detalle)
+.btn-ver {
+  background-color: #2563eb; // Azul corporativo
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
+}
+
+// Estado vacío (Cuando no hay tickets)
+.no-data {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: #64748b;
+  font-size: 1rem;
+  font-weight: 500;
+  background-color: #ffffff;
+}
+
+// Estructura base de las píldoras de estado (Badges)
+%badge-base {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 50px;
+  text-align: center;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+// Clases de los estados mapeados con el Backend
+.badge-success {
+  @extend %badge-base;
+  background-color: #dcfce7; // Verde claro
+  color: #15803d;            // Usado en PAGADO y LISTO
+}
+
+.badge-warning {
+  @extend %badge-base;
+  background-color: #fef9c3; // Amarillo claro
+  color: #a16207;            // Usado en PENDIENTE
+}
+
+.badge-info {
+  @extend %badge-base;
+  background-color: #e0f2fe; // Azul claro
+  color: #0369a1;            // Usado en EN_TALLER
+}
+
+.badge-secondary {
+  @extend %badge-base;
+  background-color: #f1f5f9; // Gris claro
+  color: #475569;            // Usado en ENTREGADO
+}
+
+.badge-danger {
+  @extend %badge-base;
+  background-color: #fee2e2; // Rojo claro
+  color: #b91c1c;            // Usado en CANCELADA
+}

@@ -18,12 +18,14 @@ export class TpvComponent implements OnInit {
   private ordenService = inject(OrdenService);
   private cajaService = inject(CajaService);
 
-  // Datos
+  // Estados del TPV
   articulos = signal<Articulo[]>([]);
   filtro = signal('');
   carrito = signal<any[]>([]); // Aquí guardaremos { articuloId, nombre, cantidad, precio, notas }
+  // 1. Añade esta propiedad arriba junto a los otros signals/variables
+  saldoInicialInput: number = 150; // 150€ por defecto para cambio
 
-  // UI State
+  // Comprobación segura de caja abierta (computed reacciona al signal del servicio)
   cajaAbierta = computed(() => !!this.cajaService.cajaActual());
   
   // Totales automáticos
@@ -61,6 +63,21 @@ export class TpvComponent implements OnInit {
     }
   }
 
+  // El método que controla los botones + y - que pusimos en el HTML
+  ajustarCantidad(index: number, cambio: number) {
+  const actual = this.carrito();
+  const item = actual[index];
+  
+  item.cantidad += cambio;
+
+  if (item.cantidad <= 0) {
+    this.quitarDelCarrito(index);
+  } else {
+    // Actualizamos el signal para que la UI reaccione
+    this.carrito.set([...actual]);
+  }
+}
+
   quitarDelCarrito(index: number) {
     const actual = this.carrito();
     actual.splice(index, 1);
@@ -94,24 +111,29 @@ export class TpvComponent implements OnInit {
   }
 
   private cobrarTicket(id: number) {
-    this.ordenService.cobrar(id, 'EFECTIVO').subscribe(() => {
-      alert('Venta finalizada con éxito');
-      this.carrito.set([]); // Limpiamos TPV
+    this.ordenService.cobrar(id, 'EFECTIVO').subscribe({
+      next: () => {
+        alert('💰 ¡Venta cobrada correctamente en Caja!');
+        this.carrito.set([]);
+      },
+      error: (err) => alert('Error al procesar el pago: ' + err.error)
     });
   }
 
-  // Añadir esto dentro de la clase TpvComponent
-  ajustarCantidad(index: number, cambio: number) {
-  const actual = this.carrito();
-  const item = actual[index];
-  
-  item.cantidad += cambio;
+  // Aquí el método para abrir la caja, que se ejecuta al hacer clic en el botón "Abrir Caja"
+  ejecutarAperturaCaja() {
+    if (this.saldoInicialInput < 0) {
+      alert('El saldo inicial no puede ser negativo');
+      return;
+    }
 
-  if (item.cantidad <= 0) {
-    this.quitarDelCarrito(index);
-  } else {
-    // Actualizamos el signal para que la UI reaccione
-    this.carrito.set([...actual]);
+    this.cajaService.abrirCaja(this.saldoInicialInput).subscribe({
+      next: (caja) => {
+        alert(`🚀 Caja abierta con un fondo de ${caja.saldoInicial}€`);
+        // Al abrirse, el signal cajaActual del servicio se actualiza y el TPV se desbloquea solo
+      },
+      error: (err) => alert('Error al abrir caja: ' + (err.error || err.message))
+    });
   }
- }
+
 }

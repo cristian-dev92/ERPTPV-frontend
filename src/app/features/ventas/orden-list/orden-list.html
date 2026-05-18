@@ -1,0 +1,53 @@
+<div class="contenedor-historial">
+  <div class="header-seccion">
+    <h2>🧾 Historial de Tickets y Órdenes</h2>
+    
+    <!-- Filtro de estados -->
+    <div class="filtros">
+      <label for="filtroEstado">Estado: </label>
+      <select id="filtroEstado" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)">
+        <option value="PENDIENTE">⏳ Pendientes de Pago</option>
+        <option value="PAGADO">💰 Pagados (En espera)</option>
+        <option value="EN_TALLER">🛠️ En Taller</option>
+        <option value="LISTO">✅ Listos para Recoger</option>
+        <option value="ENTREGADO">📦 Entregados (Cerrados)</option>
+        <option value="CANCELADA">❌ Cancelados</option>
+      </select>
+    </div>
+  </div>
+
+  <table class="tabla-ordenes">
+    <thead>
+      <tr>
+        <th>Nº Ticket</th>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Total</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (orden of ordenes(); track orden.id) {
+        <tr>
+          <td><strong>#{{ orden.id }}</strong></td>
+          <td>{{ orden.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ orden.tipo === 'VENTA_DIRECTA' ? '📦 Venta' : '🛠️ Reparación' }}</td>
+          <td>{{ orden.total | currency:'EUR' }}</td>
+          <td>
+            <span class="badge" [ngClass]="getBadgeClass(orden.estado)">
+              {{ orden.estado }}
+            </span>
+          </td>
+          <td>
+            <button class="btn-ver" (click)="verDetalle(orden.id)">👁️ Ver</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="6" class="sin-datos">No se han encontrado tickets en este estado.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

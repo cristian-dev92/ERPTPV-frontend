@@ -1,6 +1,13 @@
 @if (!cajaAbierta()) {
   <div class="alerta-caja">
-    ⚠️ <strong>CAJA CERRADA:</strong> Debes abrir la caja desde el menú de Caja para poder realizar ventas.
+    <div class="alerta-header">
+      ⚠️ <strong>CAJA CERRADA:</strong> No puedes realizar ventas hasta que abras el turno.
+    </div>
+    <div class="alerta-acciones">
+      <label for="saldoInicial">Monto Inicial (€):</label>
+      <input type="number" id="saldoInicial" [(ngModel)]="saldoInicialInput" placeholder="Ej: 150.00">
+      <button (click)="ejecutarAperturaCaja()" class="btn-abrir-ya">🔓 Abrir Caja</button>
+    </div>
   </div>
 }
 
