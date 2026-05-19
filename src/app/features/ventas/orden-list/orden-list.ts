@@ -17,6 +17,9 @@ export class OrdenListComponent implements OnInit {
   filtroEstado = signal<string>('PAGADO'); // Valor por defecto
   ordenes = signal<any[]>([]);
 
+  // 👁️ Guarda la orden que queremos ver en el modal. Si es null, el modal se oculta.
+  ordenSeleccionada = signal<any | null>(null);
+
   constructor() {
     // 🔄 Cada vez que 'filtroEstado' cambie en el HTML, se vuelve a llamar automáticamente al backend
     effect(() => {
@@ -56,8 +59,13 @@ export class OrdenListComponent implements OnInit {
     }
   }
 
-  // Método para mostrar detalles de la orden (puede ser un modal o alert simple)
-  verDetalle(id: number) {
-    alert(`👁️ Próximamente: Detalle de la orden #${id}`);
+  // Ahora en vez de un alert rancio, guarda la orden para abrir el modal
+  verDetalle(orden: any) {
+    this.ordenSeleccionada.set(orden);
+  }
+
+  // Para cerrar el modal pinchando fuera o en la 'X'
+  cerrarModal() {
+    this.ordenSeleccionada.set(null);
   }
 }

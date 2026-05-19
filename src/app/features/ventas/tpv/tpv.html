@@ -28,6 +28,44 @@
 
   <div class="ticket-section">
     <h2>📋 Ticket Actual</h2>
+
+    <!-- SECCIÓN CLIENTE -->
+  <div class="seccion-cliente-ticket">
+    @if (!clienteSeleccionado()) {
+      <!-- Buscador predictivo si es anónimo -->
+      <div class="buscador-cliente-wrapper">
+        <input type="text" 
+               [ngModel]="busquedaCliente()" 
+               (ngModelChange)="buscarClientes($event)"
+               placeholder="👤 Buscar cliente por nombre o tel...">
+        
+        @if (clientesEncontrados().length > 0) {
+          <ul class="dropdown-clientes">
+            @for (cliente of clientesEncontrados(); track cliente.id) {
+              <li (click)="seleccionarCliente(cliente)">
+                <span class="c-nombre">{{ cliente.nombre }}</span>
+                <span class="c-tel">📱 {{ cliente.telefono }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    } @else {
+      <!-- Tarjeta de cliente seleccionado -->
+      <div class="tarjeta-cliente-activo">
+        <div class="info-cliente">
+          <span class="avatar">👤</span>
+          <div>
+            <span class="nombre">{{ clienteSeleccionado()?.nombre }}</span>
+            <span class="telefono">Tel: {{ clienteSeleccionado()?.telefono }}</span>
+          </div>
+        </div>
+        <button type="button" class="btn-quitar-cliente" (click)="deseleccionarCliente()" title="Quitar cliente">
+          ✕
+        </button>
+      </div>
+    }
+  </div>
     
     <div class="lineas-ticket">
     @for (item of carrito(); track $index) {
@@ -43,6 +81,14 @@
           </div>
         </div>
 
+        <!-- Entrada opcional de notas si el tipo de orden es Reparación -->
+          @if (tipoOrdenSeleccionada() === 'REPARACION') {
+            <input type="text" 
+                   [(ngModel)]="item.notasReparacion" 
+                   placeholder="Notas (ej: Tapas rojas)" 
+                   class="input-notas-linea">
+          }
+
         <!-- Derecha: Precio total de la línea y borrar -->
         <div class="precio-final">
           <span>{{ item.precio * item.cantidad | currency:'EUR' }}</span>
@@ -56,6 +102,53 @@
       }
     </div>
 
+    <!-- NUEVA SECCIÓN DE CONFIGURACIÓN DEL PEDIDO Y PAGO -->
+    <div class="configuracion-pedido">
+      
+      <!-- Selector de Tipo de Operación -->
+      <div class="form-group">
+        <label>Tipo de Operación:</label>
+        <div class="selector-botones">
+          <button type="button" 
+                  [class.activo]="tipoOrdenSeleccionada() === 'VENTA_DIRECTA'"
+                  (click)="tipoOrdenSeleccionada.set('VENTA_DIRECTA')">
+            🛒 Venta
+          </button>
+          <button type="button" 
+                  [class.activo]="tipoOrdenSeleccionada() === 'REPARACION'"
+                  (click)="tipoOrdenSeleccionada.set('REPARACION')">
+            🛠️ Reparación
+          </button>
+        </div>
+      </div>
+
+      <!-- Fecha Prometida: Condicional solo para Reparaciones -->
+      @if (tipoOrdenSeleccionada() === 'REPARACION') {
+        <div class="form-group animacion-input">
+          <label for="fechaRecogida">📅 Fecha de Recogida:</label>
+          <input type="date" id="fechaRecogida" [ngModel]="fechaPrometidaRecogida()">
+        </div>
+      }
+
+      <!-- Selector de Método de Pago -->
+      <div class="form-group">
+        <label>Método de Pago:</label>
+        <div class="selector-botones">
+          <button type="button" 
+                  [class.activo]="metodoPagoSeleccionado() === 'EFECTIVO'"
+                  (click)="metodoPagoSeleccionado.set('EFECTIVO')">
+            💵 Efectivo
+          </button>
+          <button type="button" 
+                  [class.activo]="metodoPagoSeleccionado() === 'TARJETA'"
+                  (click)="metodoPagoSeleccionado.set('TARJETA')">
+            💳 Tarjeta
+          </button>
+        </div>
+      </div>
+
+    </div>
+
     <div class="footer-ticket">
       <div class="total-row">
         <span>TOTAL:</span>
@@ -65,7 +158,7 @@
       <button class="btn-cobrar" 
               [disabled]="carrito().length === 0"
               (click)="finalizarVenta()">
-        💰 FINALIZAR Y COBRAR
+        💰 PROCESAR OPERACIÓN
       </button>
     </div>
   </div>

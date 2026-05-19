@@ -1,4 +1,4 @@
-<div class="contenedor-historial">
+<div class="historial-container">
   <div class="header-seccion">
     <h2>🧾 Historial de Tickets y Órdenes</h2>
     
@@ -30,9 +30,15 @@
     <tbody>
       @for (orden of ordenes(); track orden.id) {
         <tr>
-          <td><strong>#{{ orden.id }}</strong></td>
+          <!-- Usamos numeroTicket del DTO si existe, si no, tiramos de id -->
+          <td><strong>{{ orden.numeroTicket || '#' + orden.id }}</strong></td>
           <td>{{ orden.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ orden.tipo === 'VENTA_DIRECTA' ? '📦 Venta' : '🛠️ Reparación' }}</td>
+          <td>
+            <span [ngClass]="{'badge-success': orden.tipo === 'VENTA_DIRECTA','badge-info': orden.tipo === 'REPARACION'
+            }">
+              {{ orden.tipo === 'VENTA_DIRECTA' ? 'VENTA' : 'REPARACIÓN' }}
+             </span>
+            </td>
           <td>{{ orden.total | currency:'EUR' }}</td>
           <td>
             <span class="badge" [ngClass]="getBadgeClass(orden.estado)">
@@ -40,7 +46,8 @@
             </span>
           </td>
           <td>
-            <button class="btn-ver" (click)="verDetalle(orden.id)">👁️ Ver</button>
+           <!-- Ahora le pasamos la 'orden' completa en vez de solo el id -->
+            <button class="btn-ver" (click)="verDetalle(orden)">👁️ Ver</button>
           </td>
         </tr>
       } @empty {
@@ -51,3 +58,61 @@
     </tbody>
   </table>
 </div>
+
+<!-- 👁️ POP-UP MODAL: Solo aparece si 'ordenSeleccionada()' tiene datos -->
+@if (ordenSeleccionada(); as orden) {
+  <div class="modal-overlay" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      
+      <!-- Cabecera del Modal -->
+      <div class="modal-header">
+        <h2>Detalle del Ticket: {{ orden.numeroTicket || '#' + orden.id }}</h2>
+        <button class="btn-close" (click)="cerrarModal()">&times;</button>
+      </div>
+
+      <!-- Cuerpo del Modal -->
+      <div class="modal-body">
+        <div class="info-general">
+          <p><strong>📅 Fecha:</strong> {{ orden.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
+          <p><strong>👤 Cliente:</strong> {{ orden.clienteNombre || 'Sin cliente asignado' }}</p>
+          <p><strong>🧑‍🔧 Atendido por:</strong> {{ orden.empleadoNombre || 'Empleado' }}</p>
+        </div>
+
+        <h3>🛠️ Trabajos / Artículos en este ticket:</h3>
+        <div class="modal-table-container">
+          <table class="modal-table">
+            <thead>
+              <tr>
+                <th>Trabajo / Artículo</th>
+                <th>Cant.</th>
+                <th>Precio U.</th>
+                <th>Notas de Reparación</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (detalle of orden.detalles; track detalle.id) {
+                <tr>
+                  <td>{{ detalle.articuloNombre }}</td>
+                  <td>{{ detalle.cantidad }}</td>
+                  <td>{{ detalle.precioUnitario | currency:'EUR' }}</td>
+                  <td class="notas-reparacion">
+                    <em>{{ detalle.notasReparacion || 'Sin notas especiales' }}</em>
+                  </td>
+                  <td><strong>{{ detalle.subtotal | currency:'EUR' }}</strong></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Resumen de Pagos basados en el DTO de Javi -->
+        <div class="resumen-pagos">
+          <p><span>Total ticket:</span> <strong>{{ orden.total | currency:'EUR' }}</strong></p>
+          <p class="pagado"><span>Importe Pagado:</span> <strong>{{ orden.importePagado | currency:'EUR' }}</strong></p>
+          <p class="pendiente"><span>Pendiente de Cobro:</span> <strong>{{ orden.importePendiente | currency:'EUR' }}</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+}
