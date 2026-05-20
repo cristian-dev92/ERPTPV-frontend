@@ -2,17 +2,37 @@
   <div class="header-seccion">
     <h2>🧾 Historial de Tickets y Órdenes</h2>
     
-    <!-- Filtro de estados -->
-    <div class="filtros">
-      <label for="filtroEstado">Estado: </label>
-      <select id="filtroEstado" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)">
-        <option value="PENDIENTE">⏳ Pendientes de Pago</option>
-        <option value="PAGADO">💰 Pagados (En espera)</option>
-        <option value="EN_TALLER">🛠️ En Taller</option>
-        <option value="LISTO">✅ Listos para Recoger</option>
-        <option value="ENTREGADO">📦 Entregados (Cerrados)</option>
-        <option value="CANCELADA">❌ Cancelados</option>
-      </select>
+    <!-- 🎛️ Selectores rápidos para los zapateros en vez del desplegable rancio -->
+    <div class="pestañas-filtros">
+      <button type="button" 
+              [class.activo]="filtroEstado() === 'PAGADO'" 
+              (click)="filtroEstado.set('PAGADO')">
+        💰 Ventas Cobradas
+      </button>
+      
+      <button type="button" 
+              [class.activo]="filtroEstado() === 'PENDIENTE'" 
+              (click)="filtroEstado.set('PENDIENTE')">
+        ⏳ Pendientes de Pago
+      </button>
+      
+      <button type="button" 
+              [class.activo]="filtroEstado() === 'EN_TALLER'" 
+              (click)="filtroEstado.set('EN_TALLER')">
+        🛠️ En Taller
+      </button>
+
+      <button type="button" 
+              [class.activo]="filtroEstado() === 'LISTO'" 
+              (click)="filtroEstado.set('LISTO')">
+        ✅ Listos para Recoger
+      </button>
+
+      <button type="button" 
+              [class.activo]="filtroEstado() === 'ENTREGADO'" 
+              (click)="filtroEstado.set('ENTREGADO')">
+        📦 Cerrados
+      </button>
     </div>
   </div>
 
@@ -112,6 +132,94 @@
           <p class="pagado"><span>Importe Pagado:</span> <strong>{{ orden.importePagado | currency:'EUR' }}</strong></p>
           <p class="pendiente"><span>Pendiente de Cobro:</span> <strong>{{ orden.importePendiente | currency:'EUR' }}</strong></p>
         </div>
+
+        <!-- Botón para accionar el cobro si la orden está pendiente -->
+        @if (orden.importePendiente > 0) {
+        <div class="zona-acciones-cobro" style="clear: both; padding-top: 1.5rem; text-align: right;">
+          <button type="button" class="btn-ir-cobrar" (click)="abrirPanelCobro()">
+          💵 Cobrar y Entregar
+          </button>
+        </div>
+      }
+      </div>
+    </div>
+  </div>
+}
+
+        <!-- 🧮 MODAL DE COBRO TÁCTIL -->
+        @if (mostrarModalCobro()) {
+        <div class="modal-overlay cobro-overlay" (click)="cerrarPanelCobro()">
+          <div class="modal-content modal-cobro-content" (click)="$event.stopPropagation()">
+      
+        <div class="modal-header cobro-header">
+          <h2>Procesar Cobro: {{ ordenSeleccionada()?.numeroTicket || '#' + ordenSeleccionada()?.id }}</h2>
+          <button class="btn-close" (click)="cerrarPanelCobro()">&times;</button>
+        </div>
+
+        <div class="modal-body teclado-grid-layout">
+        
+        <!-- Panel Izquierdo: Datos e Importes -->
+        <div class="panel-datos-cobro">
+          <div class="tarjeta-total-pendiente">
+            <span>TOTAL PENDIENTE</span>
+            <h3>{{ ordenSeleccionada()?.importePendiente | currency:'EUR' }}</h3>
+          </div>
+
+          <!-- Selector de método de pago táctil -->
+          <div class="selector-metodo">
+            <button type="button" [class.activo]="metodoPago() === 'EFECTIVO'" (click)="metodoPago.set('EFECTIVO')">
+              💵 EFECTIVO
+            </button>
+            <button type="button" [class.activo]="metodoPago() === 'TARJETA'" (click)="metodoPago.set('TARJETA')">
+              💳 TARJETA
+            </button>
+          </div>
+
+          <!-- Display de lo introducido -->
+          @if (metodoPago() === 'EFECTIVO') {
+            <div class="campo-pantalla">
+              <label>Importe Entregado por Cliente:</label>
+              <div class="pantalla-numero">{{ importeEntregado() || '0' }} €</div>
+            </div>
+
+            <div class="campo-pantalla cambio-tarjeta">
+              <label>Cambio a Devolver:</label>
+              <div class="pantalla-numero cambio">{{ cambioAOfrecer() | currency:'EUR' }}</div>
+            </div>
+          } @else {
+            <div class="aviso-tarjeta">
+              <p>Pasa el importe de <strong>{{ ordenSeleccionada()?.importePendiente | currency:'EUR' }}</strong> por el datáfono.</p>
+            </div>
+          }
+
+          <button type="button" class="btn-finalizar-cobro" (click)="finalizarEntregaYCobro()">
+            ✓ Confirmar Cobro y Entregar
+          </button>
+        </div>
+
+        <!-- Panel Derecho: Teclado Numérico (Solo se muestra para calcular efectivo) -->
+        <div class="panel-teclado" [style.visibility]="metodoPago() === 'EFECTIVO' ? 'visible' : 'hidden'">
+          <div class="teclado-tactil">
+            <button type="button" (click)="presionarTecla('1')">1</button>
+            <button type="button" (click)="presionarTecla('2')">2</button>
+            <button type="button" (click)="presionarTecla('3')">3</button>
+            
+            <button type="button" (click)="presionarTecla('4')">4</button>
+            <button type="button" (click)="presionarTecla('5')">5</button>
+            <button type="button" (click)="presionarTecla('6')">6</button>
+            
+            <button type="button" (click)="presionarTecla('7')">7</button>
+            <button type="button" (click)="presionarTecla('8')">8</button>
+            <button type="button" (click)="presionarTecla('9')">9</button>
+            
+            <button type="button" class="btn-punto" (click)="presionarTecla('.')">.</button>
+            <button type="button" (click)="presionarTecla('0')">0</button>
+            <button type="button" class="btn-borrar" (click)="presionarTecla('⌫')">⌫</button>
+            
+            <button type="button" class="btn-clear" (click)="presionarTecla('C')">Limpiar (C)</button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

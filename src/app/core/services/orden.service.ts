@@ -23,7 +23,7 @@ export interface NuevaOrdenDTO {
 @Injectable({ providedIn: 'root' })
 export class OrdenService {
   private http = inject(HttpClient);
-  private readonly API_URL = 'http://localhost:8080/api/ordenes';
+  private readonly API_URL = '/api/ordenes';
 
   // 1. Crear el ticket (Carrito) - Ahora tipado con NuevaOrdenDTO
   crearOrden(peticion: NuevaOrdenDTO): Observable<any> {
@@ -46,15 +46,17 @@ export class OrdenService {
 
   // 4. Cambiar estado (Taller, Listo, etc)
   cambiarEstado(id: number, nuevoEstado: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/${id}/estado`, null, {
+    return this.http.patch(`${this.API_URL}/${id}/estado`, null, {
       params: { nuevoEstado }
     });
   }
 
+  // 5. Consultas
   getOrdenesHoy(): Observable<any> {
     return this.http.get(`${this.API_URL}/hoy`);
   }
 
+  // 6. Consulta por estado (PAGADO, PENDIENTE, EN_TALLER)
   getOrdenesPorEstado(estado: string): Observable<any> {
     return this.http.get<any[]>(`${this.API_URL}/estado/${estado}`);
   }

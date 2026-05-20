@@ -1,0 +1,63 @@
+.toast-flotante {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: #ffffff;
+  color: #1e293b;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  border-left: 6px solid #64748b; // Color gris por defecto
+  animation: slideInToast 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: sans-serif; // O la fuente que uses en tu proyecto
+
+  p {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  span {
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+  }
+
+  // Variación: Éxito (Verde)
+  &.success {
+    border-left-color: #10b981;
+    background-color: #ecfdf5;
+    color: #065f46;
+  }
+
+  // Variación: Error (Rojo)
+  &.error {
+    border-left-color: #ef4444;
+    background-color: #fef2f2;
+    color: #991b1b;
+  }
+
+  // Variación: Advertencia (Amarillo)
+  &.warning {
+    border-left-color: #f59e0b;
+    background-color: #fffbeb;
+    color: #92400e;
+  }
+}
+
+// Animación de entrada desde la derecha
+@keyframes slideInToast {
+  from {
+    transform: translateX(140%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

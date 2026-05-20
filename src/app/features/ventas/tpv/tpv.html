@@ -126,7 +126,7 @@
       @if (tipoOrdenSeleccionada() === 'REPARACION') {
         <div class="form-group animacion-input">
           <label for="fechaRecogida">📅 Fecha de Recogida:</label>
-          <input type="date" id="fechaRecogida" [ngModel]="fechaPrometidaRecogida()">
+          <input type="date" id="fechaRecogida" [value]="fechaPrometidaRecogida()" (input)="fechaPrometidaRecogida.set($any($event.target).value)">
         </div>
       }
 

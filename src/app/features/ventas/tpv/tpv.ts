@@ -1,11 +1,12 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
-import { OrdenService, NuevaOrdenDTO, TipoOrden } from '../../../core/services/orden.service';
+import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO } from '../../../core/services/orden.service';
 import { Articulo } from '../../../core/models/articulo.model';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CajaService } from '../../../core/services/caja.service';
 import { ClienteService } from '../../../core/services/cliente.service';
+import { UiService } from '../../../core/services/ui.service';
 
 // Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
 export interface Cliente {
@@ -13,6 +14,12 @@ export interface Cliente {
   nombre: string;
   telefono: string;
   email?: string;
+}
+
+// Interfaz que extiende NuevaLineaDTO para incluir el nombre y precio del artículo, facilitando la visualización en el TPV
+export interface ItemCarrito extends NuevaLineaDTO {
+  nombre: string;
+  precio: number;
 }
 
 @Component({
@@ -28,11 +35,12 @@ export class TpvComponent implements OnInit {
   private ordenService = inject(OrdenService);
   private cajaService = inject(CajaService);
   private clienteService = inject(ClienteService);
+  private uiService = inject(UiService);
 
   // Estados del TPV
   articulos = signal<Articulo[]>([]);
   filtro = signal('');
-  carrito = signal<any[]>([]); // Aquí guardaremos { articuloId, nombre, cantidad, precio, notas }
+  carrito = signal<ItemCarrito[]>([]); // Aquí guardaremos { articuloId, nombre, cantidad, precio, notas }
   // Añade esta propiedad arriba junto a los otros signals/variables
   saldoInicialInput: number = 150; // 150€ por defecto para cambio
 
@@ -69,21 +77,36 @@ export class TpvComponent implements OnInit {
   }
 
   agregarAlCarrito(articulo: Articulo) {
-    const actual = this.carrito();
-    const existe = actual.find(item => item.articuloId === articulo.id);
+    // 1. Extraemos y aseguramos el ID en una constante local de tipo 'number'
+    const idSeguro = articulo.id;
+    if (idSeguro === undefined || idSeguro === null) {
+      console.error('No se puede añadir un artículo sin ID al carrito');
+      return;
+    }
 
-    if (existe) {
-      existe.cantidad++;
-      this.carrito.set([...actual]);
-    } else {
-      this.carrito.set([...actual, {
-        articuloId: articulo.id,
+    this.carrito.update((items: ItemCarrito[]): ItemCarrito[] => {
+      // Usamos la constante local que TypeScript ya sabe que es 100% number
+      const existe = items.find(item => item.articuloId === idSeguro);
+    
+      if (existe) {
+        return items.map(item => 
+          item.articuloId === idSeguro 
+            ? { ...item, cantidad: item.cantidad + 1 } 
+            : item
+        );
+      }
+    
+      // 2. Creamos el nuevo item forzando explícitamente el tipo ItemCarrito
+      const nuevoItem: ItemCarrito = {
+        articuloId: idSeguro,
         nombre: articulo.nombre,
         cantidad: 1,
-        precio: articulo.precioBase * (1 + articulo.porcentajeIva / 100), // Precio PVP
-        notasReparacion: ''
-      }]);
-    }
+        precio: articulo.precioBase * (1 + articulo.porcentajeIva / 100),
+        notasReparacion: null // Usamos null para que machee perfecto con el DTO
+      };
+    
+      return [...items, nuevoItem];
+    });
   }
 
   // El método que controla los botones + y - que pusimos en el HTML
@@ -111,18 +134,18 @@ export class TpvComponent implements OnInit {
   // EL MOMENTO DE LA VERDAD: Enviar al Backend
   finalizarVenta() {
     if (!this.cajaAbierta()) {
-      alert('¡Atención! Debes abrir la caja antes de realizar una venta.');
+      this.uiService.mostrarToast('¡Atención! Debes abrir la caja antes de realizar una venta.', 'warning');
       return;
     }
 
     if (this.carrito().length === 0) {
-      alert('El carrito está vacío.');
+      this.uiService.mostrarToast('El carrito está vacío.', 'warning');
       return;
     }
 
     // Si es reparación, obligamos a que pongan una fecha de recogida
     if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.fechaPrometidaRecogida()) {
-      alert('Por favor, selecciona una fecha prometida de recogida para la reparación.');
+      this.uiService.mostrarToast('Por favor, selecciona una fecha prometida de recogida para la reparación.', 'warning');
       return;
     }
 
@@ -133,12 +156,16 @@ export class TpvComponent implements OnInit {
       clienteId: this.clienteSeleccionadoId(),
       tipo: this.tipoOrdenSeleccionada(),
       fechaPrometidaRecogida: this.tipoOrdenSeleccionada() === 'REPARACION' ? this.fechaPrometidaRecogida() : null,
-      lineas: this.carrito().map(item => ({
-        articuloId: item.articuloId,
-        cantidad: item.cantidad,
-        notasReparacion: item.notasReparacion || null
-      }))
+      lineas: this.carrito().map(item => {
+        return {
+          articuloId: item.articuloId,
+          cantidad: item.cantidad,
+          notasReparacion: item.notasReparacion || null
+        };
+      })
     };
+
+    console.log('JSON final enviado al Backend:', JSON.stringify(request, null, 2));
 
     this.ordenService.crearOrden(request).subscribe({
       next: (ordenGuardada) => {
@@ -153,20 +180,20 @@ export class TpvComponent implements OnInit {
             const importe = prompt(`El total es de ${this.totalTicket()}€. ¿Cuánto deja de señal?`);
             const numImporte = parseFloat(importe || '0');
             if (numImporte > 0 && numImporte <= this.totalTicket()) {
-              this.cobrarAnticipoTicket(ordenGuardada.id, numImporte);
+              this.cobrarAnticipoTicket(ordenGuardada.id, numImporte, this.metodoPagoSeleccionado());
             } else {
-              alert('Importe no válido. La orden se ha guardado como PENDIENTE sin anticipo.');
+              this.uiService.mostrarToast('Importe no válido. La orden se ha guardado como PENDIENTE sin anticipo.', 'warning');
               this.limpiarCarrito();
-              this.deseleccionarCliente;
+              this.deseleccionarCliente();
             }
           } else {
-            alert('Orden de reparación guardada como PENDIENTE de cobro.');
+            this.uiService.mostrarToast('Orden de reparación guardada como PENDIENTE de cobro.', 'success');
             this.limpiarCarrito();
             this.deseleccionarCliente();
           }
         }
       },
-      error: (err) => alert('Error al crear ticket: ' + (err.error?.message || err.error || 'Error desconocido'))
+      error: (err) => this.uiService.mostrarToast('Error al crear ticket: ' + (err.error?.message || err.error || 'Error desconocido'), 'error')
     });
   }
 
@@ -174,23 +201,24 @@ export class TpvComponent implements OnInit {
   private cobrarTicketCompleto(id: number) {
     this.ordenService.cobrar(id, this.metodoPagoSeleccionado()).subscribe({
       next: () => {
-        alert('💰 ¡Venta cobrada al 100% correctamente en Caja!');
+        this.uiService.mostrarToast('💰 ¡Venta cobrada al 100% correctamente en Caja!', 'success');
         this.limpiarCarrito();
         this.deseleccionarCliente();
       },
-      error: (err) => alert('Error al procesar el pago: ' + err.error)
+      error: (err) => this.uiService.mostrarToast('Error al procesar el pago: ' + (err.error || err.message), 'error')
     });
   }
 
   // Método para registrar un anticipo en una reparación
-  private cobrarAnticipoTicket(id: number, importe: number) {
-    this.ordenService.registrarAnticipo(id, importe, this.metodoPagoSeleccionado()).subscribe({
+  private cobrarAnticipoTicket(id: number, importe: number, metodoPago: string) {
+    const metodo = metodoPago || this.metodoPagoSeleccionado();
+    this.ordenService.registrarAnticipo(id, importe, metodo).subscribe({
       next: () => {
-        alert(`📉 ¡Anticipo de ${importe}€ registrado con éxito! El ticket queda pendiente del resto.`);
+        this.uiService.mostrarToast(`📉 ¡Anticipo de ${importe}€ registrado con éxito! El ticket queda pendiente del resto.`, 'success');
         this.limpiarCarrito();
         this.deseleccionarCliente();
       },
-      error: (err) => alert('Error al registrar el anticipo: ' + err.error)
+      error: (err) => this.uiService.mostrarToast('Error al registrar el anticipo: ' + (err.error || err.message), 'error')
     });
   }
 
@@ -206,21 +234,22 @@ export class TpvComponent implements OnInit {
   // Aquí el método para abrir la caja, que se ejecuta al hacer clic en el botón "Abrir Caja"
   ejecutarAperturaCaja() {
     if (this.saldoInicialInput < 0) {
-      alert('El saldo inicial no puede ser negativo');
+      this.uiService.mostrarToast('El saldo inicial no puede ser negativo', 'warning');
       return;
     }
 
     this.cajaService.abrirCaja(this.saldoInicialInput).subscribe({
       next: (caja) => {
-        alert(`🚀 Caja abierta con un fondo de ${caja.saldoInicial}€`);
+        this.uiService.mostrarToast(`🚀 Caja abierta con un fondo de ${caja.saldoInicial}€`, 'success');
         // Al abrirse, el signal cajaActual del servicio se actualiza y el TPV se desbloquea solo
       },
-      error: (err) => alert('Error al abrir caja: ' + (err.error || err.message))
+      error: (err) => this.uiService.mostrarToast('Error al abrir caja: ' + (err.error || err.message), 'error')
     });
   }
   
   // Métodos para manejar la búsqueda y selección de clientes en el TPV (útil para reparaciones)
   buscarClientes(termino: string) {
+    console.log('🔍 Buscando cliente con el término:', termino);
     this.busquedaCliente.set(termino);
     
     // Si escribe menos de 2 caracteres, limpiamos el desplegable
@@ -229,34 +258,49 @@ export class TpvComponent implements OnInit {
       return;
     }
 
+    // Convertimos a MAYÚSCULAS para que coincida con la base de datos
+    const terminoLimpio = termino.trim().toUpperCase();
+
     // Expresión regular para saber si solo está escribiendo números (admite el + del prefijo)
-    const esTelefono = /^\+?[0-9\s\-]+$/.test(termino.trim());
+    const esTelefono = /^\+?[0-9\s\-]+$/.test(terminoLimpio);
 
     if (esTelefono) {
       // Llamada al endpoint de teléfono (/api/clientes/telefono/{telefono})
-      this.clienteService.buscarPorTelefono(termino.trim()).subscribe({
+      this.clienteService.buscarPorTelefono(terminoLimpio).subscribe({
         next: (resultado) => this.clientesEncontrados.set(resultado),
-        error: () => this.clientesEncontrados.set([])
+        error: (err) => {
+          console.error('❌ Error buscando por teléfono:', err); 
+          this.clientesEncontrados.set([]);
+        }
       });
     } else {
       // Llamada al endpoint de nombre (/api/clientes/nombre/{nombre})
-      this.clienteService.buscarPorNombre(termino.trim()).subscribe({
+      this.clienteService.buscarPorNombre(terminoLimpio).subscribe({
         next: (resultado) => this.clientesEncontrados.set(resultado),
-        error: () => this.clientesEncontrados.set([])
+        error: (err) => {
+          console.error('❌ Error buscando por nombre:', err); 
+          this.clientesEncontrados.set([]);
+        }
       });
     }
   }
 
   seleccionarCliente(cliente: Cliente) {
+    // Al seleccionar un cliente, guardamos su ID para asociarlo al DTO de la orden y mostrar su nombre en el TPV
     this.clienteSeleccionado.set(cliente);
-    this.clienteSeleccionadoId.set(cliente.id); // Se asocia al DTO de la orden
+    // Guardamos el ID del cliente seleccionado para luego enviarlo al backend en la creación de la orden
+    this.clienteSeleccionadoId.set(cliente.id);
+    // Limpiamos la búsqueda y los resultados para que el cajero vea claramente que ya hay un cliente seleccionado
     this.busquedaCliente.set('');
     this.clientesEncontrados.set([]);
   }
 
   deseleccionarCliente() {
+    // Reseteamos el cliente seleccionado a null para volver a la venta anónima
     this.clienteSeleccionado.set(null);
-    this.clienteSeleccionadoId.set(null); // Vuelve a ser venta anónima
+    this.clienteSeleccionadoId.set(null);
+    this.busquedaCliente.set('');
+    this.clientesEncontrados.set([]);
   }
 
 }

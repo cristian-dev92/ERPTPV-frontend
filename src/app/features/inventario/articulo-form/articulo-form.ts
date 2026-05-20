@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { UiService } from '../../../core/services/ui.service';
 
 @Component({
   selector: 'app-articulo-form',
@@ -15,7 +16,7 @@ export class ArticuloFormComponent {
   private articuloService = inject(ArticuloService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-
+  private uiService = inject(UiService);
   isEditMode = signal(false);
   articuloId = signal<number | null>(null);
 
@@ -77,12 +78,12 @@ export class ArticuloFormComponent {
     if (this.isEditMode()) {
       this.articuloService.actualizarArticulo(this.articuloId()!, articuloData).subscribe({
         next: () => this.router.navigate(['/inventario']),
-        error: (err) => alert('Error al actualizar: ' + (err.error || err.message))
+        error: (err) => this.uiService.mostrarToast('Error al actualizar: ' + (err.error || err.message), 'error')
       });
     } else {
       this.articuloService.crearArticulo(articuloData).subscribe({
         next: () => this.router.navigate(['/inventario']),
-        error: (err) => alert('Error al crear: ' + (err.error || err.message))
+        error: (err) => this.uiService.mostrarToast('Error al crear: ' + (err.error || err.message), 'error')
       });
     }
   }

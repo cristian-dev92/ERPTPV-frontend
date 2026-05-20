@@ -5,11 +5,12 @@
   min-height: 100vh;
 }
 
-// Cabecera superior que alinea título y filtros
+// Cabecera superior adaptada para las pestañas de los zapateros
 .header-seccion {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column; // Título arriba, botones abajo
+  align-items: flex-start;
+  gap: 1.25rem;
   margin-bottom: 1.5rem;
 
   h2 {
@@ -20,38 +21,39 @@
   }
 }
 
-// Sección de Filtros derecha
-.filtros {
+// Contenedor moderno de botones que sustituye al select
+.pestañas-filtros {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   background: #ffffff;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem; // Un pelín más ajustado para hacer de marco
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
+  flex-wrap: wrap; // Por si abren la app desde una tablet
 
-  label {
-    font-weight: 600;
+  button {
+    background-color: transparent;
     color: #475569;
+    border: none;
+    padding: 0.5rem 1rem;
     font-size: 0.9rem;
-  }
-
-  select {
-    padding: 0.4rem 1.5rem 0.4rem 0.5rem;
-    border: 1px solid #cbd5e1;
+    font-weight: 600;
     border-radius: 6px;
-    background-color: #ffffff;
-    color: #1e293b;
-    font-size: 0.9rem;
-    font-weight: 500;
     cursor: pointer;
-    outline: none;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 
-    &:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    &:hover {
+      background-color: #f1f5f9;
+      color: #1e293b;
+    }
+
+    // El botón azul activo resalta al instante
+    &.activo {
+      background-color: #2563eb; // El mismo azul corporativo de tu .btn-ver
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
     }
   }
 }
@@ -329,5 +331,144 @@
         color: #dc2626;
       }
     }
+  }
+}
+
+// Botón llamativo en el detalle
+.btn-ir-cobrar {
+  background-color: #16a34a;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: #15803d;
+  }
+}
+
+// Configuración específica del modal de cobro táctil
+.modal-cobro-content {
+  max-width: 800px;
+}
+
+.teclado-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+// Panel de datos izquierdo
+.panel-datos-cobro {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  .tarjeta-total-pendiente {
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    span { font-size: 0.8rem; font-weight: 700; color: #991b1b; letter-spacing: 0.05em; }
+    h3 { margin: 0.2rem 0 0 0; font-size: 2rem; color: #dc2626; font-weight: 800; }
+  }
+
+  .selector-metodo {
+    display: flex;
+    gap: 10px;
+    button {
+      flex: 1;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.15s;
+      &:hover { background: #f8fafc; }
+      &.activo {
+        border-color: #2563eb;
+        background-color: #eff6ff;
+        color: #1d4ed8;
+      }
+    }
+  }
+
+  .campo-pantalla {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.75rem;
+    border-radius: 8px;
+    label { font-size: 0.8rem; font-weight: 600; color: #64748b; }
+    .pantalla-numero { font-size: 1.5rem; font-weight: 700; color: #1e293b; text-align: right; margin-top: 0.25rem; }
+    &.cambio-tarjeta {
+      background-color: #f0fdf4;
+      border-color: #bbf7d0;
+      .cambio { color: #16a34a; font-size: 1.75rem; }
+    }
+  }
+
+  .aviso-tarjeta {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    padding: 1rem;
+    border-radius: 8px;
+    color: #1e40af;
+    p { margin: 0; font-size: 0.95rem; text-align: center; }
+  }
+
+  .btn-finalizar-cobro {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    margin-top: 0.5rem;
+    &:hover { background-color: #1d4ed8; }
+  }
+}
+
+// Panel derecho: El teclado táctil
+.teclado-tactil {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+
+  button {
+    background-color: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 1.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.1s;
+
+    &:active {
+      background-color: #cbd5e1;
+    }
+  }
+
+  .btn-borrar { background-color: #fed7d7; color: #c53030; border-color: #fecaca; }
+  .btn-clear {
+    grid-column: span 3;
+    font-size: 1rem;
+    padding: 0.75rem;
+    background-color: #e2e8f0;
+    color: #475569;
   }
 }
