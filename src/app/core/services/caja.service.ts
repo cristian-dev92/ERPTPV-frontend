@@ -44,4 +44,11 @@ export class CajaService {
       descripcion
     });
   }
+
+   obtenerTurnoActual(): Observable<any> {
+  return this.http.get(`${this.API_URL}/actual`).pipe(
+    catchError(() => of(null))
+  );
+ }
+ 
 }

@@ -1,4 +1,6 @@
+<!-- 1. GESTIÓN DE APERTURA / CIERRE DE CAJA -->
 @if (!cajaAbierta()) {
+  <!-- MOSTRAR ESTO ÚNICAMENTE SI LA CAJA ESTÁ CERRADA -->
   <div class="alerta-caja">
     <div class="alerta-header">
       ⚠️ <strong>CAJA CERRADA:</strong> No puedes realizar ventas hasta que abras el turno.
@@ -9,23 +11,121 @@
       <button (click)="ejecutarAperturaCaja()" class="btn-abrir-ya">🔓 Abrir Caja</button>
     </div>
   </div>
+} @else {
+  <!-- MOSTRAR ESTO ÚNICAMENTE SI LA CAJA ESTÁ ABIERTA -->
+  <div class="header-caja-abierta">
+    <div class="status">
+      <span class="punto-verde"></span>
+      <strong>TURNO ACTIVO:</strong> Caja abierta y operativa.
+    </div>
+    <button (click)="abrirCierreCaja()" class="btn-cerrar-caja">🔒 Finalizar Turno y Cerrar Caja</button>
+  </div>
 }
 
-<div class="tpv-container">
+<!-- 2. MODAL DE ARQUEO CIEGO (Se abre al pulsar "Finalizar Turno") -->
+@if (mostrarModalCierre()) {
+  <div class="modal-arqueo-overlay">
+    <div class="modal-arqueo-box">
+      <div class="modal-header">
+        <h3>Arqueo de Caja (Cierre)</h3>
+        <p>Realice el recuento físico del efectivo en el cajón.</p>
+      </div>
+      
+      <div class="modal-body">
+        <div class="info-ciega">
+          <p>Introduzca el importe total (Efectivo + Fondo inicial) que hay actualmente en la caja:</p>
+          <div class="input-wrap">
+            <input type="number" 
+                   [(ngModel)]="saldoContadoInput" 
+                   placeholder="0.00" 
+                   step="0.01"
+                   class="input-arqueo">
+            <span class="currency">€</span>
+          </div>
+        </div>
+        <p class="nota-seguridad text-xs">Nota: Al confirmar, el sistema comparará este valor con las ventas registradas y generará el informe de descuadre si existiera.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="mostrarModalCierre.set(false)">Cancelar</button>
+        <button class="btn-confirmar-cierre" (click)="confirmarCierreCaja()">Confirmar y Cerrar Caja</button>
+      </div>
+    </div>
+  </div>
+}
+
+
+ <div class="tpv-container">
   
-  <div class="catalogo-section">
-    <input type="text" [(ngModel)]="filtro" placeholder="🔍 Buscar zapato o servicio...">
+  <!-- INTERPOLACIÓN DEL NUEVO CATÁLOGO TÁCTIL (IZQUIERDA) -->
+  <div class="catalogo-container">
     
-    <div class="grid-articulos">
-      @for (art of articulosFiltrados(); track art.id) {
-        <div class="card-articulo" (click)="agregarAlCarrito(art)">
-          <span class="nombre">{{ art.nombre }}</span>
-          <span class="precio">{{ art.precioBase | currency:'EUR' }}</span>
+    <!-- 🗂️ BARRA DE CATEGORÍAS (Botonera Táctil Superior) -->
+    <div class="categorias-bar">
+      <button 
+        type="button"
+        class="btn-categoria" 
+        [class.active]="categoriaSeleccionada() === 'TODOS'"
+        (click)="seleccionarCategoria('TODOS')">
+        📦 Ver Todos
+      </button>
+      <button 
+        type="button"
+        class="btn-categoria" 
+        [class.active]="categoriaSeleccionada() === 'PRODUCTO'"
+        (click)="seleccionarCategoria('PRODUCTO')">
+        🧵 Productos (Tienda)
+      </button>
+      <button 
+        type="button"
+        class="btn-categoria" 
+        [class.active]="categoriaSeleccionada() === 'SERVICIO'"
+        (click)="seleccionarCategoria('SERVICIO')">
+        🛠️ Servicios (Taller)
+      </button>
+    </div>
+
+    <!-- 🔍 BUSCADOR DE APOYO -->
+    <div class="buscador-articulo-wrap">
+      <input 
+        type="text" 
+        placeholder="🔍 Escribe para filtrar aún más rápido..." 
+        [value]="busquedaArticulo()"
+        (input)="busquedaArticulo.set($any($event.target).value)"
+        class="form-control" />
+    </div>
+
+    <!-- 🟢 CUADRÍCULA DE ARTÍCULOS TÁCTILES -->
+    <div class="articulos-grid">
+      @for (articulo of articulosFiltrados(); track articulo.id) {
+        <button 
+          type="button" 
+          class="articulo-card"
+          [class.card-servicio]="articulo.tipo === 'SERVICIO'"
+          (click)="agregarAlCarrito(articulo)">
+          
+          <div class="info-producto">
+            <span class="nombre">{{ articulo.nombre }}</span>
+            <span class="precio">{{ (articulo.precio || (articulo.precioBase * 1.21)) | currency:'EUR' }}</span>
+          </div>
+          
+          @if (articulo.tipo === 'PRODUCTO') {
+            <span class="stock-badge" [class.low-stock]="articulo.stock <= articulo.stockMinimo">
+              Stock: {{ articulo.stock }}
+            </span>
+          } @else {
+            <span class="stock-badge servicio-badge">Mano de Obra</span>
+          }
+        </button>
+      } @empty {
+        <div class="no-results">
+          📭 No hay artículos en esta categoría que coincidan con la búsqueda.
         </div>
       }
     </div>
   </div>
 
+  <!-- SECCIÓN DERECHA: TICKET ACTUAL -->
   <div class="ticket-section">
     <h2>📋 Ticket Actual</h2>
 
@@ -67,6 +167,7 @@
     }
   </div>
     
+    <!-- SECCIÓN DE LÍNEAS DEL TICKET -->
     <div class="lineas-ticket">
     @for (item of carrito(); track $index) {
       <div class="linea">
@@ -79,6 +180,16 @@
             <span class="cantidad">{{ item.cantidad }}</span>
             <button (click)="ajustarCantidad($index, 1)" class="btn-qty" type="button">+</button>
           </div>
+        </div>
+
+        <!-- Entrada de descuento manual -->
+        <div class="descuento-linea-wrap">
+          <label>Dto %</label>
+          <input type="number" 
+            [value]="item.descuentoPorcentaje || 0" 
+            min="0" max="100"
+            (input)="actualizarDescuentoLinea($index, $event)"
+            class="input-descuento-manual">
         </div>
 
         <!-- Entrada opcional de notas si el tipo de orden es Reparación -->
@@ -102,7 +213,7 @@
       }
     </div>
 
-    <!-- NUEVA SECCIÓN DE CONFIGURACIÓN DEL PEDIDO Y PAGO -->
+    <!-- CONFIGURACIÓN DEL PEDIDO Y PAGO -->
     <div class="configuracion-pedido">
       
       <!-- Selector de Tipo de Operación -->
@@ -149,7 +260,19 @@
 
     </div>
 
+    <!-- RESUMEN FINAL Y BOTÓN DE COBRO -->
     <div class="footer-ticket">
+      <div class="descuento-global-row">
+        <label for="descGlobalManual"> Descuento General al Ticket (%):</label>
+        <input type="number" 
+           id="descGlobalManual"
+           [value]="descuentoGlobal()" 
+           min="0" max="100"
+           (input)="actualizarDescuentoGlobal($event)"
+           placeholder="0"
+           class="input-descuento-global">
+      </div>
+      
       <div class="total-row">
         <span>TOTAL:</span>
         <span class="total-amount">{{ totalTicket() | currency:'EUR' }}</span>
@@ -162,4 +285,108 @@
       </button>
     </div>
   </div>
+</div>
+
+<!-- MODAL VERI*FACTU (AEAT) -->
+@if (datosFacturaAeat()) {
+  <div class="modal-aeat-overlay">
+    <div class="modal-aeat-box">
+      <div class="modal-header">
+        <span class="badge-verifaktu">🛡️ VERI*FACTU</span>
+        <h3>Factura Simplificada Registrada</h3>
+      </div>
+      <div class="modal-body">
+        <p class="success-msg">La información de este ticket ha sido remitida en tiempo real a la Sede Electrónica de la AEAT.</p>
+        
+        <div class="ticket-legal-info">
+          <div><span>Identificador legal:</span> <strong>{{ datosFacturaAeat()?.ref }}</strong></div>
+          <div><span>Hora Emisión:</span> <span>{{ datosFacturaAeat()?.fecha }}</span></div>
+          <div><span>Importe Total:</span> <strong>{{ datosFacturaAeat()?.total | currency:'EUR' }}</strong></div>
+        </div>
+
+        <div class="qr-container">
+          <div class="qr-placeholder-graphics">
+            <span>🔳</span>
+          </div>
+          <p class="qr-caption">Escanee este código QR para verificar la validez del documento en la web de la Agencia Tributaria.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-imprimir-ticket" (click)="uiService.mostrarToast('Imprimiendo recibo fiscal...', 'success')">🖨️ Imprimir Factura</button>
+        <button class="btn-cerrar-modal" (click)="cerrarReciboAeat()">Siguiente Venta ➔</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- PANEL HISTORIAL DE TICKETS (ZONA INFERIOR) -->
+<div class="panel-historial-wrapper">
+  
+  <!-- Cabecera del Panel (Control de visibilidad táctil) -->
+  <div class="historial-header" (click)="toggleHistorial()">
+    <div class="header-info">
+      <span class="icono">🕒</span>
+      <h3>Últimas Ventas del Turno</h3>
+      <span class="contador-badge">
+        {{ historialTickets().length }} tickets
+      </span>
+    </div>
+    
+    <!-- Flecha indicadora (gira si está abierto) -->
+    <button type="button" class="btn-toggle-flecha" [class.rotado]="mostrarHistorial()">
+      ▼
+    </button>
+  </div>
+
+  <!-- Contenido del Historial (Se muestra/oculta de forma reactiva) -->
+  @if (mostrarHistorial()) {
+    <div class="historial-body">
+      <table class="tabla-historial">
+        <thead>
+          <tr>
+            <th>Nº Ticket</th>
+            <th>Hora</th>
+            <th>Cliente</th>
+            <th class="text-derecha">Total</th>
+            <th class="text-centro">Estado AEAT</th>
+            <th class="text-centro">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ticket of historialTickets(); track ticket.id) {
+            <tr>
+              <td class="txt-negrita">#{{ ticket.numeroFactura }}</td>
+              <td class="txt-mutado">{{ ticket.fecha | date:'HH:mm' }}</td>
+              <td>
+                {{ ticket.cliente?.nombre || 'Cliente General' }}
+              </td>
+              <td class="text-derecha txt-precio">
+                {{ ticket.total | currency:'EUR' }}
+              </td>
+              <td class="text-centro">
+                <!-- Estado del envío simulado -->
+                <span class="badge-estado" [class]="ticket.estadoAeat.toLowerCase()">
+                  <span class="punto-indicador"></span>
+                  {{ ticket.estadoAeat }}
+                </span>
+              </td>
+              <td class="text-centro">
+                <button type="button" 
+                        (click)="reimprimirTicket(ticket)" 
+                        class="btn-reimprimir">
+                  🖨️ Reimprimir
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="tabla-vacia">
+                📭 No se han realizado ventas en este turno todavía.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </div>
