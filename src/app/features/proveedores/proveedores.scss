@@ -1,0 +1,136 @@
+/* ==========================================================================
+   DIRECTORIO DE PROVEEDORES - HOJA DE ESTILOS
+   ========================================================================== */
+$primary: #1e293b;
+$secondary: #3b82f6;
+$border: #e2e8f0;
+$bg-light: #f8fafc;
+
+.proveedores-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: $primary;
+
+  header.proveedores-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid $border;
+    padding-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+    }
+    p {
+      color: #64748b;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .btn-nuevo-proveedor {
+      background-color: $secondary;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      &:hover { background-color: #2563eb; }
+    }
+  }
+}
+
+/* Tabla de datos */
+.tabla-wrapper {
+  background: white;
+  border: 1px solid $border;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.zapatero-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+
+  thead {
+    background-color: $bg-light;
+    border-bottom: 1px solid $border;
+    th { padding: 1rem; font-weight: 600; color: #475569; }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $border;
+    &:last-child { border-bottom: none; }
+    &:hover { background-color: $bg-light; }
+    td { padding: 1rem; color: #334155; }
+  }
+
+  .txt-negrita { font-weight: 600; color: $primary; }
+  .txt-mutado { color: #64748b; }
+  .txt-email { color: $secondary; font-weight: 500; }
+  
+  .badge-activo {
+    background-color: #ecfdf5;
+    color: #059669;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .tabla-vacia {
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+    font-style: italic;
+  }
+}
+
+/* Modales */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 10000;
+}
+
+.modal-box {
+  background: white; border-radius: 16px; width: 100%; max-width: 500px;
+  padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+
+  .modal-header {
+    border-bottom: 1px solid $border;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    h3 { margin: 0 0 0.5rem 0; font-size: 1.3rem; }
+    p { margin: 0; color: #64748b; font-size: 0.85rem; }
+  }
+
+  .form-group {
+    display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.25rem;
+    label { font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; }
+    input {
+      padding: 10px 12px; border: 2px solid $border; border-radius: 8px; outline: none; font-size: 0.95rem;
+      &:focus { border-color: $secondary; }
+    }
+  }
+
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+
+  .modal-footer {
+    display: flex; gap: 12px; margin-top: 1.75rem;
+    button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
+    .btn-cancelar { background: #f1f5f9; color: #475569; &:hover { background: #e2e8f0; } }
+    .btn-guardar { background: $primary; color: white; &:hover { background: #000; } }
+  }
+}

@@ -1,21 +1,22 @@
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
-import { Observable, tap, catchError, of } from 'rxjs';
-
+import { Observable, of } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class CajaService {
   private http = inject(HttpClient);
   private readonly API_URL = 'http://localhost:8080/api/caja';
 
-  // Signal para saber el estado de la caja en toda la App
+  // Signal para saber si hay una caja abierta ahora mismo
   cajaActual = signal<any | null>(null);
 
-  // NUEVO: Método para recuperar la caja abierta al iniciar la app
+  // NUEVO: Guardamos el informe del turno que se acaba de cerrar para poder imprimirlo/verlo
+  ultimoTurnoCerrado = signal<any | null>(null);
+
   checkEstadoCaja(): Observable<any> {
     return this.http.get<any | null>(`${this.API_URL}/actual`).pipe(
       tap(res => {
-      // Si responde 200, res tendrá el JSON. Si responde 204, res será null.
         this.cajaActual.set(res);
       }),
       catchError(() => {
@@ -27,13 +28,19 @@ export class CajaService {
 
   abrirCaja(saldoInicial: number): Observable<any> {
     return this.http.post(`${this.API_URL}/abrir`, { saldoInicial }).pipe(
-      tap(res => this.cajaActual.set(res))
+      tap(res => {
+        this.cajaActual.set(res);
+        this.ultimoTurnoCerrado.set(null); // Limpiamos el último cierre al abrir nueva caja
+      })
     );
   }
 
   cerrarCaja(saldoFinalReal: number): Observable<any> {
     return this.http.post(`${this.API_URL}/cerrar`, { saldoFinalReal }).pipe(
-      tap(() => this.cajaActual.set(null))
+      tap(res => {
+        this.ultimoTurnoCerrado.set(res); // 👈 GUARDAMOS el informe de cierre de Javi aquí
+        this.cajaActual.set(null); // Bloqueamos el TPV
+      })
     );
   }
 
@@ -45,10 +52,9 @@ export class CajaService {
     });
   }
 
-   obtenerTurnoActual(): Observable<any> {
-  return this.http.get(`${this.API_URL}/actual`).pipe(
-    catchError(() => of(null))
-  );
- }
- 
+  obtenerTurnoActual(): Observable<any> {
+    return this.http.get(`${this.API_URL}/actual`).pipe(
+      catchError(() => of(null))
+    );
+  }
 }

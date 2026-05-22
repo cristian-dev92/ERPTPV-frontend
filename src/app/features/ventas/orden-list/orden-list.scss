@@ -1,474 +1,546 @@
-// Contenedor principal de la pantalla
-.historial-container {
-  padding: 1.5rem;
-  background-color: #f8fafc;
+// ==========================================
+// MÓDULOS DE SASS
+// ==========================================
+@use "sass:color";
+
+// ==========================================
+// VARIABLES DE COLOR (Tema Oscuro / TPV Taller)
+// ==========================================
+$bg-main: #12141c;
+$bg-card: #1a1d29;
+$bg-modal: #1e2235;
+$text-main: #ffffff;
+$text-muted: #a0aec0;
+
+$color-accent: #3182ce;    // Azul - En Taller
+$color-success: #38a169;   // Verde - Pagado / Listo
+$color-warning: #dd6b20;   // Naranja - Pendiente
+$color-danger: #e53e3e;    // Rojo - Cancelado
+$color-secondary: #4a5568; // Gris - Entregado
+
+// ==========================================
+// CONTENEDOR PRINCIPAL
+// ==========================================
+.tpv-container {
   min-height: 100vh;
-}
+  background-color: $bg-main;
+  color: $text-main;
+  padding: 1.5rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
 
-// Cabecera superior adaptada para las pestañas de los zapateros
-.header-seccion {
-  display: flex;
-  flex-direction: column; // Título arriba, botones abajo
-  align-items: flex-start;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
-
-  h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: #1e293b;
-    font-weight: 700;
+  * {
+    box-sizing: border-box;
   }
 }
 
-// Contenedor moderno de botones que sustituye al select
-.pestañas-filtros {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #ffffff;
-  padding: 0.4rem; // Un pelín más ajustado para hacer de marco
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
-  flex-wrap: wrap; // Por si abren la app desde una tablet
+// ==========================================
+// 🎛️ BARRA DE PESTAÑAS TÁCTILES (Navegación superior)
+// ==========================================
+.tpv-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 2rem;
 
   button {
-    background-color: transparent;
-    color: #475569;
-    border: none;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
+    background-color: $bg-card;
+    color: $text-muted;
+    border: 2px solid transparent;
+    padding: 1.2rem 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 
     &:hover {
-      background-color: #f1f5f9;
-      color: #1e293b;
+      background-color: color.adjust($bg-card, $lightness: 4%);
+      color: $text-main;
     }
 
-    // El botón azul activo resalta al instante
-    &.activo {
-      background-color: #2563eb; // El mismo azul corporativo de tu .btn-ver
-      color: #ffffff;
-      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-    }
-  }
-}
-
-// Estilos de tu Tabla Original
-.tabla-ordenes {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  background: #ffffff;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-
-  thead {
-    background-color: #1e293b;
-    color: #f8fafc;
-
-    th {
-      padding: 1rem 1.25rem;
-      font-weight: 600;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-  }
-
-  tbody {
-    tr {
-      border-bottom: 1px solid #e2e8f0;
-      transition: background-color 0.15s ease;
-
-      &:hover {
-        background-color: #f1f5f9;
-      }
-
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-
-    td {
-      padding: 1rem 1.25rem;
-      color: #334155;
-      font-size: 0.95rem;
-      vertical-align: middle;
+    &.active {
+      background-color: $color-accent;
+      color: $text-main;
+      border-color: color.adjust($color-accent, $lightness: 15%);
+      box-shadow: 0 0 15px rgba($color-accent, 0.4);
     }
   }
 }
 
-// Botón de Acción
-.btn-ver {
-  background-color: #2563eb;
-  color: #ffffff;
-  border: none;
-  padding: 0.4rem 0.9rem;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.85rem;
+// ==========================================
+// 📋 GRID DE TARJETAS (Listado de Tickets)
+// ==========================================
+.tickets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.ticket-card {
+  background-color: $bg-card;
+  border-radius: 14px;
+  padding: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  transition: background-color 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 190px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 
   &:hover {
-    background-color: #1d4ed8;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+
+    .ticket-id {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+  }
+
+  .card-body {
+    flex-grow: 1;
+
+    p {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+    }
+
+    .cliente {
+      color: $text-main;
+      font-size: 1.1rem;
+    }
+
+    .servicio {
+      color: $text-muted;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .fecha-limite {
+      font-size: 0.9rem;
+      color: #cbd5e0;
+      margin-top: 0.75rem;
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      background-color: rgba(255, 255, 255, 0.05);
+
+      &.retrasado {
+        border-left: 3px solid $color-warning;
+      }
+    }
+  }
+
+  // Botones de acción directa integrados en la tarjeta
+  .card-quick-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+
+    button {
+      flex: 1;
+      padding: 0.6rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      color: white;
+      transition: background-color 0.1s ease;
+    }
+
+    .btn-start {
+      background-color: $color-accent;
+      &:hover { background-color: color.adjust($color-accent, $lightness: -10%); }
+    }
+
+    .btn-finish {
+      background-color: $color-success;
+      &:hover { background-color: color.adjust($color-success, $lightness: -10%); }
+    }
   }
 }
 
-// Estado vacío (Tu clase original sin-datos)
-.sin-datos {
+.no-tickets {
+  grid-column: 1 / -1;
   text-align: center;
-  padding: 3rem 1.5rem !important;
-  color: #64748b;
-  font-size: 1rem;
-  font-weight: 500;
-  background-color: #ffffff;
+  padding: 4rem 2rem;
+  color: $text-muted;
+  font-size: 1.2rem;
+  background-color: $bg-card;
+  border-radius: 14px;
+  border: 2px dashed rgba(255, 255, 255, 0.05);
 }
 
-// Estructura base de tus píldoras de estado (Badges)
+// ==========================================
+// 🏷️ ESTILOS DE LOS BADGES (Estados)
+// ==========================================
 .badge {
-  display: inline-block;
   padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
   font-weight: 700;
-  border-radius: 50px;
-  text-align: center;
-  letter-spacing: 0.03em;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #fff;
 }
 
-// SOLUCIÓN: Cambiado %badge-base por .badge para que compile perfecto
-.badge-success {
-  @extend .badge;
-  background-color: #dcfce7;
-  color: #15803d;
-}
+.badge-success { background-color: $color-success; }
+.badge-warning { background-color: $color-warning; color: #fff; }
+.badge-info     { background-color: $color-accent; }
+.badge-secondary{ background-color: $color-secondary; }
+.badge-danger   { background-color: $color-danger; }
 
-.badge-warning {
-  @extend .badge;
-  background-color: #fef9c3;
-  color: #a16207;
-}
-
-.badge-info {
-  @extend .badge;
-  background-color: #e0f2fe;
-  color: #0369a1;
-}
-
-.badge-secondary {
-  @extend .badge;
-  background-color: #f1f5f9;
-  color: #475569;
-}
-
-.badge-danger {
-  @extend .badge;
-  background-color: #fee2e2;
-  color: #b91c1c;
-}
-
-// === ESTILOS DEL MODAL FLOTANTE ===
-
-.modal-overlay {
+// ==========================================
+// 📑 MODALES (Detalle y Teclado)
+// ==========================================
+.modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .modal-content {
-  background: #ffffff;
-  width: 90%;
-  max-width: 750px;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  background-color: $bg-modal;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 850px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
   animation: modalFadeIn 0.2s ease-out;
-}
 
-@keyframes modalFadeIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.modal-header {
-  background-color: #1e293b;
-  color: #ffffff;
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-  }
-
-  .btn-close {
-    background: none;
-    border: none;
-    color: #94a3b8;
-    font-size: 1.75rem;
-    cursor: pointer;
-    line-height: 1;
-    transition: color 0.15s ease;
-
-    &:hover {
-      color: #ffffff;
-    }
-  }
-}
-
-.modal-body {
-  padding: 1.5rem;
-
-  .info-general {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    background-color: #f8fafc;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    border: 1px solid #e2e8f0;
-
-    p {
-      margin: 0;
-      font-size: 0.9rem;
-      color: #475569;
-    }
-  }
-
-  h3 {
-    font-size: 1rem;
-    color: #1e293b;
-    margin-bottom: 0.75rem;
-    font-weight: 600;
-  }
-}
-
-.modal-table-container {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-}
-
-.modal-table {
-  width: 100%;
-  border-collapse: collapse;
-  
-  thead {
-    background-color: #f1f5f9;
-    color: #475569;
-    th {
-      padding: 0.75rem 1rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-  }
-  tbody td {
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-    background-color: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  .notas-reparacion {
-    color: #64748b;
-    max-width: 250px;
-    white-space: normal;
-    word-break: break-word;
-  }
-}
-
-.resumen-pagos {
-  float: right;
-  width: 280px;
-  background-color: #f8fafc;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 1rem;
-
-  p {
+  .modal-header {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 1.25rem 1.5rem;
     display: flex;
     justify-content: space-between;
-    margin: 0 0 0.5rem 0;
-    font-size: 0.95rem;
-    color: #334155;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 
-    &:last-child {
-      margin-bottom: 0;
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
     }
 
-    &.pagado strong {
-      color: #16a34a;
-    }
-
-    &.pendiente {
-      border-top: 1px dashed #cbd5e1;
-      padding-top: 0.5rem;
-      margin-top: 0.5rem;
-      strong {
-        color: #dc2626;
-      }
-    }
-  }
-}
-
-// Botón llamativo en el detalle
-.btn-ir-cobrar {
-  background-color: #16a34a;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
-  transition: background-color 0.15s ease;
-
-  &:hover {
-    background-color: #15803d;
-  }
-}
-
-// Configuración específica del modal de cobro táctil
-.modal-cobro-content {
-  max-width: 800px;
-}
-
-.teclado-grid-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  align-items: start;
-}
-
-// Panel de datos izquierdo
-.panel-datos-cobro {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-
-  .tarjeta-total-pendiente {
-    background-color: #fee2e2;
-    border: 1px solid #fecaca;
-    padding: 1rem;
-    border-radius: 8px;
-    text-align: center;
-    span { font-size: 0.8rem; font-weight: 700; color: #991b1b; letter-spacing: 0.05em; }
-    h3 { margin: 0.2rem 0 0 0; font-size: 2rem; color: #dc2626; font-weight: 800; }
-  }
-
-  .selector-metodo {
-    display: flex;
-    gap: 10px;
-    button {
-      flex: 1;
-      padding: 1rem;
-      font-size: 1rem;
-      font-weight: 700;
-      border: 2px solid #cbd5e1;
-      border-radius: 8px;
-      background: white;
+    .close-btn {
+      background: none;
+      border: none;
+      color: $text-muted;
+      font-size: 1.5rem;
       cursor: pointer;
-      transition: all 0.15s;
-      &:hover { background: #f8fafc; }
-      &.activo {
-        border-color: #2563eb;
-        background-color: #eff6ff;
-        color: #1d4ed8;
+      &:hover { color: $text-main; }
+    }
+  }
+
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// Secciones internas del modal
+.info-section, .actions-section {
+  h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+  }
+  
+  p {
+    font-size: 1.05rem;
+    margin-bottom: 0.75rem;
+    color: #cbd5e0;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin: 1.5rem 0;
+  }
+}
+
+.pendiente-text {
+  background-color: rgba($color-warning, 0.15);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  display: inline-block;
+  color: color.adjust($color-warning, $lightness: 10%) !important;
+  font-weight: 600;
+}
+
+// Formulario de edición integrado en detalle
+.edit-panel {
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+
+  .form-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      color: $text-muted;
+      margin-bottom: 0.4rem;
+    }
+
+    textarea, input[type="date"] {
+      width: 100%;
+      background-color: $bg-main;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 1rem;
+
+      &:focus {
+        outline: none;
+        border-color: $color-accent;
       }
     }
-  }
 
-  .campo-pantalla {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    padding: 0.75rem;
-    border-radius: 8px;
-    label { font-size: 0.8rem; font-weight: 600; color: #64748b; }
-    .pantalla-numero { font-size: 1.5rem; font-weight: 700; color: #1e293b; text-align: right; margin-top: 0.25rem; }
-    &.cambio-tarjeta {
-      background-color: #f0fdf4;
-      border-color: #bbf7d0;
-      .cambio { color: #16a34a; font-size: 1.75rem; }
+    textarea {
+      resize: none;
+      height: 70px;
     }
   }
 
-  .aviso-tarjeta {
-    background-color: #eff6ff;
-    border: 1px solid #bfdbfe;
-    padding: 1rem;
-    border-radius: 8px;
-    color: #1e40af;
-    p { margin: 0; font-size: 0.95rem; text-align: center; }
-  }
-
-  .btn-finalizar-cobro {
-    background-color: #2563eb;
+  .btn-save-edit {
+    width: 100%;
+    background-color: $color-secondary;
     color: white;
     border: none;
-    padding: 1rem;
+    padding: 0.75rem;
+    font-weight: 600;
     border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-    margin-top: 0.5rem;
-    &:hover { background-color: #1d4ed8; }
+    &:hover { background-color: color.adjust($color-secondary, $lightness: 5%); }
   }
 }
 
-// Panel derecho: El teclado táctil
-.teclado-tactil {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+// Botonera de acciones operativas del Taller/Cobros
+.workflow-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 
-  button {
-    background-color: #f1f5f9;
-    color: #1e293b;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 1.25rem;
-    font-size: 1.5rem;
+  .btn-action {
+    width: 100%;
+    padding: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
+    border: none;
+    border-radius: 10px;
     cursor: pointer;
-    user-select: none;
-    transition: background-color 0.1s;
+    color: white;
+    transition: background-color 0.1s ease;
+    text-align: center;
 
-    &:active {
-      background-color: #cbd5e1;
+    &.start {
+      background-color: $color-accent;
+      &:hover { background-color: color.adjust($color-accent, $lightness: -8%); }
+    }
+
+    &.finish {
+      background-color: $color-success;
+      &:hover { background-color: color.adjust($color-success, $lightness: -8%); }
+    }
+
+    &.cash {
+      background-color: #b91c1c; // Rojo intenso llamativo para el cobro final
+      &:hover { background-color: #991b1b; }
+    }
+
+    &.deliver-only {
+      background-color: $color-secondary;
+      &:hover { background-color: color.adjust($color-secondary, $lightness: 5%); }
     }
   }
+}
 
-  .btn-borrar { background-color: #fed7d7; color: #c53030; border-color: #fecaca; }
-  .btn-clear {
-    grid-column: span 3;
-    font-size: 1rem;
-    padding: 0.75rem;
-    background-color: #e2e8f0;
-    color: #475569;
+// ==========================================
+// 💰 KEYPAD NUMÉRICO (Panel de cobro táctil)
+// ==========================================
+.keypad-backdrop {
+  z-index: 1100; // Por encima del modal de detalles
+}
+
+.keypad-modal {
+  background-color: $bg-modal;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 440px;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  animation: modalFadeIn 0.15s ease-out;
+
+  .keypad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+
+    h3 { margin: 0; font-size: 1.15rem; color: #e2e8f0; }
+    .close-btn { background: none; border: none; color: $text-muted; font-size: 1.3rem; cursor: pointer; }
   }
+}
+
+// Selector de método de pago (Botones divididos)
+.payment-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+
+  button {
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.2);
+    color: $text-muted;
+    border-radius: 10px;
+    cursor: pointer;
+
+    &.selected {
+      color: white;
+      background-color: $bg-card;
+      border-color: $color-success;
+      box-shadow: 0 0 10px rgba($color-success, 0.2);
+    }
+  }
+}
+
+// Pantallas del visor del teclado
+.screen-display {
+  background-color: #0b0c10;
+  padding: 0.85rem 1.2rem;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+
+  .label { color: $text-muted; font-size: 0.95rem; }
+  .value { font-size: 1.4rem; font-weight: 700; font-family: monospace; }
+
+  &.change-display {
+    background-color: #0d1b14;
+    border-color: rgba($color-success, 0.2);
+    margin-bottom: 1.25rem;
+    .value { color: #4ade80; font-size: 1.6rem; }
+  }
+}
+
+.card-message {
+  background-color: rgba($color-accent, 0.1);
+  border: 1px dashed rgba($color-accent, 0.3);
+  padding: 2rem 1rem;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  p { margin: 0; font-size: 1.15rem; color: #93c5fd; }
+}
+
+// Rejilla del teclado (3 columnas)
+.grid-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+
+  button {
+    background-color: $bg-card;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1.1rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.05s ease;
+    user-select: none;
+
+    &:active {
+      background-color: color.adjust($bg-card, $lightness: 10%);
+    }
+
+    &.btn-clear {
+      color: $color-danger;
+      background-color: rgba($color-danger, 0.1);
+      &:active { background-color: rgba($color-danger, 0.2); }
+    }
+
+    &.btn-backspace {
+      color: $color-warning;
+      background-color: rgba($color-warning, 0.1);
+      &:active { background-color: rgba($color-warning, 0.2); }
+    }
+  }
+}
+
+// Botón de confirmación final de pago
+.btn-submit-pay {
+  width: 100%;
+  background-color: $color-success;
+  color: white;
+  border: none;
+  padding: 1.2rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba($color-success, 0.3);
+  transition: background-color 0.1s ease;
+
+  &:hover { background-color: color.adjust($color-success, $lightness: -5%); }
+}
+
+// ==========================================
+// ANIMACIONES
+// ==========================================
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }

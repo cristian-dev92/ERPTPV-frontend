@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 // Mapeo exacto de los Schemas de Java para que tu Front vaya sobre seguro
@@ -32,9 +32,7 @@ export class OrdenService {
 
   // 2. Cobrar ticket completo (Usa RequestParams '?metodoPago=...')
   cobrar(id: number, metodoPago: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/${id}/cobrar`, null, {
-      params: { metodoPago }
-    });
+    return this.http.post(`${this.API_URL}/${id}/cobrar`, { metodoPago });
   }
 
   // 3. Registrar señal/anticipo (Usa RequestParams '?importe=...&metodoPago=...')
@@ -47,7 +45,7 @@ export class OrdenService {
   // 4. Cambiar estado (Taller, Listo, etc)
   cambiarEstado(id: number, nuevoEstado: string): Observable<any> {
     return this.http.patch(`${this.API_URL}/${id}/estado`, null, {
-      params: { nuevoEstado }
+      params: new HttpParams().set('nuevoEstado', nuevoEstado)
     });
   }
 
@@ -59,6 +57,21 @@ export class OrdenService {
   // 6. Consulta por estado (PAGADO, PENDIENTE, EN_TALLER)
   getOrdenesPorEstado(estado: string): Observable<any> {
     return this.http.get<any[]>(`${this.API_URL}/estado/${estado}`);
+  }
+
+  // Para la pestaña del taller del zapatero, queremos mostrar solo las órdenes que están en estado "EN_TALLER" y de tipo "REPARACION"
+  getOrdenesTaller(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API_URL}/taller`); 
+    // para pasárselo por Query Params como /api/ordenes?tipo=REPARACION&estados=PENDIENTE,PAGADO,EN_TALLER
+  }
+
+  // NUEVO: Editar notas o retrasar fecha (Punto 3)
+  editarReparacion(id: number, notas: string, fecha: string): Observable<any> {
+    return this.http.put(`${this.API_URL}/${id}/reparacion`, null, {
+      params: new HttpParams()
+        .set('notasReparacion', notas)
+        .set('nuevaFecha', fecha) // Formato YYYY-MM-DD
+    });
   }
   
 }

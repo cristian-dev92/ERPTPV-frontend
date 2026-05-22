@@ -202,7 +202,12 @@
 
         <!-- Derecha: Precio total de la línea y borrar -->
         <div class="precio-final">
-          <span>{{ item.precio * item.cantidad | currency:'EUR' }}</span>
+          <div class="bloque-precio-tactil" (click)="abrirKeypadPrecio($index)" title="Cambiar precio">
+            <span class="precio-unidad-item">{{ item.precio | currency:'EUR' }}</span>
+            <span class="icono-editar-precio">✏️</span>
+          </div>
+          <span class="total-linea-multiplicado">Total: {{ item.precio * item.cantidad | currency:'EUR' }}</span>
+          
           <button (click)="quitarDelCarrito($index)" class="btn-remove" title="Eliminar artículo">
             🗑️
           </button>
@@ -390,3 +395,45 @@
     </div>
   }
 </div>
+
+<!-- MODAL FLOTANTE DEL KEYPAD TÁCTIL PARA MODIFICAR PRECIOS -->
+@if (indiceItemEditandoPrecio() !== null) {
+  <div class="modal-keypad-overlay">
+    <div class="modal-keypad-content">
+      <h3>Modificar Precio de:</h3>
+      <p class="nombre-articulo-editar">
+        {{ carrito()[indiceItemEditandoPrecio()!].nombre }}
+      </p>
+      
+      <!-- Pantalla del precio modificado -->
+      <div class="pantalla-keypad-precio">
+        {{ precioEnConstruccion() || '0' }} €
+      </div>
+
+      <!-- Rejilla de Botones Táctiles -->
+      <div class="grid-keypad">
+        <button type="button" (click)="pulsarTeclaPrecio('1')">1</button>
+        <button type="button" (click)="pulsarTeclaPrecio('2')">2</button>
+        <button type="button" (click)="pulsarTeclaPrecio('3')">3</button>
+        
+        <button type="button" (click)="pulsarTeclaPrecio('4')">4</button>
+        <button type="button" (click)="pulsarTeclaPrecio('5')">5</button>
+        <button type="button" (click)="pulsarTeclaPrecio('6')">6</button>
+        
+        <button type="button" (click)="pulsarTeclaPrecio('7')">7</button>
+        <button type="button" (click)="pulsarTeclaPrecio('8')">8</button>
+        <button type="button" (click)="pulsarTeclaPrecio('9')">9</button>
+        
+        <button type="button" (click)="pulsarTeclaPrecio('.')">.</button>
+        <button type="button" (click)="pulsarTeclaPrecio('0')">0</button>
+        <button type="button" class="btn-keypad-backspace" (click)="borrarUltimoDigitoPrecio()">⌫</button>
+      </div>
+
+      <!-- Acciones Inferiores -->
+      <div class="acciones-keypad">
+        <button type="button" class="btn-cancelar-keypad" (click)="cerrarKeypadPrecio()">Cancelar</button>
+        <button type="button" class="btn-aceptar-keypad" (click)="guardarPrecioModificado()">Aplicar Precio</button>
+      </div>
+    </div>
+  </div>
+}

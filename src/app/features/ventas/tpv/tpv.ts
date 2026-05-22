@@ -64,6 +64,10 @@ export class TpvComponent implements OnInit {
   mostrarHistorial = signal<boolean>(false); // Empieza cerrado por defecto
   historialTickets = signal<TicketHistorial[]>([]); // Aquí guardaremos los tickets del día para mostrar en el historial inferior
 
+  // --- ESTADO PARA MODIFICAR PRECIOS CON EL KEYPAD ---
+  indiceItemEditandoPrecio = signal<number | null>(null);
+  precioEnConstruccion = signal<string>(''); // Guarda los dígitos que pulsa el usuario (ej:
+
   // Estado del carrito de compra y caja
   carrito = signal<ItemCarrito[]>([]); // Aquí guardaremos { articuloId, nombre, cantidad, precio, notas }
   saldoInicialInput: number = 150; // 150€ por defecto para cambio
@@ -119,6 +123,9 @@ export class TpvComponent implements OnInit {
       return coincideCategoria && coincideTexto;
     });
   });
+
+  // Estado para controlar la visibilidad del ticket de venta al finalizar la compra, que se muestra solo en tablets y móviles
+  isTicketVisible = signal(false);
 
   // Método que se ejecuta al cargar el componente, ideal para cargar los artículos y comprobar el estado de la caja
   ngOnInit() {
@@ -230,6 +237,7 @@ export class TpvComponent implements OnInit {
         return {
           articuloId: item.articuloId,
           cantidad: item.cantidad,
+          precioManual: item.precio,
           notasReparacion: item.notasReparacion || null
         };
       })
@@ -351,7 +359,7 @@ export class TpvComponent implements OnInit {
     if (esTelefono) {
       // Llamada al endpoint de teléfono (/api/clientes/telefono/{telefono})
       this.clienteService.buscarPorTelefono(terminoLimpio).subscribe({
-        next: (resultado) => this.clientesEncontrados.set(resultado),
+        next: (resultado) => this.clientesEncontrados.set([resultado]), // Envolvemos en array para mantener la consistencia con la búsqueda por nombre
         error: (err) => {
           console.error('❌ Error buscando por teléfono:', err); 
           this.clientesEncontrados.set([]);
@@ -458,29 +466,91 @@ export class TpvComponent implements OnInit {
       return;
     }
 
-    // Llamamos al servicio de caja (asegúrate de que tu CajaService tenga este método)
     this.cajaService.cerrarCaja(this.saldoContadoInput).subscribe({
       next: (res) => {
-        // res suele traer la diferencia calculada en el back: { saldoReal, saldoEsperado, diferencia }
-        const esperado = res.saldoFinalEsperado;
+        // Mapeamos los campos exactos del DTO de Javi
+        const esperado = res.saldoFinalEsperadoEfectivo; 
         const real = res.saldoFinalReal;
-        const dif = res.diferencia;
-        let mensaje = `Caja cerrada.  Real: ${real}€. Esperado: ${esperado}€. `;
+        const dif = res.descuadre; // 👈 Cambiado de diferencia a descuadre
+        
+        let mensaje = `Caja cerrada. Real: ${real}€. Esperado: ${esperado}€. `;
         
         if (dif === 0) {
           mensaje += '✅ ¡Cuadre perfecto!';
           this.uiService.mostrarToast(mensaje, 'success');
         } else {
           mensaje += `⚠️ Descuadre de ${dif}€.`;
+          // Usamos 'warning' o 'error' en base al tipo de descuadre
           this.uiService.mostrarToast(mensaje, dif > 0 ? 'warning' : 'error');
         }
 
         this.mostrarModalCierre.set(false);
-        // Al cerrarse la caja, el signal del servicio cajaActual() pasará a ser null 
-        // y el TPV se bloqueará automáticamente con el aviso amarillo que ya teníamos.
       },
       error: (err) => this.uiService.mostrarToast('Error al cerrar caja: ' + (err.error || err.message), 'error')
     });
   }
 
+  toggleTicket() {
+  this.isTicketVisible.update(v => !v);
+}
+
+// Abre el teclado para la línea seleccionada
+abrirKeypadPrecio(index: number) {
+  this.indiceItemEditandoPrecio.set(index);
+  // Inicializamos el teclado con el precio actual del ítem convertido a string
+  this.precioEnConstruccion.set(this.carrito()[index].precio.toFixed(2));
+}
+
+// Se ejecuta cada vez que el zapatero pulsa un número o el punto en tu Keypad en pantalla
+pulsarTeclaPrecio(tecla: string) {
+  const actual = this.precioEnConstruccion();
+  
+  if (tecla === '.' && actual.includes('.')) return; // Evitar doble punto decimal
+  
+  // Limitar a 2 decimales para que no escriban burradas
+  if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
+
+  this.precioEnConstruccion.set(actual + tecla);
+}
+
+// Botón de borrar un dígito (Retroceso) en el Keypad
+borrarUltimoDigitoPrecio() {
+  const actual = this.precioEnConstruccion();
+  if (actual.length > 0) {
+    this.precioEnConstruccion.set(actual.slice(0, -1));
+  }
+}
+
+// Botón "ACEPTAR" o "GUARDAR" del Keypad
+guardarPrecioModificado() {
+  const index = this.indiceItemEditandoPrecio();
+  if (index === null) return;
+
+  const nuevoPrecio = parseFloat(this.precioEnConstruccion() || '0');
+
+  if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
+    this.uiService.mostrarToast('El precio introducido no es válido.', 'warning');
+    return;
+  }
+
+  // Modificamos el precio en el Signal del carrito
+  this.carrito.update(items => {
+    const copia = [...items];
+    copia[index] = {
+      ...copia[index],
+      precio: nuevoPrecio // Sobrescribimos el precio final calculado
+    };
+    return copia;
+  });
+
+  this.uiService.mostrarToast('Precio actualizado en el ticket', 'success');
+  this.cerrarKeypadPrecio();
+}
+
+// Cierra el modal/contenedor del teclado
+cerrarKeypadPrecio() {
+  this.indiceItemEditandoPrecio.set(null);
+  this.precioEnConstruccion.set('');
+}
+  
 }

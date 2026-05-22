@@ -1,226 +1,171 @@
-<div class="historial-container">
-  <div class="header-seccion">
-    <h2>🧾 Historial de Tickets y Órdenes</h2>
-    
-    <!-- 🎛️ Selectores rápidos para los zapateros en vez del desplegable rancio -->
-    <div class="pestañas-filtros">
-      <button type="button" 
-              [class.activo]="filtroEstado() === 'PAGADO'" 
-              (click)="filtroEstado.set('PAGADO')">
-        💰 Ventas Cobradas
-      </button>
-      
-      <button type="button" 
-              [class.activo]="filtroEstado() === 'PENDIENTE'" 
-              (click)="filtroEstado.set('PENDIENTE')">
-        ⏳ Pendientes de Pago
-      </button>
-      
-      <button type="button" 
-              [class.activo]="filtroEstado() === 'EN_TALLER'" 
-              (click)="filtroEstado.set('EN_TALLER')">
-        🛠️ En Taller
-      </button>
-
-      <button type="button" 
-              [class.activo]="filtroEstado() === 'LISTO'" 
-              (click)="filtroEstado.set('LISTO')">
-        ✅ Listos para Recoger
-      </button>
-
-      <button type="button" 
-              [class.activo]="filtroEstado() === 'ENTREGADO'" 
-              (click)="filtroEstado.set('ENTREGADO')">
-        📦 Cerrados
-      </button>
-    </div>
+<div class="tpv-container">
+  
+  <!-- 🎛️ BARRA DE PESTAÑAS TÁCTILES -->
+  <div class="tpv-tabs">
+    <button [ngClass]="{'active': filtroEstado() === 'EN_TALLER'}" (click)="filtroEstado.set('EN_TALLER')">
+      🛠️ Pendiente de Reparar
+    </button>
+    <button [ngClass]="{'active': filtroEstado() === 'LISTO'}" (click)="filtroEstado.set('LISTO')">
+      📦 Listos para Recoger
+    </button>
+    <!-- ¡SOLUCIONADO EL BUG 400! Ahora enviamos 'PENDIENTE' -->
+    <button [ngClass]="{'active': filtroEstado() === 'PENDIENTE'}" (click)="filtroEstado.set('PENDIENTE')">
+      ⏳ Historial Pendientes
+    </button>
+    <button [ngClass]="{'active': filtroEstado() === 'ENTREGADO'}" (click)="filtroEstado.set('ENTREGADO')">
+      ✅ Historial Cerrados
+    </button>
   </div>
 
-  <table class="tabla-ordenes">
-    <thead>
-      <tr>
-        <th>Nº Ticket</th>
-        <th>Fecha</th>
-        <th>Tipo</th>
-        <th>Total</th>
-        <th>Estado</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (orden of ordenes(); track orden.id) {
-        <tr>
-          <!-- Usamos numeroTicket del DTO si existe, si no, tiramos de id -->
-          <td><strong>{{ orden.numeroTicket || '#' + orden.id }}</strong></td>
-          <td>{{ orden.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>
-            <span [ngClass]="{'badge-success': orden.tipo === 'VENTA_DIRECTA','badge-info': orden.tipo === 'REPARACION'
-            }">
-              {{ orden.tipo === 'VENTA_DIRECTA' ? 'VENTA' : 'REPARACIÓN' }}
-             </span>
-            </td>
-          <td>{{ orden.total | currency:'EUR' }}</td>
-          <td>
-            <span class="badge" [ngClass]="getBadgeClass(orden.estado)">
-              {{ orden.estado }}
-            </span>
-          </td>
-          <td>
-           <!-- Ahora le pasamos la 'orden' completa en vez de solo el id -->
-            <button class="btn-ver" (click)="verDetalle(orden)">👁️ Ver</button>
-          </td>
-        </tr>
-      } @empty {
-        <tr>
-          <td colspan="6" class="sin-datos">No se han encontrado tickets en este estado.</td>
-        </tr>
-      }
-    </tbody>
-  </table>
-</div>
-
-<!-- 👁️ POP-UP MODAL: Solo aparece si 'ordenSeleccionada()' tiene datos -->
-@if (ordenSeleccionada(); as orden) {
-  <div class="modal-overlay" (click)="cerrarModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      
-      <!-- Cabecera del Modal -->
-      <div class="modal-header">
-        <h2>Detalle del Ticket: {{ orden.numeroTicket || '#' + orden.id }}</h2>
-        <button class="btn-close" (click)="cerrarModal()">&times;</button>
-      </div>
-
-      <!-- Cuerpo del Modal -->
-      <div class="modal-body">
-        <div class="info-general">
-          <p><strong>📅 Fecha:</strong> {{ orden.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
-          <p><strong>👤 Cliente:</strong> {{ orden.clienteNombre || 'Sin cliente asignado' }}</p>
-          <p><strong>🧑‍🔧 Atendido por:</strong> {{ orden.empleadoNombre || 'Empleado' }}</p>
+  <!-- 📋 GRID DE TICKETS (Ahora iteramos sobre ordenesAMostrar para no bloquear la web) -->
+  <div class="tickets-grid">
+    @for (orden of ordenesAMostrar(); track orden.id) {
+      <div class="ticket-card" (click)="verDetalle(orden)">
+        <div class="card-header">
+          <span class="ticket-id">#{{ orden.id }}</span>
+          <span class="badge" [ngClass]="getBadgeClass(orden.estado)">{{ orden.estado }}</span>
         </div>
-
-        <h3>🛠️ Trabajos / Artículos en este ticket:</h3>
-        <div class="modal-table-container">
-          <table class="modal-table">
-            <thead>
-              <tr>
-                <th>Trabajo / Artículo</th>
-                <th>Cant.</th>
-                <th>Precio U.</th>
-                <th>Notas de Reparación</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (detalle of orden.detalles; track detalle.id) {
-                <tr>
-                  <td>{{ detalle.articuloNombre }}</td>
-                  <td>{{ detalle.cantidad }}</td>
-                  <td>{{ detalle.precioUnitario | currency:'EUR' }}</td>
-                  <td class="notas-reparacion">
-                    <em>{{ detalle.notasReparacion || 'Sin notas especiales' }}</em>
-                  </td>
-                  <td><strong>{{ detalle.subtotal | currency:'EUR' }}</strong></td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        <div class="card-body">
+          <p class="cliente"><strong>👤 {{ orden.clienteNombre || 'Cliente General' }}</strong></p>
+          <p class="servicio">👞 {{ orden.descripcionCorto || 'Reparación de calzado' }}</p>
+          <p class="fecha-limite" [ngClass]="{'retrasado': orden.estado !== 'LISTO' && orden.estado !== 'ENTREGADO'}">
+            📅 Prometido: {{ orden.fechaEntrega | date:'dd/MM/yyyy' }}
+          </p>
         </div>
-
-        <!-- Resumen de Pagos basados en el DTO de Javi -->
-        <div class="resumen-pagos">
-          <p><span>Total ticket:</span> <strong>{{ orden.total | currency:'EUR' }}</strong></p>
-          <p class="pagado"><span>Importe Pagado:</span> <strong>{{ orden.importePagado | currency:'EUR' }}</strong></p>
-          <p class="pendiente"><span>Pendiente de Cobro:</span> <strong>{{ orden.importePendiente | currency:'EUR' }}</strong></p>
-        </div>
-
-        <!-- Botón para accionar el cobro si la orden está pendiente -->
-        @if (orden.importePendiente > 0) {
-        <div class="zona-acciones-cobro" style="clear: both; padding-top: 1.5rem; text-align: right;">
-          <button type="button" class="btn-ir-cobrar" (click)="abrirPanelCobro()">
-          💵 Cobrar y Entregar
-          </button>
-        </div>
-      }
-      </div>
-    </div>
-  </div>
-}
-
-        <!-- 🧮 MODAL DE COBRO TÁCTIL -->
-        @if (mostrarModalCobro()) {
-        <div class="modal-overlay cobro-overlay" (click)="cerrarPanelCobro()">
-          <div class="modal-content modal-cobro-content" (click)="$event.stopPropagation()">
-      
-        <div class="modal-header cobro-header">
-          <h2>Procesar Cobro: {{ ordenSeleccionada()?.numeroTicket || '#' + ordenSeleccionada()?.id }}</h2>
-          <button class="btn-close" (click)="cerrarPanelCobro()">&times;</button>
-        </div>
-
-        <div class="modal-body teclado-grid-layout">
         
-        <!-- Panel Izquierdo: Datos e Importes -->
-        <div class="panel-datos-cobro">
-          <div class="tarjeta-total-pendiente">
-            <span>TOTAL PENDIENTE</span>
-            <h3>{{ ordenSeleccionada()?.importePendiente | currency:'EUR' }}</h3>
-          </div>
-
-          <!-- Selector de método de pago táctil -->
-          <div class="selector-metodo">
-            <button type="button" [class.activo]="metodoPago() === 'EFECTIVO'" (click)="metodoPago.set('EFECTIVO')">
-              💵 EFECTIVO
-            </button>
-            <button type="button" [class.activo]="metodoPago() === 'TARJETA'" (click)="metodoPago.set('TARJETA')">
-              💳 TARJETA
-            </button>
-          </div>
-
-          <!-- Display de lo introducido -->
-          @if (metodoPago() === 'EFECTIVO') {
-            <div class="campo-pantalla">
-              <label>Importe Entregado por Cliente:</label>
-              <div class="pantalla-numero">{{ importeEntregado() || '0' }} €</div>
-            </div>
-
-            <div class="campo-pantalla cambio-tarjeta">
-              <label>Cambio a Devolver:</label>
-              <div class="pantalla-numero cambio">{{ cambioAOfrecer() | currency:'EUR' }}</div>
-            </div>
-          } @else {
-            <div class="aviso-tarjeta">
-              <p>Pasa el importe de <strong>{{ ordenSeleccionada()?.importePendiente | currency:'EUR' }}</strong> por el datáfono.</p>
-            </div>
+        <div class="card-quick-actions" (click)="$event.stopPropagation()">
+          @if (filtroEstado() === 'EN_TALLER' && (orden.estado === 'PENDIENTE' || orden.estado === 'PAGADO')) {
+            <button class="btn-start" (click)="empezarTrabajo(orden.id)">▶️ Empezar</button>
           }
+          @if (filtroEstado() === 'EN_TALLER' && orden.estado === 'EN_TALLER') {
+            <button class="btn-finish" (click)="finalizarReparacion(orden.id)">✔️ Terminar</button>
+          }
+        </div>
+      </div>
+    } @empty {
+      <div class="no-tickets">
+        <p>No hay tickets en esta sección en este momento.</p>
+      </div>
+    }
+  </div>
 
-          <button type="button" class="btn-finalizar-cobro" (click)="finalizarEntregaYCobro()">
-            ✓ Confirmar Cobro y Entregar
-          </button>
+  <!-- 📑 MODAL DE DETALLE Y ACCIONES -->
+  @if (ordenSeleccionada(); as orden) {
+    <div class="modal-backdrop">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Ticket #{{ orden.id }} — {{ orden.estado }}</h2>
+          <button class="close-btn" (click)="cerrarModal()">✕</button>
         </div>
 
-        <!-- Panel Derecho: Teclado Numérico (Solo se muestra para calcular efectivo) -->
-        <div class="panel-teclado" [style.visibility]="metodoPago() === 'EFECTIVO' ? 'visible' : 'hidden'">
-          <div class="teclado-tactil">
-            <button type="button" (click)="presionarTecla('1')">1</button>
-            <button type="button" (click)="presionarTecla('2')">2</button>
-            <button type="button" (click)="presionarTecla('3')">3</button>
+        <div class="modal-grid">
+          <!-- INFO GENERAL -->
+          <div class="info-section">
+            <p><strong>Cliente:</strong> {{ orden.clienteNombre }} ({{ orden.clienteTelefono }})</p>
+            <p><strong>Total:</strong> {{ orden.total | currency:'EUR' }}</p>
+            <p class="pendiente-text"><strong>Pendiente:</strong> {{ orden.importePendiente | currency:'EUR' }}</p>
+            <hr>
             
-            <button type="button" (click)="presionarTecla('4')">4</button>
-            <button type="button" (click)="presionarTecla('5')">5</button>
-            <button type="button" (click)="presionarTecla('6')">6</button>
+            <div class="edit-panel">
+              <h3>📝 Notas de Reparación & Retrasos</h3>
+              <div class="form-group">
+                <label>Notas del taller:</label>
+                <textarea [(ngModel)]="editandoNotas" placeholder="Ej: Suela cosida, usar tinte marrón..."></textarea>
+              </div>
+              <div class="form-group">
+                <label>Nueva Fecha de Entrega:</label>
+                <input type="date" [(ngModel)]="editandoFecha">
+              </div>
+              <button class="btn-save-edit" (click)="guardarCambiosReparacion()">💾 Guardar Cambios</button>
+            </div>
+          </div>
+
+          <!-- BOTONERA TÁCTIL DE ACCIONES CENTRALIZADA -->
+          <div class="actions-section">
+            <h3>⚙️ Acciones Operativas</h3>
             
-            <button type="button" (click)="presionarTecla('7')">7</button>
-            <button type="button" (click)="presionarTecla('8')">8</button>
-            <button type="button" (click)="presionarTecla('9')">9</button>
-            
-            <button type="button" class="btn-punto" (click)="presionarTecla('.')">.</button>
-            <button type="button" (click)="presionarTecla('0')">0</button>
-            <button type="button" class="btn-borrar" (click)="presionarTecla('⌫')">⌫</button>
-            
-            <button type="button" class="btn-clear" (click)="presionarTecla('C')">Limpiar (C)</button>
+            <div class="workflow-buttons">
+              @if (orden.estado === 'PENDIENTE' || orden.estado === 'PAGADO') {
+                <button class="btn-action start" (click)="empezarTrabajo(orden.id)">
+                  ▶️ Cambiar a 'Pendiente de Reparar' / Empezar
+                </button>
+              }
+              
+              @if (orden.estado === 'EN_TALLER') {
+                <button class="btn-action finish" (click)="finalizarReparacion(orden.id)">
+                  🏁 Finalizar Reparación (Listo)
+                </button>
+              }
+
+              <!-- ZONA DE COBROS: Habilitada en cualquier estado mientras deba dinero (menos Cancelada o Entregada) -->
+              @if (orden.importePendiente > 0 && orden.estado !== 'ENTREGADO' && orden.estado !== 'CANCELADA') {
+              <div class="zona-acciones-cobro" style="clear: both; padding-top: 1.5rem; text-align: right;">
+                <button type="button" class="btn-ir-cobrar" (click)="abrirPanelCobro()">
+                  {{ orden.estado === 'LISTO' ? '💵 Cobrar y Entregar' : '💵 Cobrar Anticipo' }}
+                </button>
+              </div>
+              } @else if (orden.importePendiente === 0 && orden.estado === 'LISTO') {
+                <button class="btn-action deliver-only" (click)="finalizarEntregaYCobro()">
+                  📦 Entregar al Cliente (Ya Pagado)
+                </button>
+              }
+            </div>
           </div>
         </div>
-
       </div>
     </div>
-  </div>
-}
+  }
+
+  <!-- 💰 KEYPAD NUMÉRICO DE COBROS (MODAL SECUNDARIO) -->
+  @if (mostrarModalCobro()) {
+    <div class="modal-backdrop keypad-backdrop">
+      <div class="keypad-modal">
+        <div class="keypad-header">
+          <h3>Procesar Pago — Pendiente: {{ ordenSeleccionada()?.importePendiente | currency:'EUR' }}</h3>
+          <button class="close-btn" (click)="cerrarPanelCobro()">✕</button>
+        </div>
+
+        <div class="payment-methods">
+          <button [ngClass]="{'selected': metodoPago() === 'EFECTIVO'}" (click)="seleccionarMetodoPago('EFECTIVO')">💵 Efectivo</button>
+          <button [ngClass]="{'selected': metodoPago() === 'TARJETA'}" (click)="seleccionarMetodoPago('TARJETA')">💳 Tarjeta</button>
+        </div>
+
+        @if (metodoPago() === 'EFECTIVO') {
+          <div class="screen-display">
+            <span class="label">Entregado:</span>
+            <span class="value">{{ importeEntregado() || '0' }} €</span>
+          </div>
+          <div class="screen-display change-display">
+            <span class="label">Cambio a devolver:</span>
+            <span class="value text-success">{{ cambioAOfrecer() | currency:'EUR' }}</span>
+          </div>
+
+          <div class="grid-keypad">
+            <button (click)="presionarTecla('1')">1</button>
+            <button (click)="presionarTecla('2')">2</button>
+            <button (click)="presionarTecla('3')">3</button>
+            <button (click)="presionarTecla('4')">4</button>
+            <button (click)="presionarTecla('5')">5</button>
+            <button (click)="presionarTecla('6')">6</button>
+            <button (click)="presionarTecla('7')">7</button>
+            <button (click)="presionarTecla('8')">8</button>
+            <button (click)="presionarTecla('9')">9</button>
+            <button class="btn-clear" (click)="presionarTecla('C')">C</button>
+            <button (click)="presionarTecla('0')">0</button>
+            <button (click)="presionarTecla('.')">.</button>
+            <button class="btn-backspace" (click)="presionarTecla('⌫')">⌫</button>
+          </div>
+        } @else {
+          <div class="card-message">
+            <p>Pasa el datáfono por el importe de <strong>{{ ordenSeleccionada()?.importePendiente | currency:'EUR' }}</strong></p>
+          </div>
+        }
+
+        <button class="btn-submit-pay" (click)="finalizarEntregaYCobro()">
+          🚀 Confirmar Pago
+        </button>
+      </div>
+    </div>
+  }
+
+</div>

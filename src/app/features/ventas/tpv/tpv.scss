@@ -220,36 +220,168 @@
     }
 
     // Lado derecho: Precio y Basura
-    .precio-final {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 5px;
+    /* 1. Ajuste del precio dentro de la línea del carrito */
+  .precio-final {
+    .bloque-precio-tactil {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
 
-      span {
-        font-weight: 600;
-        color: #28a745;
-      }
+    &:hover {
+      background-color: #f1f5f9;
+      border-color: #94a3b8;
+    }
 
-      .btn-remove {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 0.85rem;
-        padding: 0;
-        opacity: 0.6;
-        transition: opacity 0.2s;
+    .precio-unidad-item {
+      font-weight: 700;
+      color: #3b82f6 !important; /* Resalta el precio unitario en azul para diferenciarlo */
+      font-size: 0.95rem;
+    }
 
-        &:hover { opacity: 1; }
-      }
+    .icono-editar-precio {
+      font-size: 0.85rem;
+      opacity: 0.7;
     }
   }
 
-  .empty-msg {
-    text-align: center;
-    color: #999;
-    margin-top: 50px;
-    font-style: italic;
+  .total-linea-multiplicado {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 2px;
+    font-weight: 500;
+  }
+  }
+ }
+}
+
+/* 2. Pantalla oscura de fondo (Overlay) */
+.modal-keypad-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.6); /* Fondo oscurecido */
+  backdrop-filter: blur(4px); /* Suaviza el TPV de fondo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Asegura que se pinte por encima de todo */
+  animation: fadeInQuick 0.2s ease-out;
+}
+
+/* 3. Tarjeta contenedora del teclado */
+.modal-keypad-content {
+  background: #ffffff;
+  width: 100%;
+  max-width: 360px; /* Tamaño ideal de calculadora de mano */
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  text-align: center;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .nombre-articulo-editar {
+    margin: 6px 0 20px 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+}
+
+/* 4. Display/Pantalla del precio tecleado */
+.pantalla-keypad-precio {
+  background-color: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 2.2rem; /* Número gigante para el zapatero */
+  font-weight: 800;
+  color: #0f172a;
+  text-align: right;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+
+/* 5. Rejilla/Grid de botones de la calculadora */
+.grid-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 25px;
+
+  button {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-bottom: 3px solid #cbd5e1; /* Efecto 3D táctil */
+    border-radius: 12px;
+    padding: 18px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.1s ease;
+
+    &:active {
+      transform: translateY(2px);
+      border-bottom-width: 1px;
+      background-color: #f8fafc;
+    }
+
+    /* Botón específico de borrar (retroceso) */
+    &.btn-keypad-backspace {
+      background-color: #fee2e2;
+      border-color: #fca5a5;
+      border-bottom-color: #f87171;
+      color: #ef4444;
+
+      &:active {
+        background-color: #fecaca;
+      }
+    }
+  }
+}
+
+/* 6. Fila inferior de botones de acción */
+.acciones-keypad {
+  display: flex;
+  gap: 12px;
+
+  button {
+    flex: 1;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.15s;
+  }
+
+  .btn-cancelar-keypad {
+    background-color: #e2e8f0;
+    color: #475569;
+    &:hover { background-color: #cbd5e1; }
+  }
+
+  .btn-aceptar-keypad {
+    background-color: #28a745; /* Mismo verde corporativo que tu botón de cobrar */
+    color: white;
+    &:hover { background-color: #218838; }
   }
 }
 
@@ -1023,5 +1155,95 @@
     button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-cancelar { background: #f1f5f9; border: none; color: #475569; }
     .btn-confirmar-cierre { background: #1e293b; border: none; color: white; &:hover { background: #000; } }
+  }
+}
+
+@media (max-width: 1024px) {
+/* 1. Reducimos el ticket para dejar más espacio al catálogo */
+.tpv-container {
+grid-template-columns: 1fr 320px;
+gap: 10px;
+}
+
+/* 2. Botones más grandes para dedos */
+.catalogo-container .articulos-grid .articulo-card {
+min-height: 130px;  
+padding: 12px;
+}
+
+/* 3. Ajuste en el ticket */
+.ticket-section {
+padding: 10px;
+
+.total-row .total-amount {
+  font-size: 1.8rem; /* Reducimos la fuente para que no se corte */
+}
+
+.btn-cobrar {
+  padding: 14px; /* Un poco más cómodo */
+  font-size: 1.1rem;
+}
+
+
+}
+}
+
+/* 4. Si la tablet es pequeña (en horizontal) o vertical */
+@media (max-width: 820px) {
+.tpv-container {
+grid-template-columns: 1fr;
+height: auto;
+overflow-y: visible;
+}
+
+/* Aquí podrías ocultar el ticket y mostrarlo solo con un botón tipo "Ver Ticket" */
+.ticket-section {
+position: fixed;
+bottom: 0;
+left: 0;
+width: 100%;
+max-height: 50vh;
+border-radius: 20px 20px 0 0;
+z-index: 1000;
+box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+}
+}
+
+/* Botón de toggle (solo visible en tablets/móvil) */
+.btn-toggle-ticket-mobile {
+  display: none; // Oculto en escritorio
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2000;
+  padding: 15px 25px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50px;
+  border: none;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 1024px) {
+  .btn-toggle-ticket-mobile {
+    display: block; // Visible en tablet
+  }
+
+  /* El ticket empieza oculto fuera de pantalla */
+  .ticket-section {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Oculto a la derecha */
+    width: 100%;
+    height: 100%;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1500;
+    box-shadow: -5px 0 20px rgba(0,0,0,0.1);
+  }
+
+  /* Cuando el estado es abierto */
+  .tpv-container.ticket-open .ticket-section {
+    right: 0;
   }
 }

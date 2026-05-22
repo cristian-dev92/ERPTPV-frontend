@@ -1,33 +1,48 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable } from 'rxjs';
 
-export interface Cliente {
+export interface NuevoClienteRequest {
+  nombre: string;
+  telefono: string;
+  email?: string;
+  documentoIdentidad?: string;
+  direccion?: string;
+  codigoPostal?: string;
+  ciudad?: string;
+}
+
+export interface ClienteDTO {
   id: number;
   nombre: string;
   telefono: string;
   email?: string;
   documentoIdentidad?: string;
+  direccion?: string;
+  codigoPostal?: string;
   ciudad?: string;
+  empresaId?: number;
+  activo?: boolean;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class ClienteService {
   private http = inject(HttpClient);
-  private urlBase = '/api/clientes'; // Ajusta la URL si tu proxy de Angular usa otro prefijo
+  private readonly API_URL = 'http://localhost:8080/api/clientes';
 
-  buscarPorNombre(nombre: string): Observable<Cliente[]> {
-    return this.http.get<Cliente[]>(`${this.urlBase}/nombre/${nombre}`);
+  obtenerMisClientes(): Observable<ClienteDTO[]> {
+    return this.http.get<ClienteDTO[]>(this.API_URL);
   }
 
-  buscarPorTelefono(telefono: string): Observable<Cliente[]> {
-    return this.http.get<Cliente>(`${this.urlBase}/telefono/${telefono}`).pipe(
-      // Transformamos el cliente único en un array de un elemento [cliente]
-      map(cliente => [cliente]),
-      // Si el backend devuelve un 404 (no encontrado), devolvemos un array vacío sin romper el flujo
-      catchError(() => of([]))
-    );
+  buscarPorTelefono(telefono: string): Observable<ClienteDTO> {
+    return this.http.get<ClienteDTO>(`${this.API_URL}/telefono/${telefono}`);
+  }
+
+  buscarPorNombre(nombre: string): Observable<ClienteDTO[]> {
+    return this.http.get<ClienteDTO[]>(`${this.API_URL}/nombre/${nombre}`);
+  }
+
+  crearCliente(nuevo: NuevoClienteRequest): Observable<ClienteDTO> {
+    return this.http.post<ClienteDTO>(this.API_URL, nuevo);
   }
 }

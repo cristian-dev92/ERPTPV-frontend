@@ -9,8 +9,8 @@ import { CajaService } from '../../../core/services/caja.service';
   templateUrl: './caja-resumen.html',
   styleUrl: './caja-resumen.scss'
 })
-export class CajaResumenComponent implements OnInit {
 
+export class CajaResumenComponent implements OnInit {
   private cajaService = inject(CajaService);
 
   turno = signal<any | null>(null);
@@ -20,52 +20,61 @@ export class CajaResumenComponent implements OnInit {
   }
 
   cargarTurno() {
+    // 1. Intentamos leer si hay una caja abierta activa en el servidor
     this.cajaService.obtenerTurnoActual().subscribe(res => {
-      this.turno.set(res);
+      if (res) {
+        this.turno.set(res);
+      } else {
+        // 2. Si no hay activa, miramos si el servicio tiene guardada la última que se acaba de cerrar
+        const ultimoCierre = this.cajaService.ultimoTurnoCerrado();
+        if (ultimoCierre) {
+          this.turno.set(ultimoCierre);
+        }
+      }
     });
   }
 
-   movimientos = computed(() => this.turno()?.movimientos ?? []);
+  // --- CÁLCULOS REACTIVOS BASADOS EN LOS MOVIMIENTOS ---
+  movimientos = computed(() => this.turno()?.movimientos ?? []);
 
   ventasEfectivo = computed(() =>
-    this.movimientos().filter((m: { tipo: string; metodoPago: string; }) => m.tipo === 'VENTA' && m.metodoPago === 'EFECTIVO')
+    this.movimientos().filter((m: any) => m.tipoMovimiento === 'VENTA' && m.metodoPago === 'EFECTIVO')
   );
   ventasTarjeta = computed(() =>
-    this.movimientos().filter((m: { tipo: string; metodoPago: string; }) => m.tipo === 'VENTA' && m.metodoPago === 'TARJETA')
+    this.movimientos().filter((m: any) => m.tipoMovimiento === 'VENTA' && m.metodoPago === 'TARJETA')
   );
   anticipos = computed(() =>
-    this.movimientos().filter((m: { tipo: string; }) => m.tipo === 'ANTICIPO')
+    this.movimientos().filter((m: any) => m.tipoMovimiento === 'ANTICIPO')
   );
   ingresos = computed(() =>
-    this.movimientos().filter((m: { tipo: string; }) => m.tipo === 'INGRESO_MANUAL' || m.tipo === 'INGRESO')
+    this.movimientos().filter((m: any) => m.tipoMovimiento === 'INGRESO_MANUAL' || m.tipoMovimiento === 'INGRESO')
   );
   gastos = computed(() =>
-    this.movimientos().filter((m: { tipo: string; }) => m.tipo === 'RETIRO_MANUAL' || m.tipo === 'GASTO')
+    this.movimientos().filter((m: any) => m.tipoMovimiento === 'RETIRO_MANUAL' || m.tipoMovimiento === 'GASTO')
   );
   devoluciones = computed(() =>
-    this.movimientos().filter((m: { tipo: string; }) => m.tipo === 'DEVOLUCION')
+    this.movimientos().filter((m: any) => m.tipoMovimiento === 'DEVOLUCION')
   );
 
   totalVentasEfectivo = computed(() =>
-    this.ventasEfectivo().reduce((acc: any, m: { importe: any; }) => acc + m.importe, 0)
+    this.ventasEfectivo().reduce((acc: number, m: any) => acc + m.importe, 0)
   );
   totalVentasTarjeta = computed(() =>
-    this.ventasTarjeta().reduce((acc: any, m: { importe: any; }) => acc + m.importe, 0)
+    this.ventasTarjeta().reduce((acc: number, m: any) => acc + m.importe, 0)
   );
   totalAnticipos = computed(() =>
-    this.anticipos().reduce((acc: any, m: { importe: any; }) => acc + m.importe, 0)
+    this.anticipos().reduce((acc: number, m: any) => acc + m.importe, 0)
   );
   totalIngresos = computed(() =>
-    this.ingresos().reduce((acc: any, m: { importe: any; }) => acc + m.importe, 0)
+    this.ingresos().reduce((acc: number, m: any) => acc + m.importe, 0)
   );
   totalGastos = computed(() =>
-    this.gastos().reduce((acc: any, m: { importe: any; }) => acc + m.importe, 0)
+    this.gastos().reduce((acc: number, m: any) => acc + m.importe, 0)
   );
   totalDevoluciones = computed(() =>
-    this.devoluciones().reduce((acc: any, m: { importe: any; }) => acc + m.importe, 0)
+    this.devoluciones().reduce((acc: number, m: any) => acc + m.importe, 0)
   );
 
-  // helpers para icono/clase
   iconoMovimiento(tipo: string): string {
     switch (tipo) {
       case 'VENTA': return '💵';

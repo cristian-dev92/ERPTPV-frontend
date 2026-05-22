@@ -1,0 +1,106 @@
+<div class="proveedores-container">
+  
+  <header class="proveedores-header">
+    <div>
+      <h1>📦 Directorio de Proveedores</h1>
+      <p>Gestione los contactos de vuestros distribuidores de material, cueros y repuestos.</p>
+    </div>
+    <button (click)="abrirModal()" class="btn-nuevo-proveedor" type="button">
+      ➕ Registrar Proveedor
+    </button>
+  </header>
+
+  <!-- LISTADO DE PROVEEDORES -->
+  <div class="tabla-wrapper">
+    <table class="zapatero-table">
+      <thead>
+        <tr>
+          <th>Nombre Comercial</th>
+          <th>C.I.F. / N.I.F.</th>
+          <th>Teléfono</th>
+          <th>Email de Pedidos</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of proveedores(); track p.id) {
+          <tr>
+            <td class="txt-negrita">{{ p.nombre }}</td>
+            <td class="txt-mutado">{{ p.cif || '-' }}</td>
+            <td>{{ p.telefono || '-' }}</td>
+            <td class="txt-email">{{ p.emailPedidos || '-' }}</td>
+            <td>
+              <span class="badge-activo">🟢 Activo</span>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="tabla-vacia">
+              📭 No hay proveedores registrados todavía para tu zapatería.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- MODAL DE REGISTRO FLOTANTE -->
+  @if (mostrarModalRegistro()) {
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Alta de Nuevo Proveedor</h3>
+          <p>Complete los datos fiscales y de contacto del distribuidor.</p>
+        </div>
+
+        <div class="modal-body">
+          <form (ngSubmit)="guardarProveedor()">
+            
+            <div class="form-group">
+              <label for="p-nombre">Razón Social / Nombre comercial *</label>
+              <input type="text" id="p-nombre" name="nombre" 
+                     [(ngModel)]="nuevoProveedor().nombre" 
+                     placeholder="Ej: Vibram S.A." required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-cif">C.I.F. o N.I.F.</label>
+                <input type="text" id="p-cif" name="cif" 
+                       [(ngModel)]="nuevoProveedor().cif" 
+                       placeholder="A12345678">
+              </div>
+
+              <div class="form-group">
+                <label for="p-telefono">Teléfono Comercial</label>
+                <input type="text" id="p-telefono" name="telefono" 
+                       [(ngModel)]="nuevoProveedor().telefono" 
+                       placeholder="912 345 678">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="p-email">Email para Pedidos Directos</label>
+              <input type="email" id="p-email" name="email" 
+                     [(ngModel)]="nuevoProveedor().emailPedidos" 
+                     placeholder="pedidos@proveedor.com">
+            </div>
+
+            <div class="form-group">
+              <label for="p-direccion">Dirección Postal / Almacén</label>
+              <input type="text" id="p-direccion" name="direccion" 
+                     [(ngModel)]="nuevoProveedor().direccion" 
+                     placeholder="Polígono Ind. Alces, Nave 4">
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
+              <button type="submit" class="btn-guardar">Guardar Distribuidor</button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  }
+</div>

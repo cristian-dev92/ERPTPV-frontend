@@ -1,79 +1,107 @@
- @if (turno()) {
+@if (turno()) {
   <div class="caja-container">
-    <!-- TODO el contenido del informe -->
-  </div>
- } @else {
-  <p class="no-turno">No hay turno abierto actualmente.</p>
- }
+    
+    <header class="caja-header">
+      <div>
+        <h1>📊 Informe del Turno de Caja</h1>
+        <p class="fecha-apertura">
+          <strong>Apertura:</strong> {{ turno()?.fechaHoraApertura | date:'dd/MM/yyyy HH:mm' }} 
+          @if (turno()?.fechaHoraCierre) {
+            <span class="separador">|</span> 
+            <strong>Cierre:</strong> {{ turno()?.fechaHoraCierre | date:'dd/MM/yyyy HH:mm' }}
+          } @else {
+            <span class="badge-abierta">🟢 Turno Activo</span>
+          }
+        </p>
+      </div>
+      <button class="btn-print" onclick="window.print()">🖨️ Imprimir Informe</button>
+    </header>
 
-  <header class="caja-header">
-    <h1>📊 Informe del Turno de Caja</h1>
-    <p class="fecha">
-      Apertura: {{ turno()?.fechaHoraApertura | date:'dd/MM HH:mm' }}  
-      <br>
-      Cierre: {{ turno()?.fechaHoraCierre ? (turno()?.fechaHoraCierre | date:'dd/MM HH:mm') : 'Turno aún abierto' }}
-    </p>
-    <button class="btn-print" onclick="window.print()">🖨️ Imprimir Informe</button>
-  </header>
+    <div class="summary-grid">
+      <div class="card">
+        <small>Ventas Efectivo</small>
+        <h2>{{ totalVentasEfectivo() | currency:'EUR' }}</h2>
+      </div>
+      <div class="card">
+        <small>Ventas Tarjeta</small>
+        <h2>{{ totalVentasTarjeta() | currency:'EUR' }}</h2>
+      </div>
+      <div class="card">
+        <small>Anticipos</small>
+        <h2>{{ totalAnticipos() | currency:'EUR' }}</h2>
+      </div>
+      <div class="card">
+        <small>Ingresos Manuales</small>
+        <h2>{{ totalIngresos() | currency:'EUR' }}</h2>
+      </div>
+      <div class="card">
+        <small>Gastos</small>
+        <h2>-{{ totalGastos() | currency:'EUR' }}</h2>
+      </div>
+      <div class="card">
+        <small>Devoluciones</small>
+        <h2>-{{ totalDevoluciones() | currency:'EUR' }}</h2>
+      </div>
+    </div>
 
-  <div class="summary-grid">
-    <div class="card">
-      <small>Ventas Efectivo</small>
-      <h2>{{ totalVentasEfectivo() | currency:'EUR' }}</h2>
-  </div>
-  <div class="card">
-    <small>Ventas Tarjeta</small>
-    <h2>{{ totalVentasTarjeta() | currency:'EUR' }}</h2>
-  </div>
-  <div class="card">
-    <small>Anticipos</small>
-    <h2>{{ totalAnticipos() | currency:'EUR' }}</h2>
-  </div>
-  <div class="card">
-    <small>Ingresos Manuales</small>
-    <h2>{{ totalIngresos() | currency:'EUR' }}</h2>
-  </div>
-  <div class="card">
-    <small>Gastos</small>
-    <h2>-{{ totalGastos() | currency:'EUR' }}</h2>
-  </div>
-  <div class="card">
-    <small>Devoluciones</small>
-    <h2>-{{ totalDevoluciones() | currency:'EUR' }}</h2>
-  </div>
- </div>
+    <!-- Muestra el resultado final del arqueo si la caja ya está cerrada -->
+    @if (turno()?.estado === 'CERRADA') {
+      <div class="card-resultado-arqueo" [class.descuadre-alert]="turno()?.descuadre !== 0">
+        <h3>Recuento de Caja al Cierre</h3>
+        <div class="arqueo-grid">
+          <div>Esperado en Caja: <strong>{{ turno()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</strong></div>
+          <div>Contado Real: <strong>{{ turno()?.saldoFinalReal | currency:'EUR' }}</strong></div>
+          <div class="resultado-descuadre">
+            Descuadre: 
+            <strong [class.text-danger]="turno()?.descuadre < 0" [class.text-success]="turno()?.descuadre >= 0">
+              {{ turno()?.descuadre | currency:'EUR' }}
+            </strong>
+          </div>
+        </div>
+      </div>
+    }
 
-  <div class="movimientos-section">
-    <h3>📜 Movimientos del Turno</h3>
+    <div class="movimientos-section">
+      <h3>📜 Movimientos del Turno</h3>
 
-    <table class="zapatero-table">
-      <thead>
-        <tr>
-          <th>Hora</th>
-          <th>Tipo</th>
-          <th>Método</th>
-          <th>Importe</th>
-          <th>Descripción</th>
-        </tr>
-      </thead>
+      <table class="zapatero-table">
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Tipo</th>
+            <th>Método</th>
+            <th>Importe</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of movimientos(); track m.id) {
+            <tr>
+              <td>{{ m.fechaHora | date:'HH:mm' }}</td>
+              <td>
+                <span class="badge-mov" [ngClass]="claseMovimiento(m.tipoMovimiento)">
+                  <span class="icon">{{ iconoMovimiento(m.tipoMovimiento) }}</span>
+                  <span class="label">{{ m.tipoMovimiento }}</span>
+                </span>
+              </td>
+              <td>{{ m.metodoPago || '-' }}</td>
+              <td [ngClass]="claseMovimiento(m.tipoMovimiento)">
+                {{ m.importe | currency:'EUR' }}
+              </td>
+              <td>{{ m.descripcion || '-' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center">No ha habido movimientos en este turno todavía.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
 
-      <tbody>
-        <tr *ngFor="let m of movimientos()">
-          <td>{{ m.fechaHora | date:'HH:mm' }}</td>
-          <td>
-        <span class="badge-mov" [ngClass]="claseMovimiento(m.tipo)">
-          <span class="icon">{{ iconoMovimiento(m.tipo) }}</span>
-          <span class="label">{{ m.tipo }}</span>
-        </span>
-      </td>
-      <td>{{ m.metodoPago || '-' }}</td>
-      <td [ngClass]="claseMovimiento(m.tipo)">
-        {{ m.importe | currency:'EUR' }}
-    </td>
-    <td>{{ m.descripcion || '-' }}</td>
-  </tr>
-</tbody>
-
-<ng-template #noTurno>
-  <p class="no-turno">No hay turno abierto actualmente.</p>
-</ng-template>
+  </div>
+} @else {
+  <div class="no-turno-wrapper">
+    <p class="no-turno">📭 No hay ningún turno abierto ni cierres recientes en esta sesión.</p>
+  </div>
+}

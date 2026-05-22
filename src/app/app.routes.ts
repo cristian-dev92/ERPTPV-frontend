@@ -49,6 +49,16 @@ export const routes: Routes = [
       path: 'caja', 
       loadComponent: () => import('./features/caja/caja-resumen/caja-resumen').then(m => m.CajaResumenComponent) 
    },
+   {
+    path: 'proveedores',
+    loadComponent: () => import('./features/proveedores/proveedores').then(m => m.ProveedoresComponent)
+  },
+  {
+    path: 'clientes',
+    loadComponent: () => import('./features/clientes/clientes').then(m => m.ClientesComponent)
+  },
+   // Ruta comodín (por si escriben algo que no existe)
+  { path: '**', redirectTo: 'tpv' }
   ]
  }
 ]
