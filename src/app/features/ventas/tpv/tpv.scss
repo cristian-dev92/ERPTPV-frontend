@@ -528,8 +528,79 @@
       &:focus {
         border-color: #007bff;
       }
+
+      /* Estilos cuando el input está deshabilitado por el botón "Sin fecha" */
+      &:disabled {
+        background-color: #e9ecef;
+        color: #adb5bd;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+      }
+    }
+
+    /* Mover el header-fecha-recogida aquí dentro porque está dentro de .form-group en el HTML */
+    .header-fecha-recogida {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+
+      label {
+        margin-bottom: 0; /* Reseteamos el margen para alinear con el botón */
+      }
+
+      /* Estilo del botón "Sin Fecha" */
+      .btn-toggle-sin-fecha {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+
+        .icono-toggle::before {
+          content: "☐"; /* Cuadrado vacío por defecto */
+          font-size: 0.9rem;
+        }
+
+        &:hover {
+          background: #e2e8f0;
+          color: #475569;
+        }
+
+        /* Estado seleccionado: Se vuelve naranja de advertencia/taller */
+        &.activo {
+          background: #fff7ed;
+          border-color: #ff9800;
+          color: #ea580c;
+          box-shadow: 0 2px 4px rgba(234, 88, 12, 0.1);
+
+          .icono-toggle::before {
+            content: "☑"; /* Cuadrado marcado con check */
+            color: #ea580c;
+          }
+        }
+      }
     }
   }
+
+
+    /* Estilos extra cuando el input está deshabilitado */
+    input[type="date"]:disabled {
+      background-color: #f1f5f9;
+      color: #94a3b8;
+      border-color: #cbd5e1;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  }
+
 
   /* Selectores estilo Switch/Botonera TPV */
   .selector-botones {
@@ -565,7 +636,6 @@
       }
     }
   }
-}
 
 /* Input extra para las notas dentro de cada línea de reparación */
 .input-notas-linea {
@@ -1118,43 +1188,285 @@
   }
 }
 
-/* Modal Arqueo Ciego */
+/* MODAL ARQUEO GUIADO */
 .modal-arqueo-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center; z-index: 10000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
 }
 
-.modal-arqueo-box {
-  background: white; border-radius: 16px; width: 400px; padding: 2rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  text-align: center;
+.modal-arqueo-content {
+  background: #ffffff;
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  max-height: 90vh;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e2e8f0;
 
-  .modal-header h3 { font-size: 1.5rem; color: #1e293b; margin-bottom: 0.5rem; }
-  .modal-header p { font-size: 0.9rem; color: #64748b; }
+  /* Cabecera del Modal */
+  .modal-header {
+    background: #1e293b;
+    color: #ffffff;
+    padding: 1.25rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
-  .modal-body {
-    margin: 2rem 0;
-    .info-ciega p { font-size: 0.95rem; color: #475569; margin-bottom: 1rem; }
-    
-    .input-wrap {
-      position: relative;
-      display: inline-block;
-      .input-arqueo {
-        font-size: 2.5rem; font-weight: 800; text-align: center;
-        width: 220px; padding: 0.5rem; border: 3px solid #e2e8f0; border-radius: 12px;
-        color: #0f172a; outline: none;
-        &:focus { border-color: #3b82f6; }
-      }
-      .currency { position: absolute; right: -30px; bottom: 15px; font-size: 1.5rem; font-weight: 700; color: #94a3b8; }
+    h3 {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .btn-cerrar {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.75rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.2s;
+      &:hover { color: #ffffff; }
     }
   }
 
-  .modal-footer {
-    display: flex; gap: 10px;
-    button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .btn-cancelar { background: #f1f5f9; border: none; color: #475569; }
-    .btn-confirmar-cierre { background: #1e293b; border: none; color: white; &:hover { background: #000; } }
+  /* Cuerpo del Arqueo Distribución en 2 Columnas */
+  .modal-body {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1.5rem;
+    background: #f8fafc;
+  }
+
+  /* COLUMNA IZQUIERDA: Listado de Billetes y Monedas */
+  .panel-recuento {
+    display: flex;
+    flex-direction: column;
+
+    h4 {
+      margin: 0 0 1rem 0;
+      color: #334155;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.5rem;
+    }
+
+    .lista-efectivo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-height: 52vh;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+
+      /* Estilos para el scroll interno de monedas */
+      &::-webkit-scrollbar { width: 6px; }
+      &::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+      &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    }
+
+    /* Filas individuales de Moneda / Billete */
+    .fila-efectivo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+
+      .label-dinero {
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.95rem;
+      }
+
+      .controles-tactiles {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        /* Botones de + y - */
+        button {
+          width: 38px;
+          height: 38px;
+          font-size: 1.4rem;
+          font-weight: 700;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.1s, filter 0.2s;
+
+          &:active { transform: scale(0.92); }
+          
+          &.btn-menos { background: #ef4444; color: white; &:hover { filter: brightness(0.9); } }
+          &.btn-mas { background: #10b981; color: white; &:hover { filter: brightness(0.9); } }
+        }
+
+        /* Input central numérico */
+        .input-cantidad {
+          width: 65px;
+          text-align: center;
+          height: 38px;
+          font-size: 1.1rem;
+          font-weight: 700;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          color: #1e293b;
+          background: #f8fafc;
+          outline: none;
+          -moz-appearance: textfield; /* Quita flechas nativas */
+          &::-webkit-outer-spin-button,
+          &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+          &:focus { border-color: #3b82f6; background: #fff; }
+        }
+      }
+    }
+  }
+
+  /* COLUMNA DERECHA: Métricas del descuadre y totales */
+  .panel-metricas {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+
+    h4 {
+      margin: 0 0 1.25rem 0;
+      color: #334155;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.5rem;
+    }
+
+    .info-valores {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      
+      .fila-valor {
+        display: flex;
+        justify-content: space-between;
+        font-size: 1.05rem;
+        color: #64748b;
+        
+        .monto {
+          font-weight: 700;
+          color: #1e293b;
+        }
+        
+        &.total-real {
+          font-size: 1.15rem;
+          border-top: 1px dashed #e2e8f0;
+          padding-top: 0.8rem;
+          margin-top: 0.2rem;
+          .monto { color: #2563eb; }
+        }
+      }
+    }
+
+    /* Caja dinámica de Descuadre Central */
+    .caja-descuadre {
+      padding: 1.25rem;
+      border-radius: 12px;
+      text-align: center;
+      margin: 1.5rem 0;
+      transition: background 0.3s;
+
+      .titulo-descuadre {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: #64748b;
+        margin-bottom: 0.25rem;
+      }
+
+      .monto-descuadre {
+        font-size: 2.25rem;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .txt-estado {
+        margin: 0.5rem 0 0 0;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      /* Modificadores de estado según descuadre */
+      &.cuadrado {
+        background: #f0fdf4;
+        .monto-descuadre, .txt-estado { color: #16a34a; }
+      }
+      &.sobrante {
+        background: #eff6ff;
+        .monto-descuadre, .txt-estado { color: #2563eb; }
+      }
+      &.faltante {
+        background: #fef2f2;
+        .monto-descuadre, .txt-estado { color: #dc2626; }
+      }
+    }
+
+    /* Botonera inferior derecha */
+    .acciones-arqueo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+
+      button {
+        width: 100%;
+        padding: 14px;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 10px;
+        cursor: pointer;
+        border: none;
+        transition: background 0.2s, transform 0.1s;
+        &:active { transform: scale(0.98); }
+      }
+
+      .btn-guardar {
+        background: #1e293b;
+        color: #ffffff;
+        &:hover { background: #0f172a; }
+      }
+
+      .btn-cancelar {
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 0.95rem;
+        &:hover { background: #e2e8f0; color: #1e293b; }
+      }
+    }
   }
 }
 
@@ -1246,4 +1558,134 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
   .tpv-container.ticket-open .ticket-section {
     right: 0;
   }
+}
+
+/* --- CAPA OSCURA DE FONDO (BACKDROP) --- */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.6); /* Fondo semi-transparente slate oscuro */
+  backdrop-filter: blur(4px); /* Difumina ligeramente la pantalla de atrás */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Siempre por encima del TPV */
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* --- CUERPO DEL MODAL --- */
+.modal-ticket-container {
+  background: #ffffff;
+  width: 90%;
+  max-width: 480px;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  .modal-header {
+    .icono-check {
+      width: 60px;
+      height: 60px;
+      background-color: #dcfce7;
+      color: #15803d;
+      font-size: 2rem;
+      font-weight: bold;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+    }
+
+    h2 {
+      margin: 0 0 8px 0;
+      color: #0f172a;
+      font-size: 1.5rem;
+    }
+
+    .subtitulo {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin: 0 0 20px 0;
+    }
+  }
+
+  .modal-detalles {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 26px;
+
+    .badge-id {
+      background: #f1f5f9;
+      color: #334155;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .badge-tipo {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      
+      &.taller { background: #fff7ed; color: #ea580c; }
+      &.venta { background: #e0f2fe; color: #0369a1; }
+    }
+  }
+
+  /* --- BOTONERA TÁCTIL --- */
+  .modal-acciones-ticket {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+
+    /* Botón Maestro del PDF (Naranja/Azul llamativo) */
+    .btn-pdf-print {
+      background-color: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.2);
+
+      &:hover { background-color: #1e293b; }
+      &:disabled { background-color: #94a3b8; cursor: not-allowed; }
+    }
+
+    /* Botón de resetear caja */
+    .btn-nueva-venta {
+      background-color: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+
+      &:hover { background-color: #e2e8f0; color: #1e293b; }
+    }
+  }
+}
+
+/* --- ANIMACIONES --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

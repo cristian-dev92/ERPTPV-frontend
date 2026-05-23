@@ -22,38 +22,107 @@
   </div>
 }
 
-<!-- 2. MODAL DE ARQUEO CIEGO (Se abre al pulsar "Finalizar Turno") -->
-@if (mostrarModalCierre()) {
+<!-- MODAL DE ARQUEO GUIADO (SE MUESTRA AL CERRAR CAJA) -->
+@if (mostrarModalArqueo()) {
   <div class="modal-arqueo-overlay">
-    <div class="modal-arqueo-box">
-      <div class="modal-header">
-        <h3>Arqueo de Caja (Cierre)</h3>
-        <p>Realice el recuento físico del efectivo en el cajón.</p>
-      </div>
+    <div class="modal-arqueo-content">
       
-      <div class="modal-body">
-        <div class="info-ciega">
-          <p>Introduzca el importe total (Efectivo + Fondo inicial) que hay actualmente en la caja:</p>
-          <div class="input-wrap">
-            <input type="number" 
-                   [(ngModel)]="saldoContadoInput" 
-                   placeholder="0.00" 
-                   step="0.01"
-                   class="input-arqueo">
-            <span class="currency">€</span>
-          </div>
-        </div>
-        <p class="nota-seguridad text-xs">Nota: Al confirmar, el sistema comparará este valor con las ventas registradas y generará el informe de descuadre si existiera.</p>
+      <!-- Cabecera -->
+      <div class="modal-header">
+        <h3>Arqueo Guiado de Caja</h3>
+        <button class="btn-cerrar" (click)="mostrarModalArqueo.set(false)">&times;</button>
       </div>
 
-      <div class="modal-footer">
-        <button class="btn-cancelar" (click)="mostrarModalCierre.set(false)">Cancelar</button>
-        <button class="btn-confirmar-cierre" (click)="confirmarCierreCaja()">Confirmar y Cerrar Caja</button>
+      <!-- Cuerpo del Arqueo -->
+      <div class="modal-body">
+        
+        <!-- COLUMNA IZQUIERDA: Recuento -->
+        <div class="panel-recuento">
+          <h4>Recuento de Efectivo</h4>
+          
+          <div class="lista-efectivo">
+            @for (item of [
+              { label: 'Billetes de 500€', key: 'b500' },
+              { label: 'Billetes de 200€', key: 'b200' },
+              { label: 'Billetes de 100€', key: 'b100' },
+              { label: 'Billetes de 50€', key: 'b50' },
+              { label: 'Billetes de 20€', key: 'b20' },
+              { label: 'Billetes de 10€', key: 'b10' },
+              { label: 'Billetes de 5€', key: 'b5' },
+              { label: 'Monedas de 2€', key: 'm2' },
+              { label: 'Monedas de 1€', key: 'm1' },
+              { label: 'Monedas de 0.50€', key: 'm050' },
+              { label: 'Monedas de 0.20€', key: 'm020' },
+              { label: 'Monedas de 0.10€', key: 'm010' },
+              { label: 'Monedas de 0.05€', key: 'm005' },
+              { label: 'Monedas de 0.02€', key: 'm002' },
+              { label: 'Monedas de 0.01€', key: 'm001' }
+            ]; track item.key) {
+              <div class="fila-efectivo">
+                <span class="label-dinero">{{ item.label }}</span>
+                
+                <div class="controles-tactiles">
+                  <button type="button" class="btn-menos"
+                          (click)="actualizarCantidadEfectivo($any(item.key), obtenerCantidad(item.key) - 1)">-</button>
+                  
+                  <input type="number" class="input-cantidad"
+                         [value]="obtenerCantidad(item.key)"
+                         (input)="actualizarCantidadEfectivo($any(item.key), +$any($event.target).value)" />
+                  
+                  <button type="button" class="btn-mas"
+                          (click)="actualizarCantidadEfectivo($any(item.key), obtenerCantidad(item.key) + 1)">+</button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: Métricas y Clases dinámicas del descuadre -->
+        <div class="panel-metricas">
+          <div>
+            <h4>Métricas del Cierre</h4>
+            
+            <div class="info-valores">
+              <div class="fila-valor">
+                <span>Saldo Esperado (Sistema):</span>
+                <span class="monto">{{ saldoTeoricoCaja() | number:'1.2-2' }} €</span>
+              </div>
+              <div class="fila-valor total-real">
+                <span>Total Real Contado:</span>
+                <span class="monto">{{ calcularTotalReal() | number:'1.2-2' }} €</span>
+              </div>
+            </div>
+
+            <!-- Aplicación de clases dinámicas según valor del descuadre -->
+            <div class="caja-descuadre" 
+                 [class.cuadrado]="calcularDescuadre() === 0"
+                 [class.sobrante]="calcularDescuadre() > 0"
+                 [class.faltante]="calcularDescuadre() < 0">
+              <div class="titulo-descuadre">Descuadre de Caja</div>
+              <div class="monto-descuadre">{{ calcularDescuadre() | number:'1.2-2' }} €</div>
+              <p class="txt-estado">
+                @if (calcularDescuadre() === 0) { Caja perfectamente cuadrada. }
+                @if (calcularDescuadre() > 0) { Hay un SOBRANTE de dinero en caja. }
+                @if (calcularDescuadre() < 0) { Hay un FALTANTE (pérdida) en la caja. }
+              </p>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="acciones-arqueo">
+            <button type="button" class="btn-guardar" (click)="confirmarArqueo()">
+              💾 GUARDAR Y CERRAR CAJA
+            </button>
+            <button type="button" class="btn-cancelar" (click)="mostrarModalArqueo.set(false)">
+              Cancelar
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
-}
-
+ }
 
  <div class="tpv-container">
   
@@ -89,10 +158,11 @@
     <div class="buscador-articulo-wrap">
       <input 
         type="text" 
-        placeholder="🔍 Escribe para filtrar aún más rápido..." 
+        placeholder="🔍 Buscar articulo..." 
         [value]="busquedaArticulo()"
         (input)="busquedaArticulo.set($any($event.target).value)"
         class="form-control" />
+        <button type="button" class="btn-teclado" (click)="abrirTecladoGeneral('ARTICULO')">⌨️</button>
     </div>
 
     <!-- 🟢 CUADRÍCULA DE ARTÍCULOS TÁCTILES -->
@@ -106,11 +176,12 @@
           
           <div class="info-producto">
             <span class="nombre">{{ articulo.nombre }}</span>
-            <span class="precio">{{ (articulo.precio || (articulo.precioBase * 1.21)) | currency:'EUR' }}</span>
+            <span class="precio">{{ (articulo.precioFinal | currency:'EUR') }}</span>
           </div>
           
           @if (articulo.tipo === 'PRODUCTO') {
-            <span class="stock-badge" [class.low-stock]="articulo.stock <= articulo.stockMinimo">
+            <!-- Usamos un operador de aserción (?? 0) por si stock o stockMinimo vienen null/undefined -->
+            <span class="stock-badge" [class.low-stock]="(articulo.stock ?? 0) <= (articulo.stockMinimo ?? 0)">
               Stock: {{ articulo.stock }}
             </span>
           } @else {
@@ -137,7 +208,9 @@
         <input type="text" 
                [ngModel]="busquedaCliente()" 
                (ngModelChange)="buscarClientes($event)"
+               (input)="buscarClientes($any($event.target).value)"
                placeholder="👤 Buscar cliente por nombre o tel...">
+               <button type="button" class="btn-teclado" (click)="abrirTecladoGeneral('ARTICULO')">⌨️</button>
         
         @if (clientesEncontrados().length > 0) {
           <ul class="dropdown-clientes">
@@ -238,13 +311,26 @@
         </div>
       </div>
 
-      <!-- Fecha Prometida: Condicional solo para Reparaciones -->
+    <!-- Entrada de fecha de recogida solo para reparaciones -->
       @if (tipoOrdenSeleccionada() === 'REPARACION') {
-        <div class="form-group animacion-input">
-          <label for="fechaRecogida">📅 Fecha de Recogida:</label>
-          <input type="date" id="fechaRecogida" [value]="fechaPrometidaRecogida()" (input)="fechaPrometidaRecogida.set($any($event.target).value)">
-        </div>
-      }
+      <div class="form-group animacion-input">
+        <div class="header-fecha-recogida">
+          <label>Fecha Estimada de Recogida</label>
+        
+        <button type="button" 
+                class="btn-toggle-sin-fecha" 
+                [class.activo]="sinFechaRecogida()"
+                (click)="toggleSinFechaRecogida()">
+          <span class="icono-toggle"></span> Sin fecha fija
+        </button>
+      </div>
+
+      <input type="date" 
+             [disabled]="sinFechaRecogida()"
+             [value]="sinFechaRecogida() ? '' : fechaRecogida()"
+             (change)="onFechaRecogidaChange($event)" />
+     </div>
+    }
 
       <!-- Selector de Método de Pago -->
       <div class="form-group">
@@ -268,14 +354,16 @@
     <!-- RESUMEN FINAL Y BOTÓN DE COBRO -->
     <div class="footer-ticket">
       <div class="descuento-global-row">
-        <label for="descGlobalManual"> Descuento General al Ticket (%):</label>
-        <input type="number" 
+        <label for="descGlobalManual"> Descuento Global (%):</label>
+        <input 
+           type="number" 
            id="descGlobalManual"
            [value]="descuentoGlobal()" 
            min="0" max="100"
            (input)="actualizarDescuentoGlobal($event)"
            placeholder="0"
            class="input-descuento-global">
+        <button type="button" class="btn-teclado" (click)="abrirTecladoGeneral('DESCUENTO')">⌨️</button>
       </div>
       
       <div class="total-row">
@@ -316,8 +404,20 @@
           <p class="qr-caption">Escanee este código QR para verificar la validez del documento en la web de la Agencia Tributaria.</p>
         </div>
       </div>
+      <!-- 🟢 AQUÍ MODIFICAMOS LOS BOTONES DEL MODAL ORIGINAL -->
       <div class="modal-footer">
-        <button class="btn-imprimir-ticket" (click)="uiService.mostrarToast('Imprimiendo recibo fiscal...', 'success')">🖨️ Imprimir Factura</button>
+        <!-- Reemplazamos el Toast por la descarga real usando la Signal del PDF -->
+        <button class="btn-imprimir-ticket" 
+                [disabled]="cargandoPDF()" 
+                (click)="descargarTicketPDF()">
+          @if (cargandoPDF()) {
+            🔄 Generando PDF...
+          } @else {
+            🖨️ Generar y Ver Ticket PDF
+          }
+        </button>
+        
+        <!-- Tu botón para limpiar el TPV y seguir con el siguiente cliente -->
         <button class="btn-cerrar-modal" (click)="cerrarReciboAeat()">Siguiente Venta ➔</button>
       </div>
     </div>
@@ -434,6 +534,74 @@
         <button type="button" class="btn-cancelar-keypad" (click)="cerrarKeypadPrecio()">Cancelar</button>
         <button type="button" class="btn-aceptar-keypad" (click)="guardarPrecioModificado()">Aplicar Precio</button>
       </div>
+    </div>
+  </div>
+}
+
+@if (mostrarTecladoGeneral()) {
+  <div class="modal-teclado-overlay" style="position: fixed; bottom: 10px; right: 10px; z-index: 9999; background: #222; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 450px; border: 1px solid #444;">
+    
+    <!-- Cabecera del Teclado -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #fff;">
+      <span style="font-weight: bold; font-size: 0.9rem;">
+        Teclado Táctil: 
+        @if(inputObjetivoTeclado() === 'ARTICULO'){ Buscar Artículo }
+        @if(inputObjetivoTeclado() === 'CLIENTE'){ Buscar Cliente }
+        @if(inputObjetivoTeclado() === 'DESCUENTO'){ Descuento Global }
+      </span>
+      <button (click)="cerrarTecladoGeneral()" style="background: #ff4d4d; border: none; color: white; border-radius: 4px; padding: 2px 8px; cursor: pointer;">X</button>
+    </div>
+
+    <!-- Pantalla de visualización del texto -->
+    <div style="background: #000; color: #00ff00; font-family: monospace; padding: 10px; font-size: 1.2rem; border-radius: 4px; margin-bottom: 10px; min-height: 40px; word-break: break-all; display: flex; justify-content: space-between;">
+      <span>{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
+      <span style="color: #666; font-size: 0.8rem; cursor: pointer;" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+    </div>
+
+    <!-- Distribución de Teclas según el tipo de campo -->
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      
+      @if (inputObjetivoTeclado() === 'DESCUENTO') {
+        <!-- Modo Numérico Puro para Descuentos -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+          @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
+            <button (click)="pulsarTeclaGeneral(num)" style="padding: 15px; font-size: 1.2rem; font-weight: bold; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer;">{{num}}</button>
+          }
+          <button (click)="borrarUltimoCaracterGeneral()" style="padding: 15px; font-size: 1.2rem; background: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer;">⌫</button>
+        </div>
+      } @else {
+        <!-- Modo Alfabético QWERTY Completo para Búsquedas (Artículos y Clientes) -->
+        <!-- Fila 1 -->
+        <div style="display: flex; gap: 4px; justify-content: center;">
+          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P','1','2','3']; track letra) {
+            <button (click)="pulsarTeclaGeneral(letra)" style="flex: 1; padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">{{letra}}</button>
+          }
+        </div>
+        <!-- Fila 2 -->
+        <div style="display: flex; gap: 4px; justify-content: center;">
+          @for (letra of ['A','S','D','F','G','H','J','K','L','4','5','6']; track letra) {
+            <button (click)="pulsarTeclaGeneral(letra)" style="flex: 1; padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">{{letra}}</button>
+          }
+        </div>
+        <!-- Fila 3 -->
+        <div style="display: flex; gap: 4px; justify-content: center;">
+          @for (letra of ['Z','X','C','V','B','N','M',',','-','7','8','9']; track letra) {
+            <button (click)="pulsarTeclaGeneral(letra)" style="flex: 1; padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">{{letra}}</button>
+          }
+        </div>
+        <!-- Fila 4 (Espacio, Borrar y 0) -->
+        <div style="display: flex; gap: 4px;">
+          <button (click)="pulsarTeclaGeneral('0')" style="width: 15%; padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">0</button>
+          <button (click)="pulsarTeclaGeneral(' ')" style="width: 60%; padding: 10px 0; background: #444; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">ESPACIO</button>
+          <button (click)="borrarUltimoCaracterGeneral()" style="width: 25%; padding: 10px 0; background: #d9534f; color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold;">BORRAR ⌫</button>
+        </div>
+      }
+      
+      <!-- Botón de Aceptar/Cerrar -->
+      <button (click)="cerrarTecladoGeneral()" style="margin-top: 5px; padding: 12px; background: #5cb85c; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%;">
+        ✔ ACEPTAR Y APLICAR
+      </button>
+
     </div>
   </div>
 }

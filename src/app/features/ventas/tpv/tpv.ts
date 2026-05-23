@@ -2,11 +2,12 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO } from '../../../core/services/orden.service';
 import { Articulo } from '../../../core/models/articulo.model';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CajaService } from '../../../core/services/caja.service';
 import { ClienteService } from '../../../core/services/cliente.service';
 import { UiService } from '../../../core/services/ui.service';
+import { HttpClient } from "@angular/common/http";
 
 // Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
 export interface Cliente {
@@ -18,9 +19,12 @@ export interface Cliente {
 
 // Interfaz que extiende NuevaLineaDTO para incluir el nombre y precio del artículo, facilitando la visualización en el TPV
 export interface ItemCarrito extends NuevaLineaDTO {
+  articuloId: number;
   nombre: string;
+  cantidad: number;
   precio: number;
   descuentoPorcentaje?: number;
+  notasReparacion?: string | null;
 }
 
 // Interfaz para representar la información que devuelve el back al cerrar un recibo con AEAT, que luego se muestra en el TPV para que el cajero pueda verificarlo
@@ -43,7 +47,7 @@ export interface TicketHistorial {
 @Component({
   selector: 'app-tpv',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule],
+  imports: [CurrencyPipe, DatePipe, FormsModule, DecimalPipe],
   templateUrl: './tpv.html',
   styleUrl: './tpv.scss'
 })
@@ -54,6 +58,7 @@ export class TpvComponent implements OnInit {
   private cajaService = inject(CajaService);
   private clienteService = inject(ClienteService);
   public uiService = inject(UiService);
+  private http: HttpClient = inject(HttpClient);
 
   // Estados del catalogo tactil
   articulos = signal<Articulo[]>([]); // Lista completa de artículos cargada desde el backend
@@ -75,7 +80,8 @@ export class TpvComponent implements OnInit {
 
   // Para controlar el flujo de Reparación en el TPV
   tipoOrdenSeleccionada = signal<TipoOrden>('VENTA_DIRECTA'); // Por defecto, el TPV arranca en modo Venta Directa
-  fechaPrometidaRecogida = signal<string | null>(null); // Para guardar el YYYY-MM-DD si es reparación
+  sinFechaRecogida = signal<boolean>(false); // Nuevo estado para controlar el toggle de "Sin Fecha de Recogida" en reparaciones
+  fechaRecogida = signal<string>(''); // Guardamos la fecha prometida de recogida como string para que sea fácil de bindear con el input type="date"
   metodoPagoSeleccionado = signal<string>('EFECTIVO'); // EFECTIVO o TARJETA
 
   // Para la búsqueda de clientes en el TPV
@@ -90,9 +96,30 @@ export class TpvComponent implements OnInit {
   // Comprobación segura de caja abierta (computed reacciona al signal del servicio)
   cajaAbierta = computed(() => !!this.cajaService.cajaActual());
 
+  // === ESTADOS PARA EL ARQUEO GUIADO ===
+  mostrarModalArqueo = signal<boolean>(false);
+  
+  // El saldo que el backend dice que debería haber (se carga al abrir el arqueo)
+  saldoTeoricoCaja = signal<number>(1450.50); // Sustituir por el valor real que venga de tu servicio/caja
+
+  // Desglose de monedas y billetes introducidos por el usuario
+  desgloseEfectivo = signal({
+    b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0,
+    m2: 0, m1: 0, m050: 0, m020: 0, m010: 0, m005: 0, m002: 0, m001: 0
+  });
+
   // === ESTADOS PARA EL CIERRE DE CAJA ===
   mostrarModalCierre = signal<boolean>(false);
   saldoContadoInput: number | null = null; // Lo que el cajero cuenta físicamente
+
+  // --- NUEVAS SIGNALS PARA EL MODAL Y PDF ---
+  idOperacionProcesada = signal<number | string | null>(null);
+  cargandoPDF = signal<boolean>(false);
+
+  // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
+  mostrarTecladoGeneral = signal<boolean>(false);
+  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | null>(null);
+  valorTecladoEnConstruccion = signal<string>('');
   
   // Totales automáticos
   totalTicket = computed(() => {
@@ -160,9 +187,6 @@ export class TpvComponent implements OnInit {
     this.carrito.update((items: ItemCarrito[]): ItemCarrito[] => {
       // 1. Usamos la constante local que TypeScript ya sabe que es 100% number
       const existe = items.find(item => item.articuloId === idSeguro);
-
-      // Calculamos el PVP dinámico respetando la estructura de tu nuevo HTML
-      const precioPvp = articulo.precio || (articulo.precioBase * (1 + (articulo.porcentajeIva || 21) / 100));
     
       if (existe) {
         return items.map(item => 
@@ -177,7 +201,7 @@ export class TpvComponent implements OnInit {
         articuloId: idSeguro,
         nombre: articulo.nombre,
         cantidad: 1,
-        precio: articulo.precioBase * (1 + articulo.porcentajeIva / 100),
+        precio: articulo.precioFinal, // Usamos el precio final del artículo como precio base en el carrito
         descuentoPorcentaje: 0, // Por defecto sin descuento
         notasReparacion: null // Usamos null para que machee perfecto con el DTO
       };
@@ -221,8 +245,8 @@ export class TpvComponent implements OnInit {
     }
 
     // Si es reparación, obligamos a que pongan una fecha de recogida
-    if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.fechaPrometidaRecogida()) {
-      this.uiService.mostrarToast('Por favor, selecciona una fecha prometida de recogida para la reparación.', 'warning');
+    if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
+      this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
       return;
     }
 
@@ -232,15 +256,13 @@ export class TpvComponent implements OnInit {
       empleadoId: 2, // Reemplazar por el ID real del empleado logueado si cambia
       clienteId: this.clienteSeleccionadoId(),
       tipo: this.tipoOrdenSeleccionada(),
-      fechaPrometidaRecogida: this.tipoOrdenSeleccionada() === 'REPARACION' ? this.fechaPrometidaRecogida() : null,
-      lineas: this.carrito().map(item => {
-        return {
+      fechaPrometidaRecogida: this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() ? this.fechaRecogida() : null,
+      lineas: this.carrito().map(item => ({
           articuloId: item.articuloId,
           cantidad: item.cantidad,
           precioManual: item.precio,
           notasReparacion: item.notasReparacion || null
-        };
-      })
+        }))
     };
 
     console.log('JSON final enviado al Backend:', JSON.stringify(request, null, 2));
@@ -281,6 +303,9 @@ export class TpvComponent implements OnInit {
       next: (res) => {
         this.uiService.mostrarToast('💰 ¡Venta cobrada al 100% correctamente en Caja!', 'success');
 
+        // Guardamos la referencia de operación/ID para la llamada del PDF
+        this.idOperacionProcesada.set(id);
+
         // === NUEVO: INSERTAR EL TICKET EN EL HISTORIAL INFERIOR ===
         const nuevoTicket: TicketHistorial = {
           id: id,
@@ -318,6 +343,15 @@ export class TpvComponent implements OnInit {
     this.ordenService.registrarAnticipo(id, importe, metodo).subscribe({
       next: () => {
         this.uiService.mostrarToast(`📉 ¡Anticipo de ${importe}€ registrado con éxito! El ticket queda pendiente del resto.`, 'success');
+        // Seteamos datos para que salte tu modal VeriFactu y permita sacar el ticket/resguardo con el anticipo
+        this.idOperacionProcesada.set(id);
+        this.datosFacturaAeat.set({
+          qr: '',
+          ref: `ANTICIPO-#${id}`,
+          total: importe,
+          fecha: new Date().toLocaleTimeString()
+        });
+
         this.limpiarCarrito();
         this.deseleccionarCliente();
       },
@@ -325,10 +359,44 @@ export class TpvComponent implements OnInit {
     });
   }
 
+  /* Pide al backend el PDF en formato BLOB basándose en la operación activa */
+  descargarTicketPDF(): void {
+    const idOReferencia = this.idOperacionProcesada() || this.datosFacturaAeat()?.ref;
+    
+    if (!idOReferencia) {
+      this.uiService.mostrarToast('No se encontró ninguna referencia de operación activa.', 'error');
+      return;
+    }
+
+    this.cargandoPDF.set(true);
+    const url = `/api/operaciones/${idOReferencia}/ticket-pdf`;
+
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob: Blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const nuevaPestana = window.open(blobUrl, '_blank');
+        if (nuevaPestana) {
+          nuevaPestana.focus();
+        } else {
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = `ticket_${idOReferencia}.pdf`;
+          link.click();
+        }
+        this.cargandoPDF.set(false);
+      },
+      error: (err) => {
+        console.error('Error al descargar el PDF:', err);
+        this.uiService.mostrarToast('No se pudo generar el documento PDF del ticket.', 'error');
+        this.cargandoPDF.set(false);
+      }
+    });
+  }
+
   // Método para limpiar el carrito y resetear estados después de finalizar una venta o reparación
   private limpiarCarrito() {
     this.carrito.set([]); // Vaciamos el carrito para la siguiente venta
-    this.fechaPrometidaRecogida.set(null); // Reseteamos la fecha de recogida prometida para la siguiente venta
+    this.fechaRecogida.set(''); // Reseteamos la fecha de recogida prometida para la siguiente venta
     this.deseleccionarCliente(); // Reseteamos el cliente seleccionado a null para la siguiente venta anónima
     this.clienteSeleccionadoId.set(null); // Mantenemos el cliente en null por defecto para la siguiente venta anónima
     this.descuentoGlobal.set(0); // Reseteamos el descuento global para la siguiente venta
@@ -337,6 +405,7 @@ export class TpvComponent implements OnInit {
   // Método para cerrar el recibo de la AEAT, que se ejecuta al hacer clic en el botón "Cerrar Recibo AEAT"
   cerrarReciboAeat() {
     this.datosFacturaAeat.set(null);
+    this.idOperacionProcesada.set(null);
   }
   
   // Métodos para manejar la búsqueda y selección de clientes en el TPV (útil para reparaciones)
@@ -360,19 +429,13 @@ export class TpvComponent implements OnInit {
       // Llamada al endpoint de teléfono (/api/clientes/telefono/{telefono})
       this.clienteService.buscarPorTelefono(terminoLimpio).subscribe({
         next: (resultado) => this.clientesEncontrados.set([resultado]), // Envolvemos en array para mantener la consistencia con la búsqueda por nombre
-        error: (err) => {
-          console.error('❌ Error buscando por teléfono:', err); 
-          this.clientesEncontrados.set([]);
-        }
+        error: () => this.clientesEncontrados.set([])
       });
     } else {
       // Llamada al endpoint de nombre (/api/clientes/nombre/{nombre})
       this.clienteService.buscarPorNombre(terminoLimpio).subscribe({
         next: (resultado) => this.clientesEncontrados.set(resultado),
-        error: (err) => {
-          console.error('❌ Error buscando por nombre:', err); 
-          this.clientesEncontrados.set([]);
-        }
+        error: () => this.clientesEncontrados.set([])
       });
     }
   }
@@ -395,10 +458,13 @@ export class TpvComponent implements OnInit {
     this.clientesEncontrados.set([]);
   }
 
-  // Método para actualizar la fecha prometida de recogida en el signal, que se ejecuta al cambiar el valor del input de fecha en el HTML
-  actualizarFecha(event: Event) {
-    const elemento = event.target as HTMLInputElement;
-    this.fechaPrometidaRecogida.set(elemento.value || null);
+  // Método que se ejecuta al cambiar la fecha en el input type="date" del HTML, para actualizar el signal fechaRecogida con el nuevo valor seleccionado por el cajero
+  onFechaRecogidaChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.value) {
+    this.fechaRecogida.set(input.value);
+    this.sinFechaRecogida.set(false); // Si selecciona una fecha del calendario, quitamos el "Sin fecha"
+   }
   }
 
   // Cambia el estado para abrir/cerrar el acordeón inferior
@@ -428,6 +494,7 @@ export class TpvComponent implements OnInit {
     );
   }
 
+  // Método para actualizar el descuento global desde el input del HTML, que se aplica sobre el total final del ticket
   actualizarDescuentoGlobal(evento: Event) {
     const input = evento.target as HTMLInputElement;
     let valor = parseFloat(input.value) || 0;
@@ -457,36 +524,6 @@ export class TpvComponent implements OnInit {
         // Al abrirse, el signal cajaActual del servicio se actualiza y el TPV se desbloquea solo
       },
       error: (err) => this.uiService.mostrarToast('Error al abrir caja: ' + (err.error || err.message), 'error')
-    });
-  }
-
-  confirmarCierreCaja() {
-    if (this.saldoContadoInput === null || this.saldoContadoInput < 0) {
-      this.uiService.mostrarToast('Por favor, introduce el saldo total contado en el cajón.', 'warning');
-      return;
-    }
-
-    this.cajaService.cerrarCaja(this.saldoContadoInput).subscribe({
-      next: (res) => {
-        // Mapeamos los campos exactos del DTO de Javi
-        const esperado = res.saldoFinalEsperadoEfectivo; 
-        const real = res.saldoFinalReal;
-        const dif = res.descuadre; // 👈 Cambiado de diferencia a descuadre
-        
-        let mensaje = `Caja cerrada. Real: ${real}€. Esperado: ${esperado}€. `;
-        
-        if (dif === 0) {
-          mensaje += '✅ ¡Cuadre perfecto!';
-          this.uiService.mostrarToast(mensaje, 'success');
-        } else {
-          mensaje += `⚠️ Descuadre de ${dif}€.`;
-          // Usamos 'warning' o 'error' en base al tipo de descuadre
-          this.uiService.mostrarToast(mensaje, dif > 0 ? 'warning' : 'error');
-        }
-
-        this.mostrarModalCierre.set(false);
-      },
-      error: (err) => this.uiService.mostrarToast('Error al cerrar caja: ' + (err.error || err.message), 'error')
     });
   }
 
@@ -552,5 +589,157 @@ cerrarKeypadPrecio() {
   this.indiceItemEditandoPrecio.set(null);
   this.precioEnConstruccion.set('');
 }
+
+// Añade este método para gestionar el comportamiento del botón
+toggleSinFechaRecogida(): void {
+  // Invertimos el estado del toggle
+  this.sinFechaRecogida.update(value => !value);
   
+  // Si se activa "Sin fecha", limpiamos la fecha recogida guardada
+  if (this.sinFechaRecogida()) {
+    this.fechaRecogida.set(''); 
+  } else {
+    // Si se desactiva, puedes asignar por defecto el día de hoy o dejarlo vacío para obligar a marcar una
+    const hoy = new Date().toISOString().split('T')[0];
+    this.fechaRecogida.set(hoy);
+  }
+}
+
+/* Abre el teclado en pantalla para un input específico */
+  abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO') {
+    this.inputObjetivoTeclado.set(objetivo);
+    
+    // Inicializamos el teclado con el valor que ya tenga ese campo
+    if (objetivo === 'ARTICULO') this.valorTecladoEnConstruccion.set(this.busquedaArticulo());
+    if (objetivo === 'CLIENTE') this.valorTecladoEnConstruccion.set(this.busquedaCliente());
+    if (objetivo === 'DESCUENTO') this.valorTecladoEnConstruccion.set(this.descuentoGlobal().toString());
+    
+    this.mostrarTecladoGeneral.set(true);
+  }
+
+  /* Gestiona las pulsaciones de las teclas del panel táctil */
+  pulsarTeclaGeneral(tecla: string) {
+    const actual = this.valorTecladoEnConstruccion();
+    const objetivo = this.inputObjetivoTeclado();
+
+    // Si es el descuento, controlamos que solo entren números y un punto
+    if (objetivo === 'DESCUENTO') {
+      if (tecla === '.' && actual.includes('.')) return;
+      if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
+      // Evitar letras en el descuento si se colaran
+      if (tecla !== '.' && isNaN(Number(tecla))) return;
+    }
+
+    this.valorTecladoEnConstruccion.set(actual + tecla);
+    this.aplicarValorEnTiempoReal();
+  }
+
+  /* Borra el último carácter introducido*/
+  borrarUltimoCaracterGeneral() {
+    const actual = this.valorTecladoEnConstruccion();
+    if (actual.length > 0) {
+      this.valorTecladoEnConstruccion.set(actual.slice(0, -1));
+      this.aplicarValorEnTiempoReal();
+    }
+  }
+
+  /* Limpia por completo el input activo */
+  limpiarTecladoGeneral() {
+    this.valorTecladoEnConstruccion.set('');
+    this.aplicarValorEnTiempoReal();
+  }
+
+  /* Sincroniza lo que se escribe en el teclado con las Signals reales del TPV */
+  private aplicarValorEnTiempoReal() {
+    const valor = this.valorTecladoEnConstruccion();
+    const objetivo = this.inputObjetivoTeclado();
+
+    if (objetivo === 'ARTICULO') {
+      this.busquedaArticulo.set(valor);
+    } else if (objetivo === 'CLIENTE') {
+      this.buscarClientes(valor); // Lanza la búsqueda de clientes directamente
+    } else if (objetivo === 'DESCUENTO') {
+      let num = parseFloat(valor) || 0;
+      if (num > 100) num = 100; // Capamos el descuento máximo al 100%
+      this.descuentoGlobal.set(num);
+    }
+  }
+
+  cerrarTecladoGeneral() {
+    this.mostrarTecladoGeneral.set(false);
+    this.inputObjetivoTeclado.set(null);
+    this.valorTecladoEnConstruccion.set('');
+  }
+
+  // Métodos auxiliares para el arqueo guiado
+  abrirArqueoGuiado() {
+    // Aquí podrías llamar a tu servicio para traer el saldo teórico actual de la caja activa
+    this.cajaService.obtenerSaldoTeoricoActual().subscribe(saldo => {
+      this.saldoTeoricoCaja.set(saldo);
+    });
+    
+    // Reiniciamos el desglose al abrir
+    this.desgloseEfectivo.set({
+      b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0,
+      m2: 0, m1: 0, m050: 0, m020: 0, m010: 0, m005: 0, m002: 0, m001: 0
+    });
+    this.mostrarModalArqueo.set(true);
+  }
+
+  // Cambiar la cantidad de un billete o moneda específico
+  actualizarCantidadEfectivo(tipo: keyof ReturnType<typeof this.desgloseEfectivo>, valor: number) {
+    if (valor < 0) valor = 0;
+    this.desgloseEfectivo.update(actual => ({
+      ...actual,
+      [tipo]: valor
+    }));
+  }
+
+  // Computed o método para calcular el total real sumado en tiempo real
+  calcularTotalReal(): number {
+    const d = this.desgloseEfectivo();
+    return (
+      d.b500 * 500 + d.b200 * 200 + d.b100 * 100 + d.b50 * 50 + d.b20 * 20 + d.b10 * 10 + d.b5 * 5 +
+      d.m2 * 2 + d.m1 * 1 + d.m050 * 0.5 + d.m020 * 0.2 + d.m010 * 0.1 + d.m005 * 0.05 + d.m002 * 0.02 + d.m001 * 0.01
+    );
+  }
+
+  // Calcula la diferencia (Descuadre)
+  calcularDescuadre(): number {
+    return this.calcularTotalReal() - this.saldoTeoricoCaja();
+  }
+
+  /**
+   * Envía el arqueo definitivo al backend
+   */
+  confirmarArqueo() {
+    const arqueoDTO = {
+      saldoTeorico: this.saldoTeoricoCaja(),
+      saldoReal: this.calcularTotalReal(),
+      descuadre: this.calcularDescuadre(),
+      desglose: this.desgloseEfectivo()
+    };
+
+    console.log('Enviando arqueo guiado al servidor:', arqueoDTO);
+    
+    // Lanzamos la petición HTTP real de cierre de caja
+    this.cajaService.cerrarCajaGuiado(arqueoDTO).subscribe({
+      next: (response) => {
+        console.log('Arqueo guiado procesado y guardado con éxito:', response);
+        this.mostrarModalArqueo.set(false);
+        // Aquí opcionalmente puedes redirigir al usuario o mostrar un mensaje de éxito
+      },
+      error: (err) => {
+        console.error('Error al intentar cerrar la caja:', err);
+        alert('Hubo un problema al registrar el cierre de caja. Revisa la consola.');
+      }
+    });
+  }
+  
+  /* Método auxiliar para obtener la cantidad actual de un billete/moneda en la plantilla */
+  obtenerCantidad(tipo: string): number {
+    const desglose = this.desgloseEfectivo() as Record<string, number>;
+    return desglose[tipo] || 0;
+  }
+
 }

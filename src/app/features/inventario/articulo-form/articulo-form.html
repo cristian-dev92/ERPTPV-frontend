@@ -1,47 +1,81 @@
-<div class="form-card">
-  <h2>{{ isEditMode() ? '📝 Editar Artículo' : '➕ Nuevo Artículo' }}</h2>
+<div class="formulario-articulo-container">
+  <h2>Crear / Editar Artículo</h2>
 
-  <form [formGroup]="articuloForm" (ngSubmit)="guardar()">
-    <div class="grid">
-      <div class="field">
-        <label>Nombre del Producto / Servicio</label>
-        <input type="text" formControlName="nombre" placeholder="Ej: Suela de goma o Zapato Oxford">
+  <form (ngSubmit)="guardarArticulo()" class="form-grid">
+    
+    <!-- Nombre -->
+    <div class="form-group full-width">
+      <label for="nombre">Nombre del Artículo *</label>
+      <input type="text" id="nombre" [value]="nombre()" (input)="nombre.set($any($event.target).value)" placeholder="Ej. Reparación de tapas de cuero" required />
+    </div>
+
+    <!-- Tipo -->
+    <div class="form-group">
+      <label for="tipo">Tipo</label>
+      <select id="tipo" [value]="tipo()" (change)="tipo.set($any($event.target).value)">
+        <option value="PRODUCTO">📦 PRODUCTO</option>
+        <option value="SERVICIO">🛠️ SERVICIO</option>
+      </select>
+    </div>
+
+    <!-- Proveedor -->
+    <div class="form-group">
+      <label for="proveedor">Proveedor</label>
+      <select id="proveedor" [value]="idProveedor() ?? ''" (change)="idProveedor.set(+$any($event.target).value)">
+        <option value="" disabled selected>Selecciona un proveedor</option>
+        @for (prov of proveedores; track prov.id) {
+          <option [value]="prov.id">{{ prov.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Bloque Condicional: Stocks (Solo si es PRODUCTO) -->
+    @if (tipo() === 'PRODUCTO') {
+      <div class="form-group animacion-fade">
+        <label for="stockInicial">Stock Inicial</label>
+        <input type="number" id="stockInicial" [value]="stockInicial()" (input)="stockInicial.set(+$any($event.target).value)" placeholder="0" min="0" />
       </div>
 
-      <div class="field">
-        <label>Tipo</label>
-        <select formControlName="tipo">
-          <option value="PRODUCTO">PRODUCTO (Tiene stock)</option>
-          <option value="SERVICIO">SERVICIO (Mano de obra / Reparación)</option>
-        </select>
+      <div class="form-group animacion-fade">
+        <label for="stockMinimo">Stock Mínimo</label>
+        <input type="number" id="stockMinimo" [value]="stockMinimo()" (input)="stockMinimo.set(+$any($event.target).value)" placeholder="0" min="0" />
       </div>
+    }
 
-      <div class="field">
-        <label>Precio (€)</label>
-        <input type="number" formControlName="precio" step="0.01">
-      </div>
-
-      <div class="field">
-        <label>Stock Inicial</label>
-        <input type="number" formControlName="stock" [readonly]="articuloForm.get('tipo')?.value === 'SERVICIO'">
+    <!-- Precio Final (PVP con IVA) -> MAPEA A precioFinal -->
+    <div class="form-group">
+      <label for="precioFinal">Precio (PVP con IVA) *</label>
+      <div class="input-moneda">
+        <input type="number" id="precioFinal" step="0.01" [value]="precioFinal()" (input)="precioFinal.set(+$any($event.target).value)" placeholder="0.00" required />
+        <span class="addon">€</span>
       </div>
     </div>
 
-    <div class="field">
-      <label>Stock Mínimo</label>
-      <input type="number" formControlName="stockMinimo" [readonly]="articuloForm.get('tipo')?.value === 'SERVICIO'">
+    <!-- Selector de IVA -->
+    <div class="form-group">
+      <label for="porcentajeIva">Tipo de IVA</label>
+      <select id="porcentajeIva" [value]="porcentajeIva()" (change)="porcentajeIva.set(+$any($event.target).value)">
+        <option value="21">Normal (21%)</option>
+        <option value="10">Reducido (10%)</option>
+        <option value="4">Superreducido (4%)</option>
+        <option value="0">Exento (0%)</option>
+      </select>
     </div>
 
-    <div class="field full-width">
-      <label>Descripción (Opcional)</label>
-      <textarea formControlName="descripcion" rows="3"></textarea>
+    <!-- Precio Base Desglosado (Solo Lectura) -->
+    <div class="form-group full-width info-base-imponible">
+      <label>Precio Base (Sin IVA - Calculado para gestión)</label>
+      <div class="display-solo-lectura">
+        <span>{{ precioBaseVisual() }} €</span>
+        <small class="txt-mutado">Limpio estimado para el negocio</small>
+      </div>
     </div>
 
-    <div class="actions">
-      <button type="button" routerLink="/inventario" class="btn-cancel" (click)="articuloForm.reset()">Cancelar</button>
-      <button type="submit" class="btn-save" [disabled]="articuloForm.invalid">
-        {{ isEditMode() ? 'Actualizar' : 'Crear Artículo' }}
-      </button>
+    <!-- Botones de Acción -->
+    <div class="form-acciones full-width">
+      <button type="button" class="btn-cancelar">Cancelar</button>
+      <button type="submit" class="btn-guardar">Guardar Artículo</button>
     </div>
+
   </form>
 </div>

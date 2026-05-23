@@ -23,19 +23,21 @@ export interface Articulo {
   /** * Cantidad disponible en la tienda. 
    * Solo es relevante si el tipo es 'PRODUCTO'.
    */
-  stock: number;
-  stockMinimo: number;
+  stock?: number | null;
+  stockMinimo?: number | null;
 
   /** Descripción ampliada de los materiales o el trabajo a realizar */
   descripcion?: string;
 
-  //Lo que pide el backend
-  precioBase: number;       // Precio antes de impuestos
-  porcentajeIva: number;    // Ej: 21
+  // --- NÚCLEO FINANCIERO (B2C Top-Down) ---
 
-  /** Precio final */
-  precio: number;
+  /** Precio Final de venta al público (PVP con IVA incluido) */
+  precioFinal: number;      
 
+  /** Porcentaje de IVA aplicado al artículo (Ej: 21, 10, 4, 0) */
+  porcentajeIva: number; 
+
+  // --- DATOS DE CONTROL INTERNO ---
   activo?: boolean;
   empresaId?: number;
 }
