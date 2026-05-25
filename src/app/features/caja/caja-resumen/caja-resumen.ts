@@ -13,25 +13,19 @@ import { CajaService } from '../../../core/services/caja.service';
 export class CajaResumenComponent implements OnInit {
   private cajaService = inject(CajaService);
 
-  turno = signal<any | null>(null);
+  // 🔄 COMPUTED REACTIVO: Si hay caja activa, muestra esa. Si no, muestra el último cierre.
+  // Al usar computed conectado al servicio, reacciona al instante sin hacer F5.
+  turno = computed(() => {
+    const activa = this.cajaService.cajaActual();
+    if (activa) {
+      return activa;
+    }
+    return this.cajaService.ultimoTurnoCerrado();
+  });
 
   ngOnInit() {
-    this.cargarTurno();
-  }
-
-  cargarTurno() {
-    // 1. Intentamos leer si hay una caja abierta activa en el servidor
-    this.cajaService.obtenerTurnoActual().subscribe(res => {
-      if (res) {
-        this.turno.set(res);
-      } else {
-        // 2. Si no hay activa, miramos si el servicio tiene guardada la última que se acaba de cerrar
-        const ultimoCierre = this.cajaService.ultimoTurnoCerrado();
-        if (ultimoCierre) {
-          this.turno.set(ultimoCierre);
-        }
-      }
-    });
+    // Al cargar la vista de resúmenes, aseguramos que el servicio compruebe el estado real actual por si acaso
+    this.cajaService.checkEstadoCaja().subscribe();
   }
 
   // --- CÁLCULOS REACTIVOS BASADOS EN LOS MOVIMIENTOS ---

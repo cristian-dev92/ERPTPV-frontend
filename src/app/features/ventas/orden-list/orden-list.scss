@@ -17,6 +17,7 @@ $color-success: #38a169;   // Verde - Pagado / Listo
 $color-warning: #dd6b20;   // Naranja - Pendiente
 $color-danger: #e53e3e;    // Rojo - Cancelado
 $color-secondary: #4a5568; // Gris - Entregado
+$color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
 
 // ==========================================
 // CONTENEDOR PRINCIPAL
@@ -69,6 +70,65 @@ $color-secondary: #4a5568; // Gris - Entregado
       color: $text-main;
       border-color: color.adjust($color-accent, $lightness: 15%);
       box-shadow: 0 0 15px rgba($color-accent, 0.4);
+    }
+  }
+}
+
+// ==========================================
+// 🔍 NUEVO: BARRA DE BUSQUEDA TÁCTIL
+// ==========================================
+.tpv-buscador-wrapper {
+  margin-bottom: 2rem;
+  width: 100%;
+
+  .buscador-interno {
+    display: flex;
+    align-items: center;
+    background-color: $bg-card;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    position: relative;
+
+    .icono-buscar {
+      font-size: 1.2rem;
+      color: $text-muted;
+      margin-right: 0.75rem;
+    }
+
+    input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 1.1rem;
+      padding: 0.6rem 0;
+      outline: none;
+
+      &::placeholder {
+        color: #4a5568;
+      }
+    }
+
+    .btn-limpiar-busqueda {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-left: 0.5rem;
+
+      &:hover {
+        background: #e53e3e;
+      }
     }
   }
 }
@@ -166,6 +226,12 @@ $color-secondary: #4a5568; // Gris - Entregado
       cursor: pointer;
       color: white;
       transition: background-color 0.1s ease;
+    }
+
+    .btn-pdf-rapido {
+      flex: 0 0 70px;
+      background-color: $color-pdf;
+      &:hover { background-color: color.adjust($color-pdf, $lightness: -8%); }
     }
 
     .btn-start {
@@ -375,6 +441,12 @@ $color-secondary: #4a5568; // Gris - Entregado
     transition: background-color 0.1s ease;
     text-align: center;
 
+    &.print-pdf {
+      background-color: $color-pdf;
+      margin-bottom: 0.5rem;
+      &:hover { background-color: color.adjust($color-pdf, $lightness: -6%); }
+    }
+    
     &.start {
       background-color: $color-accent;
       &:hover { background-color: color.adjust($color-accent, $lightness: -8%); }
@@ -543,4 +615,41 @@ $color-secondary: #4a5568; // Gris - Entregado
 @keyframes modalFadeIn {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
+}
+
+// ==========================================
+// 🔄 ESTILOS PARA LAS DEVOLUCIONES (VÍA A)
+// ==========================================
+
+// Estilo del botón "Devolver Ticket" dentro del panel de acciones operativas
+.btn-ir-devolver {
+  width: 100%;
+  padding: 1.1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: white;
+  background-color: rgba($color-danger, 0.15);
+  border: 1px solid rgba($color-danger, 0.3);
+  transition: all 0.15s ease;
+  text-align: center;
+
+  &:hover {
+    background-color: $color-danger;
+    border-color: color.adjust($color-danger, $lightness: 10%);
+    box-shadow: 0 4px 12px rgba($color-danger, 0.25);
+  }
+}
+
+// Adaptación del modal secundario de cobros para el modo devolución
+.dev-backdrop {
+  z-index: 1200; // Por encima de cualquier otro modal abierto
+
+  // Sobrescribimos el color de selección del método para que se pinte rojo en vez de verde
+  .payment-methods button.selected {
+    border-color: $color-danger;
+    box-shadow: 0 0 10px rgba($color-danger, 0.2);
+  }
 }

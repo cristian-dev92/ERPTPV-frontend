@@ -55,22 +55,46 @@
       }
     }
 
-    /* Input con el símbolo de Euro pegado */
-    .input-moneda {
-      position: relative;
+   /* Contenedor alineado para el input y el botón de teclado táctil */
+    .input-contenedor-tactil {
       display: flex;
-      align-items: center;
+      gap: 8px;
+      width: 100%;
 
-      input {
-        width: 100%;
-        padding-right: 35px;
+      .input-moneda, .input-porcentaje {
+        position: relative;
+        flex: 1;
+        
+        input {
+          width: 100%;
+          padding-right: 35px;
+        }
+
+        .addon {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-weight: 600;
+          color: #94a3b8;
+          pointer-events: none;
+        }
       }
 
-      .addon {
-        position: absolute;
-        right: 14px;
-        font-weight: 600;
-        color: #94a3b8;
+      /* Botón del icono del teclado */
+      .btn-teclado-form {
+        padding: 0 14px;
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: background-color 0.15s;
+
+        &:hover {
+          background-color: #e2e8f0;
+          border-color: #94a3b8;
+        }
       }
     }
   }
@@ -92,7 +116,7 @@
       span {
         font-size: 1.4rem;
         font-weight: 800;
-        color: #64748b; /* Gris oscuro para indicar que es informativo y no editable */
+        color: #64748b;
       }
 
       .txt-mutado {
@@ -133,6 +157,123 @@
       color: white;
       &:hover { background-color: #2563eb; }
     }
+  }
+}
+
+/* ==========================================
+   POPUP MODAL DEL TECLADO VIRTUAL TÁCTIL
+   ========================================== */
+.modal-teclado-overlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10005;
+  background: #1e293b;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  width: 320px;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInQuick 0.15s ease-out;
+
+  .teclado-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    color: #ffffff;
+
+    .teclado-titulo {
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+    }
+
+    .btn-cerrar-teclado {
+      background: #ef4444;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      &:hover { filter: brightness(0.9); }
+    }
+  }
+
+  .teclado-pantalla {
+    background: #0f172a;
+    color: #38bdf8;
+    font-family: monospace;
+    padding: 12px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    min-height: 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #1e293b;
+
+    .btn-vaciar {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      font-size: 0.8rem;
+      font-family: sans-serif;
+      cursor: pointer;
+      font-weight: 600;
+      &:hover { color: #94a3b8; }
+    }
+  }
+
+  .teclado-rejilla-botones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+
+    .btn-tecla {
+      padding: 14px;
+      font-size: 1.25rem;
+      font-weight: bold;
+      background: #334155;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.1s;
+
+      &:hover { background-color: #475569; }
+      &:active { transform: scale(0.96); }
+
+      &.btn-borrar {
+        background: #dc2626;
+        color: white;
+        &:hover { background-color: #b91c1c; }
+      }
+    }
+  }
+
+  .btn-aceptar-teclado {
+    width: 100%;
+    padding: 12px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    &:hover { background-color: #059669; }
   }
 }
 

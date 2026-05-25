@@ -197,8 +197,18 @@
   </div>
 
   <!-- SECCIÓN DERECHA: TICKET ACTUAL -->
-  <div class="ticket-section">
-    <h2>📋 Ticket Actual</h2>
+  <div class="ticket-section" [class.modo-devolucion]="modoDevolucion()">
+  <div class="header-ticket-dinamico">
+    <h2>{{ modoDevolucion() ? '🔄 Abono / Devolución' : '📋 Ticket Actual' }}</h2>
+
+    <!-- Botón táctil para alternar entre Venta y Devolución Directa -->
+    <button type="button" 
+            class="btn-toggle-devolucion"
+            [class.activo]="modoDevolucion()"
+            (click)="toggleModoDevolucion()">
+      {{ modoDevolucion() ? '⚠️ Cancelar Abono' : '🔄 Forzar Devolución' }}
+    </button>
+  </div>
 
     <!-- SECCIÓN CLIENTE -->
   <div class="seccion-cliente-ticket">
@@ -366,15 +376,17 @@
         <button type="button" class="btn-teclado" (click)="abrirTecladoGeneral('DESCUENTO')">⌨️</button>
       </div>
       
-      <div class="total-row">
-        <span>TOTAL:</span>
-        <span class="total-amount">{{ totalTicket() | currency:'EUR' }}</span>
+      <div class="total-row" [class.txt-danger]="modoDevolucion()">
+        <span>{{ modoDevolucion() ? 'TOTAL A DEVOLVER:' : 'TOTAL:' }}</span>
+        <span class="total-amount" [style.color]="modoDevolucion() ? '#ff4d4d' : ''">
+          {{ totalTicket() | currency:'EUR' }}</span>
       </div>
       
       <button class="btn-cobrar" 
+              [class.btn-devolucion-activa]="modoDevolucion()"
               [disabled]="carrito().length === 0"
               (click)="finalizarVenta()">
-        💰 PROCESAR OPERACIÓN
+        {{ modoDevolucion() ? '🔄 CONFIRMAR Y DEVOLVER DINERO' : '💰 PROCESAR OPERACIÓN' }}
       </button>
     </div>
   </div>

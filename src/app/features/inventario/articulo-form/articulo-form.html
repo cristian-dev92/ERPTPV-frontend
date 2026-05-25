@@ -45,24 +45,15 @@
     <!-- Precio Final (PVP con IVA) -> MAPEA A precioFinal -->
     <div class="form-group">
       <label for="precioFinal">Precio (PVP con IVA) *</label>
-      <div class="input-moneda">
-        <input type="number" id="precioFinal" step="0.01" [value]="precioFinal()" (input)="precioFinal.set(+$any($event.target).value)" placeholder="0.00" required />
-        <span class="addon">€</span>
+      <div class="input-contenedor-tactil">
+        <div class="input-porcentaje">
+          <input type="number" id="porcentajeIva" step="0.1" [value]="porcentajeIva()" (input)="porcentajeIva.set(+$any($event.target).value)" placeholder="21" required />
+          <span class="addon">%</span>
+        </div>
+        <button type="button" class="btn-teclado-form" (click)="abrirTeclado('IVA')">⌨️</button>
       </div>
     </div>
 
-    <!-- Selector de IVA -->
-    <div class="form-group">
-      <label for="porcentajeIva">Tipo de IVA</label>
-      <select id="porcentajeIva" [value]="porcentajeIva()" (change)="porcentajeIva.set(+$any($event.target).value)">
-        <option value="21">Normal (21%)</option>
-        <option value="10">Reducido (10%)</option>
-        <option value="4">Superreducido (4%)</option>
-        <option value="0">Exento (0%)</option>
-      </select>
-    </div>
-
-    <!-- Precio Base Desglosado (Solo Lectura) -->
     <div class="form-group full-width info-base-imponible">
       <label>Precio Base (Sin IVA - Calculado para gestión)</label>
       <div class="display-solo-lectura">
@@ -71,7 +62,6 @@
       </div>
     </div>
 
-    <!-- Botones de Acción -->
     <div class="form-acciones full-width">
       <button type="button" class="btn-cancelar">Cancelar</button>
       <button type="submit" class="btn-guardar">Guardar Artículo</button>
@@ -79,3 +69,32 @@
 
   </form>
 </div>
+
+@if (mostrarTeclado()) {
+  <div class="modal-teclado-overlay">
+    
+    <div class="teclado-header">
+      <span class="teclado-titulo">
+        Teclado Táctil: @if(campoObjetivo() === 'PRECIO') { Introducir PVP } @else { Porcentaje de IVA }
+      </span>
+      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTeclado()">&times;</button>
+    </div>
+
+    <div class="teclado-pantalla">
+      <span class="valor-actual">{{ valorTeclado() || '0' }}</span>
+      <button type="button" class="btn-vaciar" (click)="limpiarTeclado()">❌ Vaciar</button>
+    </div>
+
+    <div class="teclado-rejilla-botones">
+      @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
+        <button type="button" class="btn-tecla" (click)="pulsarTecla(num)">{{ num }}</button>
+      }
+      <button type="button" class="btn-tecla btn-borrar" (click)="borrarCaracter()">⌫</button>
+    </div>
+
+    <button type="button" class="btn-aceptar-teclado" (click)="cerrarTeclado()">
+      ✔ ACEPTAR
+    </button>
+    
+  </div>
+}

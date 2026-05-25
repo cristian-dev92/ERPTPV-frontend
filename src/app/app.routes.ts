@@ -50,6 +50,10 @@ export const routes: Routes = [
       loadComponent: () => import('./features/caja/caja-resumen/caja-resumen').then(m => m.CajaResumenComponent) 
    },
    {
+    path: 'contabilidad',
+    loadComponent: () => import('./features/contabilidad/contabilidad').then(m => m.ContabilidadComponent)
+  },
+  {
     path: 'proveedores',
     loadComponent: () => import('./features/proveedores/proveedores').then(m => m.ProveedoresComponent)
   },

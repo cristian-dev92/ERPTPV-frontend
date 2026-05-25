@@ -164,6 +164,50 @@
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 6px rgba(0,0,0,0.02);
   height: 100%;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+
+/* MODIFICADOR: Cuando el ticket entra en Modo Devolución */
+  &.modo-devolucion {
+    background-color: #ffffba; // Fondo sutil para avisar visualmente al usuario
+    border-color: #fca5a5;
+  }
+}
+
+  /* Cabecera dinámica del ticket */
+.header-ticket-dinamico {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .btn-toggle-devolucion {
+    color: white;
+    background-color: #444444; // Color por defecto (Venta)
+    border: 1px solid #666666;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      filter: brightness(1.2);
+    }
+
+    /* Cuando el modo devolución está activo */
+    &.activo {
+      background-color: #d9534f; // Rojo de advertencia
+      border-color: #c9302c;
+      box-shadow: 0 0 10px rgba(217, 83, 79, 0.3);
+    }
+  }
 }
 
 .lineas-ticket {
@@ -406,6 +450,15 @@
       color: #28a745;
       font-weight: 800;
     }
+
+  /* Modificador de fila de totales en rojo si es devolución */
+    &.txt-danger {
+      color: #df4740;
+      
+      .total-amount {
+        color: #ff4d4d; // Rojo brillante para el total negativo/abono
+      }
+    }
   }
 
   .btn-cobrar {
@@ -418,7 +471,7 @@
     font-size: 1.2rem;
     font-weight: bold;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: background 0.3s box-shadow 0.2s;
 
     &:disabled {
       background: #ccc;
@@ -427,6 +480,14 @@
 
     &:hover:not(:disabled) {
       background: #218838;
+    }
+
+    &.btn-devolucion-activa {
+      background: #d9534f;
+      
+      &:hover:not(:disabled) {
+        background: #c9302c;
+      }
     }
   }
 }

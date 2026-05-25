@@ -25,11 +25,23 @@
               {{ item.tipo }}
             </span>
           </td>
-          <td>{{ item.precio | currency:'EUR' }}</td>
+          <td>{{ item.precioFinal | currency:'EUR' }}</td>
           <td>
-            <span [style.color]="item.stock < 5 && item.tipo === 'PRODUCTO' ? 'red' : 'inherit'">
-              {{ item.tipo === 'PRODUCTO' ? item.stock : 'N/A' }}
-            </span>
+            @if (item.tipo === 'PRODUCTO') {
+              <div class="stock-container">
+                <span>{{ item.stock ?? 0 }} u.</span>
+                
+                @if (item.stock !== undefined && item.stock !== null && 
+                     item.stockMinimo !== undefined && item.stockMinimo !== null && 
+                     item.stock <= item.stockMinimo) {
+                  <span class="badge-alert" title="Stock mínimo: {{ item.stockMinimo }}">
+                    ⚠️ Va faltando material
+                  </span>
+                }
+              </div>
+            } @else {
+              <span style="color: #94a3b8;">N/A</span>
+            }
           </td>
           <td>
             <button class="btn-edit" [routerLink]="['editar', item.id]">Editar</button>

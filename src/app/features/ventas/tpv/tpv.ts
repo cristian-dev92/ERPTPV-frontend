@@ -120,6 +120,9 @@ export class TpvComponent implements OnInit {
   mostrarTecladoGeneral = signal<boolean>(false);
   inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | null>(null);
   valorTecladoEnConstruccion = signal<string>('');
+
+  // Estado para controlar si el TPV opera en modo devolución manual sin ticket
+  modoDevolucion = signal<boolean>(false);
   
   // Totales automáticos
   totalTicket = computed(() => {
@@ -134,8 +137,10 @@ export class TpvComponent implements OnInit {
     const descGlobal = this.descuentoGlobal();
     const totalFinal = totalLineasConDescuento * (1 - descGlobal / 100);
 
-    // Retornamos el total final asegurando que no sea negativo por error de tipeo
-    return totalFinal > 0 ? totalFinal : 0;
+    const totalSeguro = totalFinal > 0 ? totalFinal : 0;
+
+  // Si está activo el modo devolución, el total pasa a ser negativo para restar de caja
+  return this.modoDevolucion() ? -totalSeguro : totalSeguro;
   });
 
   // Filtrado de artículos en tiempo real
@@ -400,6 +405,18 @@ export class TpvComponent implements OnInit {
     this.deseleccionarCliente(); // Reseteamos el cliente seleccionado a null para la siguiente venta anónima
     this.clienteSeleccionadoId.set(null); // Mantenemos el cliente en null por defecto para la siguiente venta anónima
     this.descuentoGlobal.set(0); // Reseteamos el descuento global para la siguiente venta
+    this.modoDevolucion.set(false); // Reseteamos el modo devolución para la siguiente venta normal
+    this.tipoOrdenSeleccionada.set('VENTA_DIRECTA'); // Reseteamos el tipo de orden a venta directa para la siguiente venta
+    this.sinFechaRecogida.set(false); // Reseteamos el toggle de "Sin fecha de recogida" para la siguiente venta normal
+    this.metodoPagoSeleccionado.set('EFECTIVO'); // Reseteamos el método de pago a efectivo para la siguiente venta
+    this.datosFacturaAeat.set(null); // Limpiamos los datos de la factura AEAT para que no se muestren en la siguiente venta
+    this.idOperacionProcesada.set(null); // Reseteamos la referencia de operación procesada para el PDF para que no se asocie por error a la siguiente venta
+    this.modoDevolucion.set(false); // Cerramos el modo devolución por si acaso quedó activo
+    this.seleccionarCategoria('TODOS'); // Reseteamos el filtro de categoría para mostrar todo el catálogo en la siguiente venta
+    this.cargandoPDF.set(false); // Reseteamos el estado de carga del PDF para la siguiente venta
+    this.indiceItemEditandoPrecio.set(null); // Cerramos el keypad de precio por si acaso quedó abierto
+    this.precioEnConstruccion.set(''); // Reseteamos el valor en construcción del precio para la siguiente venta
+    
   }
 
   // Método para cerrar el recibo de la AEAT, que se ejecuta al hacer clic en el botón "Cerrar Recibo AEAT"
@@ -741,5 +758,15 @@ toggleSinFechaRecogida(): void {
     const desglose = this.desgloseEfectivo() as Record<string, number>;
     return desglose[tipo] || 0;
   }
+
+  toggleModoDevolucion() {
+  this.modoDevolucion.update(activo => !activo);
+  this.uiService.mostrarToast(
+    this.modoDevolucion() 
+      ? '⚠️ TPV en MODO DEVOLUCIÓN (Importes Negativos)' 
+      : '🛒 TPV en Modo Venta Ordinaria', 
+    this.modoDevolucion() ? 'warning' : 'success'
+  );
+}
 
 }

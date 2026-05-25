@@ -1,0 +1,98 @@
+.contabilidad-container {
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.conta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.filtros-card {
+  background: #f8f9fa;
+  border: 1px solid #e3e6f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.filtros-grid {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.botones-acciones {
+  display: flex;
+  gap: 10px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.kpi-card {
+  background: #ffffff;
+  border-left: 4px solid #4e73df;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  padding: 20px;
+  border-radius: 6px;
+  
+  &.principal { border-left-color: #1cc88a; background: #f0fff4; }
+  &.negativo { border-left-color: #e74a3b; }
+}
+
+.zapatero-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  background: white;
+  
+  th, td {
+    padding: 12px;
+    border-bottom: 1px solid #eaecf4;
+    text-align: left;
+  }
+  th { background-color: #f8f9fa; font-weight: 600; }
+}
+
+.print-only-header { display: none; }
+
+// ==========================================
+// 🔥 MAGIA PARA EL REPORTE EN PDF (IMPRESIÓN)
+// ==========================================
+@media print {
+  .no-print {
+    display: none !important; // Oculta botones, menús y filtros en el PDF
+  }
+  
+  body, .contabilidad-container {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-only-header {
+    display: block !important; // Muestra la cabecera limpia del PDF
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .kpi-card {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .zapatero-table th {
+    background-color: #eee !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

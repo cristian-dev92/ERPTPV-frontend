@@ -17,6 +17,22 @@
     </button>
   </div>
 
+  <!-- 🔍 BUSCADOR DE TICKETS -->
+  <div class="tpv-buscador-wrapper">
+    <div class="buscador-interno">
+      <span class="icono-buscar">🔍</span>
+      <input 
+        type="text" 
+        [ngModel]="terminoBusqueda()" 
+        (ngModelChange)="terminoBusqueda.set($event)" 
+        placeholder="Buscar ticket por número o nombre de cliente..."
+      />
+      @if (terminoBusqueda()) {
+        <button type="button" class="btn-limpiar-busqueda" (click)="limpiarBuscador()">✕</button>
+      }
+    </div>
+  </div>
+
   <!-- 📋 GRID DE TICKETS (Ahora iteramos sobre ordenesAMostrar para no bloquear la web) -->
   <div class="tickets-grid">
     @for (orden of ordenesAMostrar(); track orden.id) {
@@ -83,6 +99,11 @@
           <!-- BOTONERA TÁCTIL DE ACCIONES CENTRALIZADA -->
           <div class="actions-section">
             <h3>⚙️ Acciones Operativas</h3>
+
+            <div class="workflow-buttons">
+              <button class="btn-action print-pdf" (click)="descargarPdfTicket(orden.id)">
+                🖨️ Generar / Imprimir PDF
+              </button>
             
             <div class="workflow-buttons">
               @if (orden.estado === 'PENDIENTE' || orden.estado === 'PAGADO') {
@@ -109,11 +130,19 @@
                   📦 Entregar al Cliente (Ya Pagado)
                 </button>
               }
+              @if (orden.estado === 'PAGADO' || orden.estado === 'ENTREGADO' || orden.estado === 'LISTO') {
+                <div class="zona-acciones-devolucion" style="clear: both; padding-top: 1rem; text-align: right;">
+                  <button type="button" class="btn-ir-devolver" (click)="abrirPanelDevolucion()">
+                    🔄 Devolver Ticket (Rectificativa)
+                  </button>
+                </div>
+              }
             </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
   }
 
   <!-- 💰 KEYPAD NUMÉRICO DE COBROS (MODAL SECUNDARIO) -->
@@ -163,6 +192,35 @@
 
         <button class="btn-submit-pay" (click)="finalizarEntregaYCobro()">
           🚀 Confirmar Pago
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (mostrarModalDevolucion()) {
+    <div class="modal-backdrop dev-backdrop">
+      <div class="keypad-modal">
+        <div class="keypad-header">
+          <h3>🔄 Registrar Devolución — Ticket #{{ ordenSeleccionada()?.id }}</h3>
+          <button class="close-btn" (click)="cerrarPanelDevolucion()">✕</button>
+        </div>
+
+        <p style="margin: 1rem 0; color: #4a5568;">
+          Vas a generar una factura rectificativa legal. ¿Cómo vas a reintegrar el dinero al cliente?
+        </p>
+
+        <div class="payment-methods">
+          <button type="button" [ngClass]="{'selected': metodoDevolucion() === 'EFECTIVO'}" (click)="metodoDevolucion.set('EFECTIVO')">💵 Devolver Efectivo</button>
+          <button type="button" [ngClass]="{'selected': metodoDevolucion() === 'TARJETA'}" (click)="metodoDevolucion.set('TARJETA')">💳 Abonar a Tarjeta</button>
+        </div>
+
+        <div class="screen-display" style="margin-top: 1.5rem; background: #fff5f5; border-color: #feb2b2;">
+          <span class="label" style="color: #c53030;">Total a abonar:</span>
+          <span class="value" style="color: #c53030;">{{ ordenSeleccionada()?.total | currency:'EUR' }}</span>
+        </div>
+
+        <button class="btn-submit-pay" style="background-color: #e53e3e; margin-top: 1.5rem;" (click)="confirmarDevolucionTicket()">
+          🔥 Confirmar Devolución y Emitir DEV-26
         </button>
       </div>
     </div>

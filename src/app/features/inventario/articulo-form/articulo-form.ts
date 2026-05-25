@@ -22,6 +22,16 @@ export class ArticuloFormComponent {
   precioFinal = signal<number | null>(null); // El PVP con IVA que teclea el usuario
   porcentajeIva = signal<number>(21);       // 21% seleccionado por defecto
 
+  // === ESTADOS PARA EL TECLADO TÁCTIL EN FORMULARIO ===
+  mostrarTeclado = signal<boolean>(false);
+  campoObjetivo = signal<'PRECIO' | 'IVA' | null>(null);
+  valorTeclado = signal<string>('');
+
+   // Inyección de dependencias
+  private articuloService = inject(ArticuloService);
+  private uiService = inject(UiService);
+  private router = inject(Router);
+
   // Lista de proveedores de prueba (adapta a tu modelo)
   proveedores = [
     { id: 1, nombre: 'Distribuidor Oficial S.L.' },
@@ -76,9 +86,62 @@ export class ArticuloFormComponent {
      });
   }
 
-  // Inyección de dependencias
-  private articuloService = inject(ArticuloService);
-  private uiService = inject(UiService);
-  private router = inject(Router);
+
+/**
+   * Abre el teclado en pantalla para el precio o el IVA
+   */
+  abrirTeclado(objetivo: 'PRECIO' | 'IVA') {
+    this.campoObjetivo.set(objetivo);
+    
+    if (objetivo === 'PRECIO') {
+      this.valorTeclado.set(this.precioFinal() ? this.precioFinal()!.toString() : '');
+    } else {
+      this.valorTeclado.set(this.porcentajeIva().toString());
+    }
+    
+    this.mostrarTeclado.set(true);
+  }
+
+  /**
+   * Procesa las pulsaciones del teclado virtual
+   */
+  pulsarTecla(tecla: string) {
+    const actual = this.valorTeclado();
+    
+    // Validar decimales (solo un punto y máximo dos decimales)
+    if (tecla === '.' && actual.includes('.')) return;
+    if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
+
+    this.valorTeclado.set(actual + tecla);
+    this.actualizarCampoEnTiempoReal();
+  }
+
+  borrarCaracter() {
+    const actual = this.valorTeclado();
+    if (actual.length > 0) {
+      this.valorTeclado.set(actual.slice(0, -1));
+      this.actualizarCampoEnTiempoReal();
+    }
+  }
+
+  limpiarTeclado() {
+    this.valorTeclado.set('');
+    this.actualizarCampoEnTiempoReal();
+  }
+
+  private actualizarCampoEnTiempoReal() {
+    const valorNum = parseFloat(this.valorTeclado()) || 0;
+    if (this.campoObjetivo() === 'PRECIO') {
+      this.precioFinal.set(valorNum === 0 ? null : valorNum);
+    } else {
+      this.porcentajeIva.set(valorNum);
+    }
+  }
+
+  cerrarTeclado() {
+    this.mostrarTeclado.set(false);
+    this.campoObjetivo.set(null);
+    this.valorTeclado.set('');
+  }
 
 }

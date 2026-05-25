@@ -17,12 +17,26 @@ export class OrdenListComponent implements OnInit {
   
   // Signals para el estado
   filtroEstado = signal<string>('EN_TALLER'); // He puesto EN_TALLER por defecto
+  terminoBusqueda = signal<string>('');
   ordenes = signal<any[]>([]);
 
-  // 🛡️ NUEVO: Límite de líneas para no petar el sistema con 300 tickets
+  // 🛡️ Filtra primero por el buscador y luego limita a un máximo de 50 registros
   ordenesAMostrar = computed(() => {
-    const maxLineas = 50; // Puedes subirlo a 100 si quieres
-    return this.ordenes().slice(0, maxLineas);
+    const busqueda = this.terminoBusqueda().toLowerCase().trim();
+    const listaOriginal = this.ordenes();
+
+    if (!busqueda) {
+      return listaOriginal.slice(0, 50);
+    }
+
+    // Filtra dinámicamente por ID del ticket o por Nombre del Cliente
+    const listaFiltrada = listaOriginal.filter(orden => {
+      const cumpleId = orden.id?.toString().includes(busqueda);
+      const cumpleCliente = orden.clienteNombre?.toLowerCase().includes(busqueda);
+      return cumpleId || cumpleCliente;
+    });
+
+    return listaFiltrada.slice(0, 50);
   });
 
   // 👁️ Guarda la orden que queremos ver en el modal.
@@ -43,6 +57,10 @@ export class OrdenListComponent implements OnInit {
     return entregado > total ? entregado - total : 0;
   });
 
+  // --- SIGNALS PARA DEVOLUCIONES (VÍA A) ---
+  mostrarModalDevolucion = signal<boolean>(false);
+  metodoDevolucion = signal<'EFECTIVO' | 'TARJETA'>('EFECTIVO');
+
   // Carga inicial de datos y recarga cada vez que cambia el filtro
   constructor() {
     effect(() => {
@@ -57,17 +75,41 @@ export class OrdenListComponent implements OnInit {
 
   // Método para cargar datos según la pestaña seleccionada
   cargarDatos(pestana: string) {
-    if (pestana === 'EN_TALLER') {
-      this.ordenService.getOrdenesTaller().subscribe({
-        next: (data) => this.ordenes.set(data),
-        error: (err) => this.uiService.mostrarToast('Error en el taller: ' + (err.error?.message || err.message), 'error')
-      });
-    } else {
-      this.ordenService.getOrdenesPorEstado(pestana).subscribe({
-        next: (data) => this.ordenes.set(data),
-        error: (err) => this.uiService.mostrarToast('Error al cargar historial: ' + (err.error?.message || err.message), 'error')
-      });
-    }
+    this.ordenService.getOrdenesPorEstado(pestana).subscribe({
+      next: (data) => this.ordenes.set(data),
+      error: (err) => this.uiService.mostrarToast('Error al cargar el listado: ' + (err.error?.message || err.message), 'error')
+    });
+  }
+
+  // 📄 NUEVO: Método para descargar/imprimir el PDF desde el Backend de Javi
+  descargarPdfTicket(ordenId: number) {
+    this.uiService.mostrarToast('Generando PDF del ticket...');
+    
+    this.ordenService.getTicketPdf(ordenId).subscribe({
+      next: (blob: Blob) => {
+        // Creamos una URL local con los bytes del PDF que escupió Spring Boot
+        const urlDescarga = window.URL.createObjectURL(blob);
+        
+        // Opción A: Abrirlo en una pestaña nueva listo para imprimir directamente en el TPV
+        window.open(urlDescarga, '_blank');
+
+        // Opción B (Comentada por si prefieres descarga directa):
+        // const a = document.createElement('a');
+        // a.href = urlDescarga;
+        // a.download = `ticket-${ordenId}.pdf`;
+        // a.click();
+        
+        window.URL.revokeObjectURL(urlDescarga);
+      },
+      error: (err) => {
+        this.uiService.mostrarToast('Error al generar el archivo PDF en el servidor.', 'error');
+      }
+    });
+  }
+
+  // Limpiar el buscador con un clic táctil
+  limpiarBuscador() {
+    this.terminoBusqueda.set('');
   }
 
   // Método para asignar clases CSS según el estado de la orden
@@ -219,4 +261,52 @@ export class OrdenListComponent implements OnInit {
     }
   });
  }
+
+ // Abre el selector de método de devolución
+  abrirPanelDevolucion() {
+    this.metodoDevolucion.set('EFECTIVO');
+    this.mostrarModalDevolucion.set(true);
+  }
+
+  cerrarPanelDevolucion() {
+    this.mostrarModalDevolucion.set(false);
+  }
+
+  // Lanza la petición al nuevo endpoint de Javi
+  confirmarDevolucionTicket() {
+    const orden = this.ordenSeleccionada();
+    if (!orden) return;
+
+    // Mapeamos las líneas del ticket original tal y como el backend las espera (IDs y cantidades en positivo)
+    // Nota: Si en tu objeto orden las líneas vienen como 'lineas', adáptalo. 
+    // Si devuelves el ticket entero, mapeamos sus artículos:
+    const lineasDev = (orden.lineas || []).map((l: any) => ({
+      articuloId: l.articuloId || l.id, // Según cómo te devuelva Javi el campo en el DTO
+      cantidad: l.cantidad
+    }));
+
+    if (lineasDev.length === 0) {
+      this.uiService.mostrarToast('No hay artículos válidos en este ticket para devolver', 'warning');
+      return;
+    }
+
+    const peticion = {
+      ordenOrigenId: orden.id,
+      metodoPago: this.metodoDevolucion(),
+      lineas: lineasDev
+    };
+
+    this.ordenService.procesarDevolucion(peticion).subscribe({
+      next: (res) => {
+        this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada con éxito.`, 'success');
+        this.cerrarPanelDevolucion();
+        this.cerrarModal();
+        this.cargarDatos(this.filtroEstado()); // Recarga la pestaña actual
+      },
+      error: (err) => {
+        this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error || err.message), 'error');
+      }
+    });
+  }
+
 }
