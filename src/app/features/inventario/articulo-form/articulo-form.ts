@@ -1,17 +1,19 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { Router } from '@angular/router';
 import { UiService } from '../../../core/services/ui.service';
+import { CommonModule } from "@angular/common";
+import { ProveedorDTO, ProveedorService } from '../../../core/services/proveedor.service';
 
 @Component({
   selector: 'app-articulo-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './articulo-form.html',
   styleUrl: './articulo-form.scss'
 })
-export class ArticuloFormComponent {
+export class ArticuloFormComponent implements OnInit {
   // 1. Definición de señales para el formulario
   nombre = signal<string>('');
   tipo = signal<'PRODUCTO' | 'SERVICIO'>('PRODUCTO');
@@ -22,6 +24,9 @@ export class ArticuloFormComponent {
   precioFinal = signal<number | null>(null); // El PVP con IVA que teclea el usuario
   porcentajeIva = signal<number>(21);       // 21% seleccionado por defecto
 
+  // === Señal para las notas internas del artículo ===
+  notasReparacion = signal<string>('');
+
   // === ESTADOS PARA EL TECLADO TÁCTIL EN FORMULARIO ===
   mostrarTeclado = signal<boolean>(false);
   campoObjetivo = signal<'PRECIO' | 'IVA' | null>(null);
@@ -31,14 +36,31 @@ export class ArticuloFormComponent {
   private articuloService = inject(ArticuloService);
   private uiService = inject(UiService);
   private router = inject(Router);
+  private proveedorservice = inject(ProveedorService);
+  
+  // Señal limpia para almacenar los proveedores reales del Backend
+  proveedores = signal<ProveedorDTO[]>([]);
 
-  // Lista de proveedores de prueba (adapta a tu modelo)
-  proveedores = [
-    { id: 1, nombre: 'Distribuidor Oficial S.L.' },
-    { id: 2, nombre: 'Componentes Calzado Norte' }
-  ];
+  ngOnInit(): void {
+    this.cargarProveedores();
+  }
 
-  // 2. Cálculo de la Base Imponible en tiempo real (Solo Visual)
+  // Carga real de tus proveedores desde el backend
+  cargarProveedores(): void {
+    this.proveedorservice.obtenerMisProveedores().subscribe({
+      next: (data: ProveedorDTO[]) => {
+        this.proveedores.set(data);
+        console.log('Proveedores cargados del backend:', data);
+      },
+      error: (err: any) => {
+        console.error('Error al cargar proveedores:', err);
+        this.uiService.mostrarToast('No se pudieron cargar los proveedores', 'error');
+      }
+    });
+  }
+
+
+  // Cálculo de la Base Imponible en tiempo real (Solo Visual)
   precioBaseVisual = computed(() => {
     const pvp = this.precioFinal();
     const iva = this.porcentajeIva();
@@ -52,10 +74,17 @@ export class ArticuloFormComponent {
     return baseImponible.toFixed(2);
   });
 
-  // 3. Envío del formulario al Backend
+  // Envío del formulario al Backend
   guardarArticulo(): void {
     if (!this.nombre() || !this.precioFinal()) {
-      alert('Por favor, rellena los campos obligatorios.');
+      this.uiService.mostrarToast('Por favor, rellena los campos obligatorios.', 'error');
+      return;
+    }
+
+    // Comprobación a prueba de nulls
+    const valorPrecio = this.precioFinal();
+    if (valorPrecio === null || valorPrecio === undefined || valorPrecio <= 0) {
+      this.uiService.mostrarToast('El precio final debe ser mayor que 0.', 'error');
       return;
     }
 
@@ -65,9 +94,10 @@ export class ArticuloFormComponent {
       tipo: this.tipo(),
       stock: this.tipo() === 'PRODUCTO' ? this.stockInicial() : null,
       stockMinimo: this.tipo() === 'PRODUCTO' ? this.stockMinimo() : null,
-      idProveedor: this.idProveedor(),
+      idProveedor: this.idProveedor() ? Number(this.idProveedor()) : null,
       precioFinal: this.precioFinal() ?? 0, // Aseguramos que no sea null
       porcentajeIva: this.porcentajeIva(),  // Envía el número limpio (21, 10, etc.)
+      notas: this.notasReparacion().trim(), // Incluimos las notas de reparación
       activo: true // Puedes ajustar esto según tu lógica de negocio
     };
 
@@ -87,9 +117,7 @@ export class ArticuloFormComponent {
   }
 
 
-/**
-   * Abre el teclado en pantalla para el precio o el IVA
-   */
+/* Abre el teclado en pantalla para el precio o el IVA */
   abrirTeclado(objetivo: 'PRECIO' | 'IVA') {
     this.campoObjetivo.set(objetivo);
     
@@ -102,14 +130,13 @@ export class ArticuloFormComponent {
     this.mostrarTeclado.set(true);
   }
 
-  /**
-   * Procesa las pulsaciones del teclado virtual
-   */
+  /* Procesa las pulsaciones del teclado virtual */
   pulsarTecla(tecla: string) {
     const actual = this.valorTeclado();
     
     // Validar decimales (solo un punto y máximo dos decimales)
     if (tecla === '.' && actual.includes('.')) return;
+    // Limitar a dos decimales
     if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
 
     this.valorTeclado.set(actual + tecla);
@@ -130,7 +157,11 @@ export class ArticuloFormComponent {
   }
 
   private actualizarCampoEnTiempoReal() {
-    const valorNum = parseFloat(this.valorTeclado()) || 0;
+    const cadena = this.valorTeclado();
+    // Si termina en punto (ej: "25."), no forzamos el parseo para dejar que el usuario escriba los decimales
+    if (cadena.endsWith('.')) return; 
+
+    const valorNum = parseFloat(cadena) || 0;
     if (this.campoObjetivo() === 'PRECIO') {
       this.precioFinal.set(valorNum === 0 ? null : valorNum);
     } else {
@@ -142,6 +173,11 @@ export class ArticuloFormComponent {
     this.mostrarTeclado.set(false);
     this.campoObjetivo.set(null);
     this.valorTeclado.set('');
+  }
+
+  cancelarYVolver() {
+    this.cerrarTeclado();
+    this.router.navigate(['/inventario']);
   }
 
 }

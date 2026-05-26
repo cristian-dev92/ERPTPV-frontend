@@ -158,6 +158,7 @@ export class TpvComponent implements OnInit {
 
   // Estado para controlar la visibilidad del ticket de venta al finalizar la compra, que se muestra solo en tablets y móviles
   isTicketVisible = signal(false);
+  idTicketOrigenDevolucion =signal<number | null>(null);
 
   // Método que se ejecuta al cargar el componente, ideal para cargar los artículos y comprobar el estado de la caja
   ngOnInit() {
@@ -237,7 +238,7 @@ export class TpvComponent implements OnInit {
     this.carrito.set([...actual]);
   }
 
-  // EL MOMENTO DE LA VERDAD: Enviar al Backend
+  // Método para finalizar la venta, que se ejecuta al hacer clic en el botón "Finalizar Venta" del HTML
   finalizarVenta() {
     if (!this.cajaAbierta()) {
       this.uiService.mostrarToast('¡Atención! Debes abrir la caja antes de realizar una venta.', 'warning');
@@ -249,6 +250,68 @@ export class TpvComponent implements OnInit {
       return;
     }
 
+    // =========================================================================
+  // 🔄 FLUJO NUEVO: MODO DEVOLUCIÓN / ABONO ACTIVO
+  // =========================================================================
+  if (this.modoDevolucion && this.modoDevolucion()) {
+    
+    // Construimos el DTO mapeando exactamente a DevolucionRequest de Java
+    const requestDevolucion = {
+      // Si tenéis guardado el ID del ticket que se está devolviendo, se pone aquí. Si es anónimo/sin ticket, va null.
+      ordenOrigenId: (this.idTicketOrigenDevolucion ? this.idTicketOrigenDevolucion() : null), 
+      metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' , // EFECTIVO, TARJETA, etc.
+      lineas: this.carrito().map(item => ({
+        articuloId: item.articuloId,
+        cantidad: Math.abs(item.cantidad) // Javi pide la cantidad en POSITIVO, nos aseguramos con Math.abs
+      }))
+    };
+
+    console.log('📦 Enviando solicitud de DEVOLUCIÓN al Backend:', JSON.stringify(requestDevolucion, null, 2));
+
+    this.ordenService.procesarDevolucion(requestDevolucion).subscribe({
+      next: (devolucionGuardada) => {
+        this.uiService.mostrarToast(`✅ Devolución procesada con éxito. Abono de ${this.totalTicket()}€ registrado.`, 'success');
+        
+        // Guardamos la referencia para el PDF del ticket de abono/devolución
+        this.idOperacionProcesada.set(devolucionGuardada.id);
+
+        // Insertamos la devolución en el historial inferior (en negativo para que cuadre visualmente)
+        const ticketAbonoHistorial = {
+          id: devolucionGuardada.id,
+          numeroFactura: devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`, 
+          fecha: new Date(),
+          cliente: this.clienteSeleccionado() ? { nombre: this.clienteSeleccionado()!.nombre } : null,
+          total: -Math.abs(this.totalTicket()), // Lo pintamos en negativo en la lista
+          estadoAeat: 'PENDIENTE' as 'ENVIADO' | 'PENDIENTE' // Marcamos como pendiente de envío a AEAT por ahora, hasta que implementemos ese módulo
+        };
+
+        this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
+
+        // Si el backend devolviera QR de VeriFactu para el abono, lo preparamos
+        if (devolucionGuardada.aeatQrUrl || devolucionGuardada.aeatIdentificador) {
+          this.datosFacturaAeat.set({
+            qr: devolucionGuardada.aeatQrUrl,
+            ref: devolucionGuardada.aeatIdentificador,
+            total: -Math.abs(this.totalTicket()),
+            fecha: new Date().toLocaleTimeString()
+          });
+        }
+
+        // Limpiamos el estado de la devolución y el carrito
+        if (this.desactivarModoDevolucion) this.desactivarModoDevolucion(); // Función tuya para apagar el botón rojo si la tienes
+        this.limpiarCarrito();
+        this.deseleccionarCliente();
+      },
+      error: (err) => {
+        console.error('Error en devolución:', err);
+        this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error?.message || err.error || 'Error desconocido'), 'error');
+      }
+    });
+
+    return; // ⚠️ Importante: Salimos de la función para que no ejecute el flujo de venta ordinaria
+  }
+  
+    // 💰 FLUJO ORDINARIO: VENTAS DIRECTAS Y REPARACIONES
     // Si es reparación, obligamos a que pongan una fecha de recogida
     if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
       this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
@@ -767,6 +830,11 @@ toggleSinFechaRecogida(): void {
       : '🛒 TPV en Modo Venta Ordinaria', 
     this.modoDevolucion() ? 'warning' : 'success'
   );
+}
+
+desactivarModoDevolucion(): void {
+  this.modoDevolucion.set(false);
+  this.idTicketOrigenDevolucion.set(null); // Limpiamos también el ticket origen
 }
 
 }

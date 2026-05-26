@@ -206,7 +206,7 @@
             class="btn-toggle-devolucion"
             [class.activo]="modoDevolucion()"
             (click)="toggleModoDevolucion()">
-      {{ modoDevolucion() ? '⚠️ Cancelar Abono' : '🔄 Forzar Devolución' }}
+      {{ modoDevolucion() ? '⚠️ Cancelar Abono' : '🔄 Devolución' }}
     </button>
   </div>
 
@@ -551,66 +551,56 @@
 }
 
 @if (mostrarTecladoGeneral()) {
-  <div class="modal-teclado-overlay" style="position: fixed; bottom: 10px; right: 10px; z-index: 9999; background: #222; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 450px; border: 1px solid #444;">
+  <div class="modal-teclado-general-container">
     
-    <!-- Cabecera del Teclado -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #fff;">
-      <span style="font-weight: bold; font-size: 0.9rem;">
+    <div class="teclado-general-header">
+      <span class="titulo-contexto">
         Teclado Táctil: 
         @if(inputObjetivoTeclado() === 'ARTICULO'){ Buscar Artículo }
         @if(inputObjetivoTeclado() === 'CLIENTE'){ Buscar Cliente }
         @if(inputObjetivoTeclado() === 'DESCUENTO'){ Descuento Global }
       </span>
-      <button (click)="cerrarTecladoGeneral()" style="background: #ff4d4d; border: none; color: white; border-radius: 4px; padding: 2px 8px; cursor: pointer;">X</button>
+      <button class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
     </div>
 
-    <!-- Pantalla de visualización del texto -->
-    <div style="background: #000; color: #00ff00; font-family: monospace; padding: 10px; font-size: 1.2rem; border-radius: 4px; margin-bottom: 10px; min-height: 40px; word-break: break-all; display: flex; justify-content: space-between;">
-      <span>{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
-      <span style="color: #666; font-size: 0.8rem; cursor: pointer;" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+    <div class="teclado-general-pantalla">
+      <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
+      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
     </div>
 
-    <!-- Distribución de Teclas según el tipo de campo -->
-    <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="teclado-general-wrapper-keys">
       
       @if (inputObjetivoTeclado() === 'DESCUENTO') {
-        <!-- Modo Numérico Puro para Descuentos -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+        <div class="grid-numerico-descuento">
           @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
-            <button (click)="pulsarTeclaGeneral(num)" style="padding: 15px; font-size: 1.2rem; font-weight: bold; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer;">{{num}}</button>
+            <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
           }
-          <button (click)="borrarUltimoCaracterGeneral()" style="padding: 15px; font-size: 1.2rem; background: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer;">⌫</button>
+          <button class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫</button>
         </div>
       } @else {
-        <!-- Modo Alfabético QWERTY Completo para Búsquedas (Artículos y Clientes) -->
-        <!-- Fila 1 -->
-        <div style="display: flex; gap: 4px; justify-content: center;">
+        <div class="fila-qwerty">
           @for (letra of ['Q','W','E','R','T','Y','U','I','O','P','1','2','3']; track letra) {
-            <button (click)="pulsarTeclaGeneral(letra)" style="flex: 1; padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">{{letra}}</button>
+            <button class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
           }
         </div>
-        <!-- Fila 2 -->
-        <div style="display: flex; gap: 4px; justify-content: center;">
+        <div class="fila-qwerty">
           @for (letra of ['A','S','D','F','G','H','J','K','L','4','5','6']; track letra) {
-            <button (click)="pulsarTeclaGeneral(letra)" style="flex: 1; padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">{{letra}}</button>
+            <button class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
           }
         </div>
-        <!-- Fila 3 -->
-        <div style="display: flex; gap: 4px; justify-content: center;">
+        <div class="fila-qwerty">
           @for (letra of ['Z','X','C','V','B','N','M',',','-','7','8','9']; track letra) {
-            <button (click)="pulsarTeclaGeneral(letra)" style="flex: 1; padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">{{letra}}</button>
+            <button class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
           }
         </div>
-        <!-- Fila 4 (Espacio, Borrar y 0) -->
-        <div style="display: flex; gap: 4px;">
-          <button (click)="pulsarTeclaGeneral('0')" style="width: 15%; padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">0</button>
-          <button (click)="pulsarTeclaGeneral(' ')" style="width: 60%; padding: 10px 0; background: #444; color: white; border: 1px solid #555; border-radius: 4px; font-size: 1rem; font-weight: bold;">ESPACIO</button>
-          <button (click)="borrarUltimoCaracterGeneral()" style="width: 25%; padding: 10px 0; background: #d9534f; color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold;">BORRAR ⌫</button>
+        <div class="fila-qwerty">
+          <button class="btn-tecla-alpha btn-cero" (click)="pulsarTeclaGeneral('0')">0</button>
+          <button class="btn-tecla-alpha btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+          <button class="btn-tecla-alpha btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
         </div>
       }
       
-      <!-- Botón de Aceptar/Cerrar -->
-      <button (click)="cerrarTecladoGeneral()" style="margin-top: 5px; padding: 12px; background: #5cb85c; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%;">
+      <button class="btn-aceptar-teclado-general" (click)="cerrarTecladoGeneral()">
         ✔ ACEPTAR Y APLICAR
       </button>
 

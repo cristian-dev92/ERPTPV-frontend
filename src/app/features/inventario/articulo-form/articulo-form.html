@@ -1,7 +1,7 @@
 <div class="formulario-articulo-container">
   <h2>Crear / Editar Artículo</h2>
 
-  <form (ngSubmit)="guardarArticulo()" class="form-grid">
+  <form class="form-grid" novalidate>
     
     <!-- Nombre -->
     <div class="form-group full-width">
@@ -23,7 +23,7 @@
       <label for="proveedor">Proveedor</label>
       <select id="proveedor" [value]="idProveedor() ?? ''" (change)="idProveedor.set(+$any($event.target).value)">
         <option value="" disabled selected>Selecciona un proveedor</option>
-        @for (prov of proveedores; track prov.id) {
+        @for (prov of proveedores(); track prov.id) {
           <option [value]="prov.id">{{ prov.nombre }}</option>
         }
       </select>
@@ -46,9 +46,20 @@
     <div class="form-group">
       <label for="precioFinal">Precio (PVP con IVA) *</label>
       <div class="input-contenedor-tactil">
-        <div class="input-porcentaje">
-          <input type="number" id="porcentajeIva" step="0.1" [value]="porcentajeIva()" (input)="porcentajeIva.set(+$any($event.target).value)" placeholder="21" required />
-          <span class="addon">%</span>
+        <div class="input-dinero">
+          <input type="number" id="precioFinal" step="0.01" [value]="precioFinal()" (input)="precioFinal.set(+$any($event.target).value)" placeholder="0.00" required />
+          <span class="addon">€</span>
+        </div>
+        <button type="button" class="btn-teclado-form" (click)="abrirTeclado('PRECIO')">⌨️</button>
+      </div>
+    </div>
+
+      <div class="form-group">
+        <label for="porcentajeIva">Porcentaje de IVA *</label>
+        <div class="input-contenedor-tactil">
+          <div class="input-porcentaje">
+            <input type="number" id="porcentajeIva" step="0.1" [value]="porcentajeIva()" (input)="porcentajeIva.set(+$any($event.target).value)" placeholder="21" required />
+            <span class="addon">%</span>
         </div>
         <button type="button" class="btn-teclado-form" (click)="abrirTeclado('IVA')">⌨️</button>
       </div>
@@ -62,9 +73,19 @@
       </div>
     </div>
 
+    <div class="form-group full-width notas-reparacion-container">
+      <label for="notasReparacion">Notas del Artículo <span class="txt-mutado">(Solo para notas internas)</span></label>
+      <textarea 
+        id="notasReparacion" 
+        rows="3" 
+        [value]="notasReparacion()" 
+        (input)="notasReparacion.set($any($event.target).value)" 
+        placeholder="Ej: Ubicación en estantería B3, proveedor tarda 4 días, notas de costes extra..."></textarea>
+    </div>
+
     <div class="form-acciones full-width">
-      <button type="button" class="btn-cancelar">Cancelar</button>
-      <button type="submit" class="btn-guardar">Guardar Artículo</button>
+      <button type="button" class="btn-cancelar" (click)="cancelarYVolver()">Cancelar</button>
+      <button type="button" class="btn-guardar" (click)="guardarArticulo()">Guardar Artículo</button>
     </div>
 
   </form>
