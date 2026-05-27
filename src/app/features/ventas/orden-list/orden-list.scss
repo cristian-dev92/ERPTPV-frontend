@@ -653,3 +653,53 @@ $color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
     box-shadow: 0 0 10px rgba($color-danger, 0.2);
   }
 }
+
+// =========================================================================
+// 🔄 ENVOLTURAS Y BLOQUES DE ACCIÓN (Sustituyen los estilos inline del HTML)
+// =========================================================================
+.zona-acciones-cobro,
+.zona-acciones-entrega {
+  clear: both;
+  padding-top: 1.5rem;
+  text-align: right;
+  width: 100%;
+}
+
+.zona-acciones-devolucion {
+  clear: both;
+  padding-top: 1rem;
+  text-align: right;
+  width: 100%;
+}
+
+// =========================================================================
+// 💵 BOTÓN TÁCTIL GIGANTE PARA COBRAR ANTICIPO O ENTREGAR (.btn-ir-cobrar)
+// =========================================================================
+.btn-ir-cobrar {
+  width: 100%;                  /* Ocupa todo el ancho disponible en móviles/modales */
+  padding: 1.2rem;              /* Padding ergonómico idéntico a tus botones principales */
+  font-size: 1.15rem;           /* Texto grande y legible */
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: white;
+  background-color: $color-success; /* Usamos tu variable verde para entradas de caja */
+  border-bottom: 4px solid color.adjust($color-success, $lightness: -12%); /* Efecto 3D táctil */
+  transition: all 0.1s ease;
+  text-align: center;
+  user-select: none;
+  box-shadow: 0 4px 12px rgba($color-success, 0.2);
+
+  &:hover {
+    background-color: color.adjust($color-success, $lightness: 4%);
+  }
+
+  /* Efecto físico de hundimiento real al pulsar en la pantalla de la tablet */
+  &:active {
+    transform: translateY(2px);
+    border-bottom-width: 1px;
+    box-shadow: 0 2px 6px rgba($color-success, 0.1);
+    filter: brightness(0.9);
+  }
+}

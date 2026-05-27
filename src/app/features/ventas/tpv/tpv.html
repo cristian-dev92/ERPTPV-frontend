@@ -161,8 +161,8 @@
         placeholder="🔍 Buscar articulo..." 
         [value]="busquedaArticulo()"
         (input)="busquedaArticulo.set($any($event.target).value)"
+        (focus)="abrirTecladoGeneral('ARTICULO')"
         class="form-control" />
-        <button type="button" class="btn-teclado" (click)="abrirTecladoGeneral('ARTICULO')">⌨️</button>
     </div>
 
     <!-- 🟢 CUADRÍCULA DE ARTÍCULOS TÁCTILES -->
@@ -210,18 +210,26 @@
     </button>
   </div>
 
-    <!-- SECCIÓN CLIENTE -->
+  <!-- SECCIÓN CLIENTE -->
   <div class="seccion-cliente-ticket">
     @if (!clienteSeleccionado()) {
       <!-- Buscador predictivo si es anónimo -->
       <div class="buscador-cliente-wrapper">
+
+       <div class="buscador-fila-tactil">
+
         <input type="text" 
                [ngModel]="busquedaCliente()" 
                (ngModelChange)="buscarClientes($event)"
                (input)="buscarClientes($any($event.target).value)"
+               (focus)="abrirTecladoGeneral('CLIENTE')"
                placeholder="👤 Buscar cliente por nombre o tel...">
-               <button type="button" class="btn-teclado" (click)="abrirTecladoGeneral('ARTICULO')">⌨️</button>
-        
+               
+        <button (click)="abrirModal()" class="btn-nuevo-cliente" type="button">
+            ➕ <span class="txt-btn">Registrar Cliente</span>
+        </button>
+       </div>
+       
         @if (clientesEncontrados().length > 0) {
           <ul class="dropdown-clientes">
             @for (cliente of clientesEncontrados(); track cliente.id) {
@@ -272,6 +280,7 @@
             [value]="item.descuentoPorcentaje || 0" 
             min="0" max="100"
             (input)="actualizarDescuentoLinea($index, $event)"
+            (focus)="abrirTecladoGeneral('DESCUENTO_MANUAL')"
             class="input-descuento-manual">
         </div>
 
@@ -371,9 +380,9 @@
            [value]="descuentoGlobal()" 
            min="0" max="100"
            (input)="actualizarDescuentoGlobal($event)"
+           (focus)="abrirTecladoGeneral('DESCUENTO')"
            placeholder="0"
            class="input-descuento-global">
-        <button type="button" class="btn-teclado" (click)="abrirTecladoGeneral('DESCUENTO')">⌨️</button>
       </div>
       
       <div class="total-row" [class.txt-danger]="modoDevolucion()">
@@ -559,18 +568,54 @@
         @if(inputObjetivoTeclado() === 'ARTICULO'){ Buscar Artículo }
         @if(inputObjetivoTeclado() === 'CLIENTE'){ Buscar Cliente }
         @if(inputObjetivoTeclado() === 'DESCUENTO'){ Descuento Global }
+        @if(inputObjetivoTeclado() === 'DESCUENTO_MANUAL'){ Descuento Manual }
+        @if(inputObjetivoTeclado() === 'PREGUNTA_ANTICIPO'){ Gestión de Reparación }
+        @if(inputObjetivoTeclado() === 'CANTIDAD_ANTICIPO'){ Introducir Señal / Anticipo }
       </span>
       <button class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
     </div>
 
-    <div class="teclado-general-pantalla">
-      <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
-      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
-    </div>
+    @if (inputObjetivoTeclado() === 'PREGUNTA_ANTICIPO') {
+      <div class="contenido-pregunta-tactil">
+        <p class="texto-pregunta">¿El cliente va a dejar un anticipo o señal para la reparación?</p>
+        <div class="wrapper-botones-decision">
+          <button type="button" class="btn-decision btn-no" (click)="responderNoAnticipo()">❌ NO DEJA</button>
+          <button type="button" class="btn-decision btn-si" (click)="responderSiAnticipo()">💰 SÍ, DEJA ANTICIPO</button>
+        </div>
+      </div>
+    } 
+    
+    @else if (inputObjetivoTeclado() === 'CANTIDAD_ANTICIPO') {
+      <div class="teclado-general-pantalla">
+        <span class="texto-construccion">{{ valorTecladoEnConstruccion() || '0.00' }} €</span>
+        <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+      </div>
+      
+      <p class="info-max-permitido">Total del ticket actual: <strong>{{ totalTicket() }}€</strong></p>
+
+      <div class="teclado-general-wrapper-keys">
+        <div class="grid-numerico-descuento">
+          @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
+            <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
+          }
+          <button class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ Borrar</button>
+        </div>
+        
+        <button class="btn-aceptar-teclado-general btn-cobrar-anticipo-accion" (click)="aplicarCantidadAnticipo()">
+          💵 REGISTRAR COBRO DE SEÑAL
+        </button>
+      </div>
+    }
+
+    @else {
+      <div class="teclado-general-pantalla">
+        <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
+        <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+      </div>
 
     <div class="teclado-general-wrapper-keys">
       
-      @if (inputObjetivoTeclado() === 'DESCUENTO') {
+      @if (inputObjetivoTeclado() === 'DESCUENTO' || inputObjetivoTeclado() === 'DESCUENTO_MANUAL') {
         <div class="grid-numerico-descuento">
           @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
             <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
@@ -603,7 +648,8 @@
       <button class="btn-aceptar-teclado-general" (click)="cerrarTecladoGeneral()">
         ✔ ACEPTAR Y APLICAR
       </button>
-
     </div>
+  }
   </div>
 }
+<app-clientes #componenteClientes [modoModalSolo]="true"></app-clientes>

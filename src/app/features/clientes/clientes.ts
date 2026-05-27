@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService, ClienteDTO, NuevoClienteRequest } from '../../core/services/cliente.service';
@@ -14,6 +14,7 @@ import { UiService } from '../../core/services/ui.service';
 export class ClientesComponent implements OnInit {
   private clienteService = inject(ClienteService);
   private uiService = inject(UiService);
+  modoModalSolo = input<boolean>(false);
 
   clientes = signal<ClienteDTO[]>([]);
   mostrarModalRegistro = signal<boolean>(false);

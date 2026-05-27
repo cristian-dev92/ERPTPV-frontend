@@ -293,6 +293,38 @@
       }
     }
 
+    
+// 🗑️ BOTÓN TÁCTIL DE ELIMINAR ARTÍCULO DEL CARRITO (.btn-remove)
+
+.btn-remove {
+  background-color: #fef2f2;  
+  border: 2px solid #fee2e2;  
+  color: #ef4444;             
+  font-size: 2rem;          /* Cubo de basura grande y visible */
+  width: 55px;                /* Tamaño perfecto para que acierte el dedo sin fallar */
+  height: 44px;               /* Centrado y equilibrado con la altura del input de descuento */
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  transition: all 0.1s ease;
+
+  /* Al pasar el ratón (o mantener pulsado en PC de desarrollo) */
+  &:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+  }
+
+  /* Efecto físico de hundimiento y alerta visual instantánea al tocar la pantalla */
+  &:active {
+    background-color: #ef4444;
+    border-color: #dc2626;
+    color: #ffffff;           /* El icono cambia a blanco al ser presionado */
+    transform: scale(0.92);
+  }
+}
     // Lado derecho: Precio y Basura
     /* 1. Ajuste del precio dentro de la línea del carrito */
   .precio-final {
@@ -777,24 +809,79 @@
 /* --- BUSCADOR DE CLIENTES EN TICKET --- */
 .seccion-cliente-ticket {
   margin-bottom: 15px;
+  width: 100%;
 }
 
 .buscador-cliente-wrapper {
   position: relative;
-  
-  input {
-    width: 100%;
+  width: 100%;
+
+  // ⚡ LA FILA FLEX: Controla que TODO vaya en la misma línea
+  .buscador-fila-tactil {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important; /* Espacio de separación limpio que querías */
+    width: 100% !important;
     box-sizing: border-box;
-    height: 46px;
-    padding: 10px 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    outline: none;
-    
-    &:focus {
-      border-color: #007bff;
+
+    // 🚀 El input metido DENTRO del flexbox para que se estire al máximo al lado del botón
+    input {
+      flex: 1 !important; 
+      display: block !important;
+      box-sizing: border-box !important;
+      height: 46px !important;
+      padding: 10px 15px !important;
+      border: 2px solid #e0e0e0 !important;
+      border-radius: 8px !important;
+      font-size: 0.9rem !important;
+      outline: none !important;
+      transition: border-color 0.2s ease;
+      
+      &:focus {
+        border-color: #740aca !important; /* Foco con tu morado corporativo */
+      }
     }
+
+    // 🚀 El botón metido DENTRO del flexbox para mantenerse en paralelo con su color morado
+    .btn-nuevo-cliente {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 46px !important;
+      width: auto !important; /* Ancho automático para ajustarse al contenido */              
+      padding: 0 0.75rem !important;         
+      background-color: #740aca !important;   
+      color: white !important;
+      border: none !important;
+      border-radius: 8px !important;
+      font-size: 0.8rem !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      gap: 6px !important;
+      white-space: nowrap !important;         
+      transition: background-color 0.2s ease, transform 0.05s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+
+      &:hover {
+        background-color: #5429ca !important; 
+      }
+
+      &:active {
+        transform: scale(0.96) !important;
+      }
+
+      @media (max-width: 450px) {
+        .txt-btn {
+          font-size: 0 !important;
+          &::before {
+            content: "Registrar" !important;
+            font-size: 0.9rem !important;
+          }
+        }
+      }
+    }
+
   }
 }
 
@@ -871,6 +958,16 @@
     transition: opacity 0.2s;
 
     &:hover { opacity: 1; }
+  }
+}
+
+
+// 🚫 OCULTAR INTERFAZ DE CLIENTES CUANDO SE INCRUSTA EN EL TPV
+app-clientes {
+  .clientes-container > header,
+  .search-bar-container,
+  .tabla-wrapper {
+    display: none !important; /* Capa de seguridad para que la lista y cabecera no se rendericen en el TPV */
   }
 }
 
@@ -1199,6 +1296,13 @@
     font-weight: 600;
     color: #64748b;
     text-transform: uppercase;
+  }
+
+  .descuento-manual-flex {
+    display: flex;
+    gap: 6px;                 
+    align-items: center;
+    justify-content: center;
   }
 
   .input-descuento-manual {
@@ -1814,48 +1918,18 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
 }
 
 // =========================================================================
-// ⌨️ BOTÓN DISPARADOR: ABRIR TECLADO TÁCTIL GENERAL (.btn-teclado)
-// =========================================================================
-.btn-teclado {
-  background-color: #f1f5f9;  
-  border: 2px solid #cbd5e1;  
-  color: #334155;
-  font-size: 2rem;          
-  width: 80px;               
-  height: 55px;               
-  border-radius: 10px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-  transition: all 0.1s ease;
-
-  &:hover {
-    background-color: #e2e8f0;
-    border-color: #94a3b8;
-  }
-
-  /* Efecto físico de hundimiento al tocar la pantalla */
-  &:active {
-    background-color: #cbd5e1;
-    transform: scale(0.92);
-  }
-}
-
-// =========================================================================
 // ⌨️ TECLADO TÁCTIL GENERAL
 // =========================================================================
 .modal-teclado-general-container {
   position: fixed; 
-  bottom: 15px; 
-  right: 15px; 
+  bottom: 20px; 
+  right: 20px; 
   z-index: 9999; 
   background: #1e293b;          /* Gris oscuro slate premium (a juego con tu cabecera de arqueo) */
-  padding: 20px; 
-  border-radius: 16px; 
+  padding: 25px; 
+  border-radius: 20px; 
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2); 
-  width: 520px;                 /* AGRANDADO: Ancho extendido para dar más separación a las filas alfabéticas */
+  width: 980px;                 /* AGRANDADO: Ancho extendido para dar más separación a las filas alfabéticas */
   border: 1px solid #334155;
   box-sizing: border-box;
   font-family: inherit;
@@ -1871,7 +1945,7 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
 
     .titulo-contexto {
       font-weight: 700; 
-      font-size: 1rem;
+      font-size: 1.25rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: #94a3b8;           /* Texto secundario claro */
@@ -1882,8 +1956,8 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
       border: none; 
       color: white; 
       border-radius: 6px; 
-      width: 32px;
-      height: 32px;
+      width: 42px;
+      height: 42px;
       font-weight: bold;
       font-size: 1rem;
       cursor: pointer;
@@ -1903,12 +1977,12 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
     background: #0f172a;        /* Fondo oscuro profundo */
     color: #38bdf8;             /* Azul neón/vibrante de alta visibilidad en mostrador */
     font-family: 'Courier New', Courier, monospace; 
-    padding: 14px; 
-    font-size: 1.4rem;          /* Letra en pantalla más grande */
+    padding: 18px; 
+    font-size: 2rem;          /* Letra en pantalla más grande */
     font-weight: 700;
-    border-radius: 8px; 
-    margin-bottom: 15px; 
-    min-height: 55px;           /* Más alta */
+    border-radius: 10px; 
+    margin-bottom: 20px; 
+    min-height: 70px;           /* Más alta */
     border: 1px solid #1e293b;
     word-break: break-all; 
     display: flex; 
@@ -1918,12 +1992,12 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
 
     .btn-vaciar-pantalla {
       color: #64748b; 
-      font-size: 0.85rem; 
+      font-size: 1rem; 
       font-weight: bold;
       cursor: pointer;
       user-select: none;
       background: #1e293b;
-      padding: 6px 10px;
+      padding: 10px 16px;
       border-radius: 6px;
       transition: all 0.1s;
 
@@ -1938,12 +2012,12 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
   .teclado-general-wrapper-keys {
     display: flex; 
     flex-direction: column; 
-    gap: 8px;                   /* Más separación entre filas */
+    gap: 12px;                   /* Más separación entre filas */
 
     /* Comportamiento base común para TODOS los botones del teclado */
     button {
       border: 1px solid #475569;
-      border-bottom: 3px solid #334155; /* Efecto relieve táctil */
+      border-bottom: 4px solid #334155; /* Efecto relieve táctil */
       border-radius: 8px; 
       font-weight: 700; 
       cursor: pointer;
@@ -1992,28 +2066,32 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
     // ==========================================
     .fila-qwerty {
       display: flex; 
-      gap: 6px;                 /* Separación holgada entre letras vecinas */
+      gap: 12px;                 /* Separación holgada entre letras vecinas */
       justify-content: center;
       width: 100%;
 
       .btn-tecla-alpha {
         flex: 1; 
-        height: 52px;           /* ALTURA AGRANDADA: Espacio perfecto para dedos de operarios */
+        width: 85px;          /* Ancho extendido para facilitar el toque */
+        height: 75px;           /* ALTURA AGRANDADA: Espacio perfecto para dedos de operarios */
         background: #334155; 
         color: #ffffff; 
-        font-size: 1.15rem;     /* Letras más grandes por tecla */
+        font-size: 1.8rem;     /* Letras más grandes por tecla */
         padding: 0;
       }
 
       /* Modificadores específicos de la fila inferior */
       .btn-cero {
         flex: unset;
-        width: 15%;
+        width: 85px;          /* Ancho extendido para facilitar el toque */
+        height: 75px;           /* Altura consistente con las letras */
+        font-size: 1.8rem;     /* Número más grande */
       }
 
       .btn-espacio {
         flex: unset;
-        width: 55%;
+        width: 460px;          /* Ancho extendido para facilitar el toque */
+        height: 75px;           /* Altura consistente con las letras */
         background: #475569;    /* Tono diferente para la barra espaciadora */
       }
     }
@@ -2021,24 +2099,95 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
     /* Botón común de Borrar Carácter (Retroceso) */
     .btn-borrar-atras {
       flex: unset;
-      width: 35%;
+      width: 120px;          /* Ocupa toda la fila para ser fácilmente accesible */
+      height: 75px;
       background: #ef4444 !important; 
       border-color: #dc2626 !important;
       border-bottom-color: #991b1b !important;
       color: #ffffff !important;
-      font-size: 1.1rem;
+      font-size: 1.4rem;
     }
 
     /* Botón gigante inferior de Confirmar */
     .btn-aceptar-teclado-general {
       margin-top: 8px; 
-      padding: 16px; 
+      padding: 20px; 
       background: #10b981;      /* Verde éxito corporativo */
       border-color: #059669;
       border-bottom-color: #047857;
       color: white; 
-      font-size: 1.2rem; 
+      font-size: 1.5rem; 
       width: 100%;
     }
   }
+}
+
+// --- Estilos para la ventana de decisión de Anticipo SÍ/NO --- //
+.contenido-pregunta-tactil {
+  padding: 16px 0;
+  text-align: center;
+
+  .texto-pregunta {
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  .wrapper-botones-decision {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .btn-decision {
+    flex: 1;
+    height: 65px; /* Súper alto para pulsar rápido con el dedo */
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    transition: transform 0.05s ease, filter 0.1s ease;
+
+    &:active {
+      transform: scale(0.96);
+      filter: brightness(0.85);
+    }
+
+    &.btn-no {
+      background-color: #ef4444;
+      color: #ffffff;
+      border-bottom: 4px solid #b91c1c;
+    }
+
+    &.btn-si {
+      background-color: #3b82f6; /* Azul corporativo para la acción positiva */
+      color: #ffffff;
+      border-bottom: 4px solid #1d4ed8;
+    }
+  }
+}
+
+/* Texto informativo sobre el coste del ticket */
+.info-max-permitido {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin: 0 0 12px 4px;
+  
+  strong {
+    color: #f59e0b; /* Color naranja/ámbar para destacar el importe total */
+  }
+}
+
+/* Ajuste premium para el botón de confirmar cobro de señal */
+.btn-cobrar-anticipo-accion {
+  background-color: #3b82f6 !important;
+  border-color: #2563eb !important;
+  border-bottom-color: #1d4ed8 !important;
 }

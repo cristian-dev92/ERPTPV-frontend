@@ -8,6 +8,8 @@ import { CajaService } from '../../../core/services/caja.service';
 import { ClienteService } from '../../../core/services/cliente.service';
 import { UiService } from '../../../core/services/ui.service';
 import { HttpClient } from "@angular/common/http";
+import { ClientesComponent } from '../../clientes/clientes';
+import { ViewChild } from "@angular/core";
 
 // Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
 export interface Cliente {
@@ -47,7 +49,7 @@ export interface TicketHistorial {
 @Component({
   selector: 'app-tpv',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule, DecimalPipe],
+  imports: [CurrencyPipe, DatePipe, FormsModule, DecimalPipe, ClientesComponent],
   templateUrl: './tpv.html',
   styleUrl: './tpv.scss'
 })
@@ -59,6 +61,7 @@ export class TpvComponent implements OnInit {
   private clienteService = inject(ClienteService);
   public uiService = inject(UiService);
   private http: HttpClient = inject(HttpClient);
+  @ViewChild('componenteClientes') componenteClientes!: ClientesComponent;
 
   // Estados del catalogo tactil
   articulos = signal<Articulo[]>([]); // Lista completa de artículos cargada desde el backend
@@ -77,6 +80,7 @@ export class TpvComponent implements OnInit {
   carrito = signal<ItemCarrito[]>([]); // Aquí guardaremos { articuloId, nombre, cantidad, precio, notas }
   saldoInicialInput: number = 150; // 150€ por defecto para cambio
   descuentoGlobal = signal<number>(0); // Descuento global en porcentaje
+  indiceLineaDescuentoActual = signal<number | null>(null); // Para saber a qué línea se le está aplicando un descuento manual específico
 
   // Para controlar el flujo de Reparación en el TPV
   tipoOrdenSeleccionada = signal<TipoOrden>('VENTA_DIRECTA'); // Por defecto, el TPV arranca en modo Venta Directa
@@ -100,7 +104,10 @@ export class TpvComponent implements OnInit {
   mostrarModalArqueo = signal<boolean>(false);
   
   // El saldo que el backend dice que debería haber (se carga al abrir el arqueo)
-  saldoTeoricoCaja = signal<number>(1450.50); // Sustituir por el valor real que venga de tu servicio/caja
+  saldoTeoricoCaja = signal<number>(0); // Sustituir por el valor real que venga de tu servicio/caja
+
+  // Lo que el cajero introduce como descuadre (positivo o negativo)
+  descuadreInput = signal<number>(0); 
 
   // Desglose de monedas y billetes introducidos por el usuario
   desgloseEfectivo = signal({
@@ -118,8 +125,11 @@ export class TpvComponent implements OnInit {
 
   // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
   mostrarTecladoGeneral = signal<boolean>(false);
-  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | null>(null);
+  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | null>(null);
   valorTecladoEnConstruccion = signal<string>('');
+
+  // Variable para recordar la orden que se acaba de crear mientras se responde al flujo táctil
+  idOrdenPendienteAnticipo = signal<number | null>(null);
 
   // Estado para controlar si el TPV opera en modo devolución manual sin ticket
   modoDevolucion = signal<boolean>(false);
@@ -337,28 +347,13 @@ export class TpvComponent implements OnInit {
 
     this.ordenService.crearOrden(request).subscribe({
       next: (ordenGuardada) => {
-        // Evaluamos qué flujo seguir según lo que haya seleccionado el cajero
-        if (this.tipoOrdenSeleccionada() === 'VENTA_DIRECTA') {
-          // Flujo A: Cobro completo inmediato
+          // Dependiendo del tipo de orden y la configuración, decidimos el flujo de cobro:
+          if (this.tipoOrdenSeleccionada() === 'VENTA_DIRECTA') {
           this.cobrarTicketCompleto(ordenGuardada.id);
-        } else {
-          // Flujo B: Es una reparación. Preguntamos si va a dejar un anticipo/señal
-          const dejarAnticipo = confirm('¿El cliente va a dejar un anticipo para la reparación?');
-          if (dejarAnticipo) {
-            const importe = prompt(`El total es de ${this.totalTicket()}€. ¿Cuánto deja de señal?`);
-            const numImporte = parseFloat(importe || '0');
-            if (numImporte > 0 && numImporte <= this.totalTicket()) {
-              this.cobrarAnticipoTicket(ordenGuardada.id, numImporte, this.metodoPagoSeleccionado());
             } else {
-              this.uiService.mostrarToast('Importe no válido. La orden se ha guardado como PENDIENTE sin anticipo.', 'warning');
-              this.limpiarCarrito();
-              this.deseleccionarCliente();
-            }
-          } else {
-            this.uiService.mostrarToast('Orden de reparación guardada como PENDIENTE de cobro.', 'success');
-            this.limpiarCarrito();
-            this.deseleccionarCliente();
-          }
+          // En vez de un confirm() nativo, guardamos la ID y abrimos el paso de la pregunta SÍ/NO
+          this.idOrdenPendienteAnticipo.set(ordenGuardada.id);
+          this.abrirTecladoGeneral('PREGUNTA_ANTICIPO');
         }
       },
       error: (err) => this.uiService.mostrarToast('Error al crear ticket: ' + (err.error?.message || err.error || 'Error desconocido'), 'error')
@@ -561,7 +556,8 @@ export class TpvComponent implements OnInit {
     console.log('Reimprimiendo ticket ID:', ticket.id);
   }
   
-  actualizarDescuentoLinea(index: number, evento: Event) {
+  // Método para actualizar el descuento de una línea específica desde el input del HTML, que se aplica solo a esa línea
+  actualizarDescuentoLinea(index: number, evento: any) {
     const input = evento.target as HTMLInputElement;
     let valor = parseFloat(input.value) || 0;
     
@@ -587,8 +583,12 @@ export class TpvComponent implements OnInit {
 
   // Abrir el modal de arqueo
   abrirCierreCaja() {
-    this.saldoContadoInput = null; // Resetear el campo para que sea ciego de verdad
-    this.mostrarModalCierre.set(true);
+   // Reseteamos el desglose a cero para un nuevo recuento limpio
+    this.desgloseEfectivo.set({
+      b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0,
+      m2: 0, m1: 0, m050: 0, m020: 0, m010: 0, m005: 0, m002: 0, m001: 0
+    });
+    this.mostrarModalArqueo.set(true);  
   }
 
   // Aquí el método para abrir la caja, que se ejecuta al hacer clic en el botón "Abrir Caja"
@@ -686,13 +686,29 @@ toggleSinFechaRecogida(): void {
 }
 
 /* Abre el teclado en pantalla para un input específico */
-  abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO') {
+  abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_MANUAL' | 'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO', index: number | null = null) {
     this.inputObjetivoTeclado.set(objetivo);
+
+    if (objetivo === 'PREGUNTA_ANTICIPO') {
+      this.valorTecladoEnConstruccion.set('');
+    } else if (objetivo === 'CANTIDAD_ANTICIPO') {
+      // Inicializamos el prompt numérico vacío para escribir directo
+      this.valorTecladoEnConstruccion.set('');
+      // Guardamos el índice si estamos editando el descuento de una línea específica
+    } else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
+      this.indiceLineaDescuentoActual.set(index);
+      // Obtenemos el descuento actual de ese ítem en el carrito
+      const item = this.carrito()[index];
+      const descuentoActual = item ? (item.descuentoPorcentaje || 0) : 0;
+      this.valorTecladoEnConstruccion.set(descuentoActual > 0 ? descuentoActual.toString() : '');
+    } else {
+      this.indiceLineaDescuentoActual.set(null);
     
     // Inicializamos el teclado con el valor que ya tenga ese campo
     if (objetivo === 'ARTICULO') this.valorTecladoEnConstruccion.set(this.busquedaArticulo());
     if (objetivo === 'CLIENTE') this.valorTecladoEnConstruccion.set(this.busquedaCliente());
     if (objetivo === 'DESCUENTO') this.valorTecladoEnConstruccion.set(this.descuentoGlobal().toString());
+    }
     
     this.mostrarTecladoGeneral.set(true);
   }
@@ -703,7 +719,7 @@ toggleSinFechaRecogida(): void {
     const objetivo = this.inputObjetivoTeclado();
 
     // Si es el descuento, controlamos que solo entren números y un punto
-    if (objetivo === 'DESCUENTO') {
+    if (objetivo === 'DESCUENTO' || objetivo === 'DESCUENTO_MANUAL' || objetivo === 'CANTIDAD_ANTICIPO') {
       if (tecla === '.' && actual.includes('.')) return;
       if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
       // Evitar letras en el descuento si se colaran
@@ -742,6 +758,23 @@ toggleSinFechaRecogida(): void {
       let num = parseFloat(valor) || 0;
       if (num > 100) num = 100; // Capamos el descuento máximo al 100%
       this.descuentoGlobal.set(num);
+    } else if (objetivo === 'DESCUENTO_MANUAL') {
+      let num = parseFloat(valor) || 0;
+      if (num > 100) num = 100; // Capamos el descuento máximo al 100%
+      
+      const index = this.indiceLineaDescuentoActual();
+      if (index !== null) {
+        // 1. Hacemos una copia de la lista actual del carrito para no mutar directamente el estado
+        const listaCarrito = [...this.carrito()];
+        // 2. Si la línea existe, modificamos su propiedad directamente
+        if (listaCarrito[index]) {
+          // IMPORTANTE: Asegúrate de si tu objeto usa 'descuentoPorcentaje' o 'descuento'
+          listaCarrito[index].descuentoPorcentaje = num;
+          
+          // 3. Notificamos a Angular el cambio del Signal
+          this.carrito.set(listaCarrito);
+      }
+     }
     }
   }
 
@@ -749,6 +782,7 @@ toggleSinFechaRecogida(): void {
     this.mostrarTecladoGeneral.set(false);
     this.inputObjetivoTeclado.set(null);
     this.valorTecladoEnConstruccion.set('');
+    this.indiceLineaDescuentoActual.set(null);
   }
 
   // Métodos auxiliares para el arqueo guiado
@@ -789,10 +823,17 @@ toggleSinFechaRecogida(): void {
     return this.calcularTotalReal() - this.saldoTeoricoCaja();
   }
 
-  /**
-   * Envía el arqueo definitivo al backend
-   */
+  // Método para confirmar el arqueo guiado y enviar los datos al backend
   confirmarArqueo() {
+    // 1. Extraemos los valores de las métricas guiadas calculadas en tu componente
+    const saldoTeorico = this.saldoTeoricoCaja ? this.saldoTeoricoCaja() : 0;
+    const saldoReal = this.calcularTotalReal();
+    const descuadre = this.calcularDescuadre();
+    
+    // 2. Extraemos el desglose exacto de monedas/billetes mapeando el Record
+    const desglose = (this.desgloseEfectivo ? this.desgloseEfectivo() : {}) as Record<string, number>;
+
+    // 3. Construimos el DTO con la estructura estricta que exige tu 'cerrarCajaGuiado'
     const arqueoDTO = {
       saldoTeorico: this.saldoTeoricoCaja(),
       saldoReal: this.calcularTotalReal(),
@@ -806,12 +847,22 @@ toggleSinFechaRecogida(): void {
     this.cajaService.cerrarCajaGuiado(arqueoDTO).subscribe({
       next: (response) => {
         console.log('Arqueo guiado procesado y guardado con éxito:', response);
+        // Cerramos el modal de arqueo
         this.mostrarModalArqueo.set(false);
-        // Aquí opcionalmente puedes redirigir al usuario o mostrar un mensaje de éxito
+        // Usamos tu servicio de UI para lanzar un Toast moderno en lugar de un alert feo
+        if (this.uiService) {
+          this.uiService.mostrarToast('🔒 Turno finalizado y caja cerrada correctamente.', 'success');
+        } else {
+          alert('🔒 Turno finalizado y caja cerrada correctamente.');
+        }
       },
       error: (err) => {
         console.error('Error al intentar cerrar la caja:', err);
-        alert('Hubo un problema al registrar el cierre de caja. Revisa la consola.');
+        if (this.uiService) {
+          this.uiService.mostrarToast('Hubo un problema al registrar el cierre de caja. Revisa la consola.', 'error');
+        } else {
+          alert('Hubo un problema al registrar el cierre de caja. Revisa la consola.');
+        }
       }
     });
   }
@@ -830,11 +881,48 @@ toggleSinFechaRecogida(): void {
       : '🛒 TPV en Modo Venta Ordinaria', 
     this.modoDevolucion() ? 'warning' : 'success'
   );
-}
+ }
 
-desactivarModoDevolucion(): void {
-  this.modoDevolucion.set(false);
-  this.idTicketOrigenDevolucion.set(null); // Limpiamos también el ticket origen
-}
+  desactivarModoDevolucion(): void {
+    this.modoDevolucion.set(false);
+    this.idTicketOrigenDevolucion.set(null); // Limpiamos también el ticket origen
+  }
+
+/* El cliente SÍ quiere dejar anticipo */
+  responderSiAnticipo() {
+    this.abrirTecladoGeneral('CANTIDAD_ANTICIPO');
+  }
+
+  /* El cliente NO quiere dejar anticipo */
+  responderNoAnticipo() {
+    this.uiService.mostrarToast('Orden de reparación guardada como PENDIENTE de cobro.', 'success');
+    this.limpiarCarrito();
+    this.deseleccionarCliente();
+    this.cerrarTecladoGeneral();
+    this.idOrdenPendienteAnticipo.set(null);
+  }
+
+  /* Aplica la cantidad numérica introducida por el teclado táctil */
+  aplicarCantidadAnticipo() {
+    const valor = this.valorTecladoEnConstruccion();
+    const numImporte = parseFloat(valor) || 0;
+    const id = this.idOrdenPendienteAnticipo();
+
+    if (id !== null && numImporte > 0 && numImporte <= this.totalTicket()) {
+      this.cobrarAnticipoTicket(id, numImporte, this.metodoPagoSeleccionado());
+      this.cerrarTecladoGeneral();
+      this.idOrdenPendienteAnticipo.set(null);
+    } else {
+      this.uiService.mostrarToast(`Importe no válido. El máximo permitido es ${this.totalTicket()}€.`, 'warning');
+    }
+  }
+
+  // --- MÉTODOS DEL FORMULARIO DE REGISTRO PARA CLIENTES ---
+  
+  abrirModal() {
+   if (this.componenteClientes) {
+     this.componenteClientes.abrirModal(); // <-- Llama directamente al abrirModal() de tu Clientes.ts
+   }
+ }
 
 }

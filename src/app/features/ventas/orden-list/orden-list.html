@@ -108,7 +108,7 @@
             <div class="workflow-buttons">
               @if (orden.estado === 'PENDIENTE' || orden.estado === 'PAGADO') {
                 <button class="btn-action start" (click)="empezarTrabajo(orden.id)">
-                  ▶️ Cambiar a 'Pendiente de Reparar' / Empezar
+                  ▶️ Cambiar a 'Pendiente de Reparar'
                 </button>
               }
               
@@ -120,7 +120,7 @@
 
               <!-- ZONA DE COBROS: Habilitada en cualquier estado mientras deba dinero (menos Cancelada o Entregada) -->
               @if (orden.importePendiente > 0 && orden.estado !== 'ENTREGADO' && orden.estado !== 'CANCELADA') {
-              <div class="zona-acciones-cobro" style="clear: both; padding-top: 1.5rem; text-align: right;">
+              <div class="zona-acciones-cobro">
                 <button type="button" class="btn-ir-cobrar" (click)="abrirPanelCobro()">
                   {{ orden.estado === 'LISTO' ? '💵 Cobrar y Entregar' : '💵 Cobrar Anticipo' }}
                 </button>
@@ -131,7 +131,7 @@
                 </button>
               }
               @if (orden.estado === 'PAGADO' || orden.estado === 'ENTREGADO' || orden.estado === 'LISTO') {
-                <div class="zona-acciones-devolucion" style="clear: both; padding-top: 1rem; text-align: right;">
+                <div class="zona-acciones-devolucion">
                   <button type="button" class="btn-ir-devolver" (click)="abrirPanelDevolucion()">
                     🔄 Devolver Ticket (Rectificativa)
                   </button>

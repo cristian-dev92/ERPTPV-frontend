@@ -1,5 +1,6 @@
 <div class="clientes-container">
   
+  @if (!modoModalSolo()) {
   <header class="clientes-header">
     <div>
       <h1>👤 Directorio de Clientes</h1>
@@ -64,6 +65,7 @@
       </tbody>
     </table>
   </div>
+ }
 
   <!-- MODAL DE REGISTRO FLOTANTE -->
   @if (mostrarModalRegistro()) {
