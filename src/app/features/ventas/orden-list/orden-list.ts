@@ -16,26 +16,38 @@ export class OrdenListComponent implements OnInit {
   private uiService = inject(UiService);
   
   // Signals para el estado
-  filtroEstado = signal<string>('EN_TALLER'); // He puesto EN_TALLER por defecto
+  filtroTipo = signal<string>('REPARACION');       // Pestaña principal (REPARACION, VENTA_DIRECTA, DEVOLUCION)
+  filtroEstado = signal<string>('TODOS');          // Sub-filtro de flujo (TODOS, EN_TALLER, LISTO, PENDIENTE, ENTREGADO)
+
   terminoBusqueda = signal<string>('');
   ordenes = signal<any[]>([]);
 
-  // 🛡️ Filtra primero por el buscador y luego limita a un máximo de 50 registros
+  // Computed para aplicar los filtros y búsqueda sobre el listado de órdenes
   ordenesAMostrar = computed(() => {
     const busqueda = this.terminoBusqueda().toLowerCase().trim();
-    const listaOriginal = this.ordenes();
+    const tipoActual = this.filtroTipo();
+    const estadoActual = this.filtroEstado();
+    let listaFiltrada = this.ordenes();
 
-    if (!busqueda) {
-      return listaOriginal.slice(0, 50);
+    // 1. Filtro duro por Tipo de Operación (Regla de Javi)
+    listaFiltrada = listaFiltrada.filter(orden => orden.tipo === tipoActual);
+
+    // 2. Filtro secundario por Estado del flujo de caja/taller
+    if (estadoActual !== 'TODOS') {
+      listaFiltrada = listaFiltrada.filter(orden => orden.estado === estadoActual);
     }
 
-    // Filtra dinámicamente por ID del ticket o por Nombre del Cliente
-    const listaFiltrada = listaOriginal.filter(orden => {
-      const cumpleId = orden.id?.toString().includes(busqueda);
-      const cumpleCliente = orden.clienteNombre?.toLowerCase().includes(busqueda);
-      return cumpleId || cumpleCliente;
-    });
+    // 3. Filtro de búsqueda textual dinámica
+    if (busqueda) {
+      listaFiltrada = listaFiltrada.filter(orden => {
+        const cumpleId = orden.id?.toString().includes(busqueda);
+        const cumpleCliente = orden.clienteNombre?.toLowerCase().includes(busqueda);
+        const cumpleNumFactura = orden.numeroFactura?.toLowerCase().includes(busqueda);
+        return cumpleId || cumpleCliente || cumpleNumFactura;
+      });
+    }
 
+    // Devolvemos acotado a 50 registros para mantener la fluidez táctil
     return listaFiltrada.slice(0, 50);
   });
 
@@ -61,27 +73,29 @@ export class OrdenListComponent implements OnInit {
   mostrarModalDevolucion = signal<boolean>(false);
   metodoDevolucion = signal<'EFECTIVO' | 'TARJETA'>('EFECTIVO');
 
-  // Carga inicial de datos y recarga cada vez que cambia el filtro
+  // --- CONSTRUCTOR Y CICLO DE VIDA ---
   constructor() {
     effect(() => {
-      this.cargarDatos(this.filtroEstado());
+      // Pasamos el tipo como argumento de consulta
+      this.cargarDatosDelServidor();
     });
   }
 
-  // Carga inicial de datos al montar el componente
   ngOnInit() {
-      this.cargarDatos(this.filtroEstado());
+    this.cargarDatosDelServidor();
   }
 
-  // Método para cargar datos según la pestaña seleccionada
-  cargarDatos(pestana: string) {
-    this.ordenService.getOrdenesPorEstado(pestana).subscribe({
+  // Descargamos todo el volumen de órdenes para filtrarlo reactivamente en memoria sin sobrecargar la red
+  cargarDatosDelServidor() {
+    // Nota: Usamos el método genérico del servicio. Si getOrdenesPorEstado requiriera mapeo, 
+    // Javi ya nos devuelve los DTOs con los campos "tipo" y "estado" listos.
+    this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
       next: (data) => this.ordenes.set(data),
-      error: (err) => this.uiService.mostrarToast('Error al cargar el listado: ' + (err.error?.message || err.message), 'error')
+      error: (err) => this.uiService.mostrarToast('Error al cargar el histórico: ' + (err.error?.message || err.message), 'error')
     });
   }
 
-  // 📄 NUEVO: Método para descargar/imprimir el PDF desde el Backend de Javi
+  // 📄 Método para descargar/imprimir el PDF desde el Backend de Javi
   descargarPdfTicket(ordenId: number) {
     this.uiService.mostrarToast('Generando PDF del ticket...');
     
@@ -129,10 +143,11 @@ export class OrdenListComponent implements OnInit {
   verDetalle(orden: any) {
     this.ordenSeleccionada.set(orden);
     this.editandoNotas.set(orden.notasReparacion || '');
-    if (orden.fechaEntrega) {
-      this.editandoFecha.set(orden.fechaEntrega.substring(0, 10));
-    } else {
-      this.editandoFecha.set('');
+    if (orden.fechaEntrega) { 
+      this.editandoFecha.set(orden.fechaEntrega.substring(0, 10)); 
+    } 
+    else { 
+      this.editandoFecha.set(''); 
     }
   }
 
@@ -143,13 +158,13 @@ export class OrdenListComponent implements OnInit {
 
   // Métodos para cambiar el estado de la orden
   empezarTrabajo(ordenId: number) {
-    this.ordenService.cambiarEstado(ordenId, 'EN_TALLER').subscribe({
-      next: () => {
-        this.uiService.mostrarToast('¡Trabajo iniciado! El ticket ya está en taller.', 'success');
-        this.cargarDatos(this.filtroEstado());
-        if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal();
+   this.ordenService.cambiarEstado(ordenId, 'EN_TALLER').subscribe({
+      next: () => { 
+        this.uiService.mostrarToast('¡Trabajo iniciado en taller!', 'success'); 
+        this.cargarDatosDelServidor(); 
+        if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal(); 
       },
-      error: (err) => this.uiService.mostrarToast('Error al iniciar trabajo: ' + (err.error?.message || err.message), 'error')
+      error: (err) => this.uiService.mostrarToast('Error al iniciar: ' + (err.error?.message || err.message), 'error')
     });
   }
 
@@ -158,7 +173,7 @@ export class OrdenListComponent implements OnInit {
     this.ordenService.cambiarEstado(ordenId, 'LISTO').subscribe({
       next: () => {
         this.uiService.mostrarToast('Reparación finalizada. Pasada a "Listos para recoger".', 'success');
-        this.cargarDatos(this.filtroEstado());
+        this.cargarDatosDelServidor();
         if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal();
       },
       error: (err) => this.uiService.mostrarToast('Error al finalizar reparación', 'error')
@@ -173,7 +188,7 @@ export class OrdenListComponent implements OnInit {
     this.ordenService.editarReparacion(orden.id, this.editandoNotas(), this.editandoFecha()).subscribe({
       next: (ordenActualizada) => {
         this.uiService.mostrarToast('Ticket actualizado correctamente.', 'success');
-        this.cargarDatos(this.filtroEstado());
+        this.cargarDatosDelServidor();
         this.cerrarModal();
       },
       error: (err) => this.uiService.mostrarToast('Error al actualizar el ticket', 'error')
@@ -235,7 +250,7 @@ export class OrdenListComponent implements OnInit {
             this.uiService.mostrarToast('¡Ticket completado! Orden cobrada y ENTREGADA.', 'success');
             this.cerrarPanelCobro();
             this.cerrarModal(); 
-            this.cargarDatos(this.filtroEstado());
+            this.cargarDatosDelServidor();
         },
         error: (errEstado) => this.uiService.mostrarToast('Problema al marcar como ENTREGADO.', 'error')
         });
@@ -244,7 +259,7 @@ export class OrdenListComponent implements OnInit {
         this.uiService.mostrarToast('¡Pago adelantado registrado! El ticket sigue en proceso.', 'success');
         this.cerrarPanelCobro();
         this.cerrarModal(); 
-        this.cargarDatos(this.filtroEstado());
+        this.cargarDatosDelServidor();
     }
   };
 
@@ -301,7 +316,7 @@ export class OrdenListComponent implements OnInit {
         this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada con éxito.`, 'success');
         this.cerrarPanelDevolucion();
         this.cerrarModal();
-        this.cargarDatos(this.filtroEstado()); // Recarga la pestaña actual
+        this.cargarDatosDelServidor(); // Recarga la pestaña actual
       },
       error: (err) => {
         this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error || err.message), 'error');

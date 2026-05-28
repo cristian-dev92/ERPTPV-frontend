@@ -2,19 +2,29 @@
   
   <!-- 🎛️ BARRA DE PESTAÑAS TÁCTILES -->
   <div class="tpv-tabs">
-    <button [ngClass]="{'active': filtroEstado() === 'EN_TALLER'}" (click)="filtroEstado.set('EN_TALLER')">
-      🛠️ Pendiente de Reparar
+    <button [ngClass]="{'active': filtroTipo() === 'REPARACION'}" (click)="filtroTipo.set('REPARACION'); filtroEstado.set('TODOS')">
+      🛠️ Reparaciones (Servicios)
     </button>
-    <button [ngClass]="{'active': filtroEstado() === 'LISTO'}" (click)="filtroEstado.set('LISTO')">
-      📦 Listos para Recoger
+    <button [ngClass]="{'active': filtroTipo() === 'VENTA_DIRECTA'}" (click)="filtroTipo.set('VENTA_DIRECTA'); filtroEstado.set('TODOS')">
+      💰 Ventas Directas (Mostrador)
     </button>
-    <!-- ¡SOLUCIONADO EL BUG 400! Ahora enviamos 'PENDIENTE' -->
-    <button [ngClass]="{'active': filtroEstado() === 'PENDIENTE'}" (click)="filtroEstado.set('PENDIENTE')">
-      ⏳ Historial Pendientes
+    <button [ngClass]="{'active': filtroTipo() === 'DEVOLUCION'}" (click)="filtroTipo.set('DEVOLUCION'); filtroEstado.set('TODOS')">
+      🔄 Devoluciones / Abonos
     </button>
-    <button [ngClass]="{'active': filtroEstado() === 'ENTREGADO'}" (click)="filtroEstado.set('ENTREGADO')">
-      ✅ Historial Cerrados
-    </button>
+  </div>
+
+  <!-- 🏷️ SUB-BARRA DE FILTROS DE ESTADO (Diferente según el tipo de orden) -->
+  <div class="sub-filtros-estados">
+    <button class="pill-filter" [class.active]="filtroEstado() === 'TODOS'" (click)="filtroEstado.set('TODOS')">Todos</button>
+    
+    @if (filtroTipo() === 'REPARACION') {
+      <button class="pill-filter" [class.active]="filtroEstado() === 'EN_TALLER'" (click)="filtroEstado.set('EN_TALLER')">En Taller</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'LISTO'" (click)="filtroEstado.set('LISTO')">Listos para Recoger</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'PENDIENTE'" (click)="filtroEstado.set('PENDIENTE')">Pendientes de Pago</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'ENTREGADO'" (click)="filtroEstado.set('ENTREGADO')">Entregados</button>
+    } @else {
+      <button class="pill-filter" [class.active]="filtroEstado() === 'ENTREGADO'" (click)="filtroEstado.set('ENTREGADO')">Cobrados / Cerrados</button>
+    }
   </div>
 
   <!-- 🔍 BUSCADOR DE TICKETS -->

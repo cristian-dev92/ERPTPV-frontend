@@ -401,46 +401,61 @@
   </div>
 </div>
 
-<!-- MODAL VERI*FACTU (AEAT) -->
+<!-- MODAL FLOTANTE DE RESULTADO DE ENVÍO A AEAT -->
 @if (datosFacturaAeat()) {
   <div class="modal-aeat-overlay">
     <div class="modal-aeat-box">
+      
       <div class="modal-header">
         <span class="badge-verifaktu">🛡️ VERI*FACTU</span>
         <h3>Factura Simplificada Registrada</h3>
       </div>
-      <div class="modal-body">
-        <p class="success-msg">La información de este ticket ha sido remitida en tiempo real a la Sede Electrónica de la AEAT.</p>
+      
+      <div class="modal-split-body">
         
-        <div class="ticket-legal-info">
-          <div><span>Identificador legal:</span> <strong>{{ datosFacturaAeat()?.ref }}</strong></div>
-          <div><span>Hora Emisión:</span> <span>{{ datosFacturaAeat()?.fecha }}</span></div>
-          <div><span>Importe Total:</span> <strong>{{ datosFacturaAeat()?.total | currency:'EUR' }}</strong></div>
+        <div class="panel-previsualizacion-pdf">
+          @if (cargandoPDF()) {
+            <div class="spinner-pdf-loader">
+              <span>🔄 Cargando diseño de ticket térmico...</span>
+            </div>
+          } @else if (urlSeguraPdf()) {
+            <iframe id="iframeTicketPdf" [src]="urlSeguraPdf()" class="visor-ticket-frame"></iframe>
+          } @else {
+            <div class="error-pdf-placeholder">⚠️ El PDF no se cargó correctamente.</div>
+          }
         </div>
 
-        <div class="qr-container">
-          <div class="qr-placeholder-graphics">
-            <span>🔳</span>
+        <div class="panel-datos-fiscales">
+          <p class="success-msg">La información ha sido remitida en tiempo real a la Sede Electrónica de la AEAT.</p>
+          
+          <div class="ticket-legal-info">
+            <div><span>Identificador legal:</span> <strong>{{ datosFacturaAeat()?.ref }}</strong></div>
+            <div><span>Hora Emisión:</span> <span>{{ datosFacturaAeat()?.fecha }}</span></div>
+            <div><span>Importe Total:</span> <strong>{{ datosFacturaAeat()?.total | currency:'EUR' }}</strong></div>
           </div>
-          <p class="qr-caption">Escanee este código QR para verificar la validez del documento en la web de la Agencia Tributaria.</p>
+
+          <div class="qr-container">
+            <div class="qr-placeholder-graphics">
+              <span>🔳</span>
+            </div>
+            <p class="qr-caption">Escanee este código QR para verificar la validez del documento en la web de la Agencia Tributaria.</p>
+          </div>
         </div>
+
       </div>
-      <!-- 🟢 AQUÍ MODIFICAMOS LOS BOTONES DEL MODAL ORIGINAL -->
+      
       <div class="modal-footer">
-        <!-- Reemplazamos el Toast por la descarga real usando la Signal del PDF -->
         <button class="btn-imprimir-ticket" 
-                [disabled]="cargandoPDF()" 
-                (click)="descargarTicketPDF()">
-          @if (cargandoPDF()) {
-            🔄 Generando PDF...
-          } @else {
-            🖨️ Generar y Ver Ticket PDF
-          }
+                [disabled]="!urlSeguraPdf()" 
+                (click)="imprimirIframeTicket()">
+          🖨️ Lanzar a Impresora de Tickets
         </button>
         
-        <!-- Tu botón para limpiar el TPV y seguir con el siguiente cliente -->
-        <button class="btn-cerrar-modal" (click)="cerrarReciboAeat()">Siguiente Venta ➔</button>
+        <button class="btn-cerrar-modal" (click)="cerrarReciboAeat()">
+          Continuar (Nueva Venta) ➔
+        </button>
       </div>
+
     </div>
   </div>
 }

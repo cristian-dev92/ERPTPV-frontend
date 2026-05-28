@@ -31,7 +31,12 @@
               <div class="stock-container">
                 <span>{{ item.stock ?? 0 }} u.</span>
                 
-                @if (item.stock !== undefined && item.stock !== null && 
+                @if (item.stock !== undefined && item.stock !== null && item.stock <= 0) {
+                  <span class="badge-alert sin-material" title="¡Urgente! Reponer existencias">
+                    🚫 No hay material
+                  </span>
+                }
+                @else if (item.stock !== undefined && item.stock !== null && 
                      item.stockMinimo !== undefined && item.stockMinimo !== null && 
                      item.stock <= item.stockMinimo) {
                   <span class="badge-alert" title="Stock mínimo: {{ item.stockMinimo }}">
@@ -45,6 +50,7 @@
           </td>
           <td>
             <button class="btn-edit" [routerLink]="['editar', item.id]">Editar</button>
+            <button class="btn-delete" (click)="eliminarProducto(item.id!, item.nombre)">Eliminar</button>
           </td>
         </tr>
       } @empty {

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, ViewChild, HostListener } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO } from '../../../core/services/orden.service';
 import { Articulo } from '../../../core/models/articulo.model';
@@ -9,7 +9,7 @@ import { ClienteService } from '../../../core/services/cliente.service';
 import { UiService } from '../../../core/services/ui.service';
 import { HttpClient } from "@angular/common/http";
 import { ClientesComponent } from '../../clientes/clientes';
-import { ViewChild } from "@angular/core";
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 // Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
 export interface Cliente {
@@ -61,6 +61,9 @@ export class TpvComponent implements OnInit {
   private clienteService = inject(ClienteService);
   public uiService = inject(UiService);
   private http: HttpClient = inject(HttpClient);
+  private sanitizer: DomSanitizer = inject(DomSanitizer);
+  private bufferCodigoBarras: string = '';
+  private ultimaPulsacion: number = 0;
   @ViewChild('componenteClientes') componenteClientes!: ClientesComponent;
 
   // Estados del catalogo tactil
@@ -119,9 +122,10 @@ export class TpvComponent implements OnInit {
   mostrarModalCierre = signal<boolean>(false);
   saldoContadoInput: number | null = null; // Lo que el cajero cuenta físicamente
 
-  // --- NUEVAS SIGNALS PARA EL MODAL Y PDF ---
+  // Señal reactiva para guardar la URL segura del PDF y cargarla en el iframe
   idOperacionProcesada = signal<number | string | null>(null);
   cargandoPDF = signal<boolean>(false);
+  urlSeguraPdf = signal<SafeResourceUrl | null>(null);
 
   // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
   mostrarTecladoGeneral = signal<boolean>(false);
@@ -133,7 +137,7 @@ export class TpvComponent implements OnInit {
 
   // Estado para controlar si el TPV opera en modo devolución manual sin ticket
   modoDevolucion = signal<boolean>(false);
-  
+ 
   // Totales automáticos
   totalTicket = computed(() => {
     // 1. Calculamos la suma de todas las líneas aplicando sus respectivos descuentos individuales
@@ -176,6 +180,16 @@ export class TpvComponent implements OnInit {
     this.articuloService.getArticulos().subscribe(data => this.articulos.set(data));
     // 2. Comprobamos si la caja ya estaba abierta
     this.cajaService.checkEstadoCaja().subscribe();
+    // 3. Cargamos el historial de tickets del día para mostrar en el panel inferior
+    this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+    next: (tickets) => {
+      this.historialTickets.set(tickets);
+    },
+    error: (err) => {
+      console.error('Error cargando historial inicial:', err);
+      this.uiService.mostrarToast('No se pudo inicializar el historial de órdenes', 'error');
+    }
+  });
   }
 
   // Método para cargar el catálogo de artículos desde el backend, que se ejecuta al hacer clic en el botón "Recargar Catálogo"
@@ -250,17 +264,20 @@ export class TpvComponent implements OnInit {
 
   // Método para finalizar la venta, que se ejecuta al hacer clic en el botón "Finalizar Venta" del HTML
   finalizarVenta() {
+    //1. Validacion de caja abierta antes de permitir finalizar la venta
     if (!this.cajaAbierta()) {
       this.uiService.mostrarToast('¡Atención! Debes abrir la caja antes de realizar una venta.', 'warning');
       return;
     }
 
-    if (this.carrito().length === 0) {
-      this.uiService.mostrarToast('El carrito está vacío.', 'warning');
+    // 2. VALIDACIÓN DE ÓRDENES DE TALLER (Control de seguridad frente a olvidos)
+    if (this.tipoOrdenSeleccionada() && this.tipoOrdenSeleccionada() !== 'VENTA_DIRECTA' && !this.clienteSeleccionado()) {
+      this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
       return;
-    }
+   }
+  
 
-    // =========================================================================
+  // =========================================================================
   // 🔄 FLUJO NUEVO: MODO DEVOLUCIÓN / ABONO ACTIVO
   // =========================================================================
   if (this.modoDevolucion && this.modoDevolucion()) {
@@ -275,8 +292,6 @@ export class TpvComponent implements OnInit {
         cantidad: Math.abs(item.cantidad) // Javi pide la cantidad en POSITIVO, nos aseguramos con Math.abs
       }))
     };
-
-    console.log('📦 Enviando solicitud de DEVOLUCIÓN al Backend:', JSON.stringify(requestDevolucion, null, 2));
 
     this.ordenService.procesarDevolucion(requestDevolucion).subscribe({
       next: (devolucionGuardada) => {
@@ -318,10 +333,12 @@ export class TpvComponent implements OnInit {
       }
     });
 
-    return; // ⚠️ Importante: Salimos de la función para que no ejecute el flujo de venta ordinaria
+    return; // Salimos de la función para que no ejecute el flujo de venta ordinaria
   }
-  
+
+    // ==================================================
     // 💰 FLUJO ORDINARIO: VENTAS DIRECTAS Y REPARACIONES
+    // ==================================================
     // Si es reparación, obligamos a que pongan una fecha de recogida
     if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
       this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
@@ -342,8 +359,6 @@ export class TpvComponent implements OnInit {
           notasReparacion: item.notasReparacion || null
         }))
     };
-
-    console.log('JSON final enviado al Backend:', JSON.stringify(request, null, 2));
 
     this.ordenService.crearOrden(request).subscribe({
       next: (ordenGuardada) => {
@@ -385,7 +400,8 @@ export class TpvComponent implements OnInit {
         this.historialTickets.update(tickets => [nuevoTicket, ...tickets]);
         // =========================================================
 
-        if (res.aeatQrUrl || res.aeatIdentificador) {
+        // Si el backend devuelve datos de AEAT para VeriFactu, los preparamos para mostrar en el modal de comprobación antes de cerrar el recibo
+        if (res.aeatQrUrl) {
           this.datosFacturaAeat.set({
             qr: res.aeatQrUrl,
             ref: res.aeatIdentificador,
@@ -393,8 +409,8 @@ export class TpvComponent implements OnInit {
             fecha: new Date().toLocaleTimeString()
           });
         }
-        // Como dentro de limpiarCarrito() ya tienes metido tu this.deseleccionarCliente(), al llamarlo aquí dejas el TPV impoluto para la siguiente venta.
-        this.limpiarCarrito();
+        // Lanzamos la generación del PDF ahora que tenemos ID y datos cargados
+        this.generarYPrevisualizarTicket();
       },
       error: (err) => this.uiService.mostrarToast('Error al procesar el pago: ' + (err.error || err.message), 'error')
     });
@@ -415,72 +431,82 @@ export class TpvComponent implements OnInit {
           fecha: new Date().toLocaleTimeString()
         });
 
-        this.limpiarCarrito();
+        // Después de registrar el anticipo, previsualizamos el ticket con el importe del anticipo y dejamos la orden abierta para que el cajero pueda cobrar el resto más tarde.
+        this.generarYPrevisualizarTicket();
         this.deseleccionarCliente();
       },
       error: (err) => this.uiService.mostrarToast('Error al registrar el anticipo: ' + (err.error || err.message), 'error')
     });
   }
 
-  /* Pide al backend el PDF en formato BLOB basándose en la operación activa */
-  descargarTicketPDF(): void {
-    const idOReferencia = this.idOperacionProcesada() || this.datosFacturaAeat()?.ref;
+  /* 🖨️ Función para obtener el PDF del Backend y meterlo en la previsualización */
+  generarYPrevisualizarTicket(): void {
+    const idOrden = this.idOperacionProcesada();
     
-    if (!idOReferencia) {
-      this.uiService.mostrarToast('No se encontró ninguna referencia de operación activa.', 'error');
+    if (!idOrden) {
+      this.uiService.mostrarToast('No se encontró ninguna ID de operación activa.', 'error');
       return;
     }
 
     this.cargandoPDF.set(true);
-    const url = `/api/operaciones/${idOReferencia}/ticket-pdf`;
+    // Atacamos al endpoint real de tu nuevo controller de 80mm
+    const urlEndpoint = `/api/ordenes/${idOrden}/pdf`;
 
-    this.http.get(url, { responseType: 'blob' }).subscribe({
+    this.http.get(urlEndpoint, { responseType: 'blob' }).subscribe({
       next: (blob: Blob) => {
+        // Creamos una URL segura a partir del binario recibido
         const blobUrl = window.URL.createObjectURL(blob);
-        const nuevaPestana = window.open(blobUrl, '_blank');
-        if (nuevaPestana) {
-          nuevaPestana.focus();
-        } else {
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = `ticket_${idOReferencia}.pdf`;
-          link.click();
-        }
+        // Blindamos la URL aquí mismo diciéndole a Angular que confíe en este Blob
+        const urlSaneada = this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl);
+        this.urlSeguraPdf.set(urlSaneada);
         this.cargandoPDF.set(false);
+        this.uiService.mostrarToast('📄 Ticket generado. Listo para revisión o impresión.', 'success');
       },
       error: (err) => {
-        console.error('Error al descargar el PDF:', err);
-        this.uiService.mostrarToast('No se pudo generar el documento PDF del ticket.', 'error');
+        console.error('Error al generar PDF del ticket:', err);
+        this.uiService.mostrarToast('No se pudo generar el documento térmico de 80mm.', 'error');
         this.cargandoPDF.set(false);
       }
     });
+  }
+
+  /* 🔥 MANDA EL TICKET DIRECTAMENTE A LA IMPRESORA SIN SALIR DEL TPV */
+  imprimirIframeTicket(): void {
+    const iframe = document.getElementById('iframeTicketPdf') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } else {
+      this.uiService.mostrarToast('No se pudo conectar con el visor de impresión.', 'error');
+    }
+  }
+
+   /* ➔ ACCIÓN DE CONTINUAR: Limpia todo el TPV y lo prepara para la siguiente venta */
+  cerrarReciboAeat(): void {
+    this.urlSeguraPdf.set(null);
+    this.datosFacturaAeat.set(null);
+    this.limpiarCarrito();
+    if (this.deseleccionarCliente) this.deseleccionarCliente();
   }
 
   // Método para limpiar el carrito y resetear estados después de finalizar una venta o reparación
   private limpiarCarrito() {
     this.carrito.set([]); // Vaciamos el carrito para la siguiente venta
     this.fechaRecogida.set(''); // Reseteamos la fecha de recogida prometida para la siguiente venta
+    this.sinFechaRecogida.set(false); // Reseteamos el toggle de "Sin fecha de recogida" para la siguiente venta normal
     this.deseleccionarCliente(); // Reseteamos el cliente seleccionado a null para la siguiente venta anónima
-    this.clienteSeleccionadoId.set(null); // Mantenemos el cliente en null por defecto para la siguiente venta anónima
     this.descuentoGlobal.set(0); // Reseteamos el descuento global para la siguiente venta
     this.modoDevolucion.set(false); // Reseteamos el modo devolución para la siguiente venta normal
     this.tipoOrdenSeleccionada.set('VENTA_DIRECTA'); // Reseteamos el tipo de orden a venta directa para la siguiente venta
-    this.sinFechaRecogida.set(false); // Reseteamos el toggle de "Sin fecha de recogida" para la siguiente venta normal
     this.metodoPagoSeleccionado.set('EFECTIVO'); // Reseteamos el método de pago a efectivo para la siguiente venta
+    this.seleccionarCategoria('TODOS'); // Reseteamos el filtro de categoría para mostrar todo el catálogo en la siguiente venta
     this.datosFacturaAeat.set(null); // Limpiamos los datos de la factura AEAT para que no se muestren en la siguiente venta
     this.idOperacionProcesada.set(null); // Reseteamos la referencia de operación procesada para el PDF para que no se asocie por error a la siguiente venta
     this.modoDevolucion.set(false); // Cerramos el modo devolución por si acaso quedó activo
-    this.seleccionarCategoria('TODOS'); // Reseteamos el filtro de categoría para mostrar todo el catálogo en la siguiente venta
     this.cargandoPDF.set(false); // Reseteamos el estado de carga del PDF para la siguiente venta
     this.indiceItemEditandoPrecio.set(null); // Cerramos el keypad de precio por si acaso quedó abierto
     this.precioEnConstruccion.set(''); // Reseteamos el valor en construcción del precio para la siguiente venta
     
-  }
-
-  // Método para cerrar el recibo de la AEAT, que se ejecuta al hacer clic en el botón "Cerrar Recibo AEAT"
-  cerrarReciboAeat() {
-    this.datosFacturaAeat.set(null);
-    this.idOperacionProcesada.set(null);
   }
   
   // Métodos para manejar la búsqueda y selección de clientes en el TPV (útil para reparaciones)
@@ -551,9 +577,14 @@ export class TpvComponent implements OnInit {
   reimprimirTicket(ticket: TicketHistorial) {
     this.uiService.mostrarToast(`🖨️ Reenviando a impresora ticket #${ticket.numeroFactura}...`, 'success');
     
-    // Aquí en el futuro llamarás a tu servicio de impresión:
-    // this.ordenService.imprimirTicket(ticket.id).subscribe();
-    console.log('Reimprimiendo ticket ID:', ticket.id);
+    // 🚀 Llamamos a tu servicio pasándole la ID del ticket
+    this.ordenService.imprimirTicket(ticket.id).subscribe({
+      next: () => console.log('Reimprimiendo ticket ID:', ticket.id),
+      error: (err: any) => {
+        console.error('Error al reimprimir:', err);
+        this.uiService.mostrarToast('No se pudo recuperar el documento para imprimir.', 'error');
+      }
+    });
   }
   
   // Método para actualizar el descuento de una línea específica desde el input del HTML, que se aplica solo a esa línea

@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ArticuloService } from '../../../core/services/articulo.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UiService } from '../../../core/services/ui.service';
 import { CommonModule } from "@angular/common";
 import { ProveedorDTO, ProveedorService } from '../../../core/services/proveedor.service';
@@ -27,6 +27,9 @@ export class ArticuloFormComponent implements OnInit {
   // === Señal para las notas internas del artículo ===
   notasReparacion = signal<string>('');
 
+  // Identificador para saber si estamos editando o creando
+  idArticuloEdicion = signal<number | null>(null);
+
   // === ESTADOS PARA EL TECLADO TÁCTIL EN FORMULARIO ===
   mostrarTeclado = signal<boolean>(false);
   campoObjetivo = signal<'PRECIO' | 'IVA' | null>(null);
@@ -36,6 +39,7 @@ export class ArticuloFormComponent implements OnInit {
   private articuloService = inject(ArticuloService);
   private uiService = inject(UiService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private proveedorservice = inject(ProveedorService);
   
   // Señal limpia para almacenar los proveedores reales del Backend
@@ -43,6 +47,36 @@ export class ArticuloFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarProveedores();
+    this.comprobarModoEdicion();
+  }
+
+  // 🚀 Comprueba si viene un ID en la ruta para cargar los datos del artículo
+  comprobarModoEdicion(): void {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam) {
+      const id = Number(idParam);
+      this.idArticuloEdicion.set(id);
+      
+      this.articuloService.getArticuloById(id).subscribe({
+        next: (articulo: any ) => {
+          // Rellenamos las señales con la información recuperada del backend
+          this.nombre.set(articulo.nombre);
+          this.tipo.set(articulo.tipo);
+          this.stockInicial.set(articulo.stock ?? null);
+          this.stockMinimo.set(articulo.stockMinimo ?? null);
+          this.idProveedor.set(articulo.idProveedor ?? null);
+          this.precioFinal.set(articulo.precioFinal);
+          this.porcentajeIva.set(articulo.porcentajeIva);
+          // Mapeamos el campo 'notas' del backend a tu señal 'notasReparacion'
+          this.notasReparacion.set(articulo.notas || '');
+        },
+        error: (err) => {
+          console.error('Error al recuperar el artículo:', err);
+          this.uiService.mostrarToast('No se pudo cargar la información del artículo.', 'error');
+          this.router.navigate(['/inventario']);
+        }
+      });
+    }
   }
 
   // Carga real de tus proveedores desde el backend
@@ -101,21 +135,34 @@ export class ArticuloFormComponent implements OnInit {
       activo: true // Puedes ajustar esto según tu lógica de negocio
     };
 
-    console.log('Enviando DTO al Backend:', articuloPayload);
+   const idEdicion = this.idArticuloEdicion();
 
-    // Aquí llamarías a tu servicio para enviar el artículo al backend
-    this.articuloService.crearArticulo(articuloPayload).subscribe({
-      next: () => {
-      this.uiService.mostrarToast('Artículo creado con éxito', 'success');
-      this.router.navigate(['/inventario']);
-       },
-       error: (err) => {
-         console.error('Error al crear artículo:', err);
-         this.uiService.mostrarToast('Error al crear el artículo', 'error');
-       }
-     });
+    if (idEdicion) {
+      // 🚀 MODO EDICIÓN: Llama a actualizarArticulo
+      this.articuloService.actualizarArticulo(idEdicion, articuloPayload).subscribe({
+        next: () => {
+          this.uiService.mostrarToast('Artículo actualizado con éxito', 'success');
+          this.router.navigate(['/inventario']);
+        },
+        error: (err) => {
+          console.error('Error al actualizar artículo:', err);
+          this.uiService.mostrarToast('Error al guardar las modificaciones', 'error');
+        }
+      });
+    } else {
+      // ➕ MODO CREACIÓN: Llama a crearArticulo original
+      this.articuloService.crearArticulo(articuloPayload).subscribe({
+        next: () => {
+          this.uiService.mostrarToast('Artículo creado con éxito', 'success');
+          this.router.navigate(['/inventario']);
+        },
+        error: (err) => {
+          console.error('Error al crear artículo:', err);
+          this.uiService.mostrarToast('Error al crear el artículo', 'error');
+        }
+      });
+    }
   }
-
 
 /* Abre el teclado en pantalla para el precio o el IVA */
   abrirTeclado(objetivo: 'PRECIO' | 'IVA') {

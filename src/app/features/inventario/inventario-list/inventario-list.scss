@@ -112,10 +112,43 @@
   align-items: center;
   gap: 4px;
   animation: pulse-alert 2s infinite;
+
+  &.badge-alert.sin-material {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fee2e2;
+
+  // Si tu diseño usa iconos o animaciones, un leve parpadeo sutil para llamar la atención
+  font-weight: 700;
+ }
 }
 
 @keyframes pulse-alert {
   0% { opacity: 1; }
   50% { opacity: 0.7; }
   100% { opacity: 1; }
+}
+
+.btn-delete {
+  background-color: #fff0f0;
+  color: #e03131;
+  border: 1px solid #ffc9c9;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 6px; // Pequeña separación con el botón editar
+
+  &:hover {
+    background-color: #e03131;
+    color: white;
+    border-color: #e03131;
+    box-shadow: 0 4px 12px rgba(224, 49, 49, 0.2);
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
 }

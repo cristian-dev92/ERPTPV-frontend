@@ -510,14 +510,48 @@
 
 /* --- FOOTER DEL TICKET --- */
 .footer-ticket {
-  border-top: 2px solid #333;
-  padding-top: 15px;
+  background-color: #f8f9fa;
+  padding: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0 0 14px 14px;
+
+  .descuento-global-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    label {
+      font-size: 1rem;
+      color: #495057;
+    }
+
+    .input-descuento-global {
+      width: 80px;
+      background-color: #f8f9fa;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      padding: 0.5rem;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+
+      &:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+    }
+  }
 
   .total-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #495057;
     
     span:first-child {
       font-size: 1.2rem;
@@ -568,6 +602,18 @@
       &:hover:not(:disabled) {
         background: #c9302c;
       }
+    }
+    
+    &:disabled {
+      background-color: #242736 !important;
+      color: #4a5568 !important;
+      border-color: transparent !important;
+      border-bottom: none !important; // Elimina el relieve táctil 3D
+      cursor: not-allowed !important;
+      transform: none !important;
+      box-shadow: none !important;
+      opacity: 0.5;
+      filter: grayscale(1) !important;
     }
   }
 }

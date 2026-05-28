@@ -14,40 +14,31 @@ export class ArticuloService {
   // Inyectamos el cliente HTTP para poder hacer peticiones
   private http = inject(HttpClient);
 
-  // URL base del backend (Asegúrate de que coincida con el puerto de tu compañero)
-  private readonly API_URL = 'http://localhost:8080/api/articulos';
+  // URL base para los endpoints de artículos. El Interceptor se encargará de añadir el empresaId automáticamente.
+  private apiUrl = '/api/articulos';
 
-  /**
-   * Recupera la lista completa de artículos de la empresa.
-   * Gracias al Interceptor, no enviamos el empresaId, el backend lo sabe por el Token.
-   * @returns Un Observable con el array de artículos.
-   */
+  // Obtiene la lista completa de artículos (productos y servicios) para la empresa actual.
   getArticulos(): Observable<Articulo[]> {
-    return this.http.get<Articulo[]>(this.API_URL);
+    return this.http.get<Articulo[]>(this.apiUrl);
   }
 
-  /**
-   * Obtiene los detalles de un único artículo por su ID.
-   * @param id El identificador del artículo
-   */
+  // Obtiene los detalles de un único artículo por su ID.
   getArticuloById(id: number): Observable<Articulo> {
-    return this.http.get<Articulo>(`${this.API_URL}/${id}`);
+    return this.http.get<Articulo>(`${this.apiUrl}/${id}`);
   }
 
-  /**
-   * Envía un nuevo artículo al servidor para ser guardado.
-   * @param articulo Los datos del artículo (sin ID)
-   */
+  // Crea un nuevo artículo (producto o servicio) en el backend.
   crearArticulo(articulo: Articulo): Observable<Articulo> {
-    return this.http.post<Articulo>(this.API_URL, articulo);
+    return this.http.post<Articulo>(this.apiUrl, articulo);
   }
 
-  /**
-   * Actualiza un artículo existente.
-   * @param id El ID del artículo a modificar
-   * @param articulo Los nuevos datos
-   */
+  // Actualiza un artículo existente.
   actualizarArticulo(id: number, articulo: Articulo): Observable<Articulo> {
-    return this.http.put<Articulo>(`${this.API_URL}/${id}`, articulo);
+    return this.http.put<Articulo>(`${this.apiUrl}/${id}`, articulo);
+  }
+
+  // Elimina un artículo por su ID.
+  eliminarArticulo(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
 }
