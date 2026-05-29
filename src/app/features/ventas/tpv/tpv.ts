@@ -290,7 +290,7 @@ export class TpvComponent implements OnInit {
     const requestDevolucion = {
       // Si tenéis guardado el ID del ticket que se está devolviendo, se pone aquí. Si es anónimo/sin ticket, va null.
       ordenOrigenId: (this.idTicketOrigenDevolucion ? this.idTicketOrigenDevolucion() : null), 
-      metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTROS', // EFECTIVO, TARJETA, etc.
+      metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO', // EFECTIVO, TARJETA, etc.
       lineas: this.carrito().map(item => ({
         articuloId: item.articuloId,
         cantidad: Math.abs(item.cantidad) // Javi pide la cantidad en POSITIVO, nos aseguramos con Math.abs
@@ -382,7 +382,7 @@ export class TpvComponent implements OnInit {
 
   // Métodos privados para manejar los flujos de cobro según la selección del cajero
   private cobrarTicketCompleto(id: number) {
-    this.ordenService.cobrar(id, this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTROS').subscribe({
+    this.ordenService.cobrar(id, this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO').subscribe({
       next: (res) => {
         this.uiService.mostrarToast('💰 ¡Venta cobrada al 100% correctamente en Caja!', 'success');
 
@@ -431,7 +431,7 @@ export class TpvComponent implements OnInit {
   }
 
   // Método para registrar un anticipo en una reparación
-  private cobrarAnticipoTicket(id: number, importe: number, metodoPago: MetodoPago) {
+  private cobrarAnticipoTicket(id: number, importe: number, metodoPago: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO') {
     this.ordenService.registrarAnticipo(id, importe, metodoPago).subscribe({
       next: () => {
         this.uiService.mostrarToast(`📉 ¡Anticipo de ${importe}€ registrado con éxito! El ticket queda pendiente del resto.`, 'success');

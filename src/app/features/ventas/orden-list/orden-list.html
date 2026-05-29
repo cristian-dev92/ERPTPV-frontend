@@ -20,10 +20,10 @@
     @if (filtroTipo() === 'REPARACION') {
       <button class="pill-filter" [class.active]="filtroEstado() === 'EN_TALLER'" (click)="filtroEstado.set('EN_TALLER')">En Taller</button>
       <button class="pill-filter" [class.active]="filtroEstado() === 'LISTO'" (click)="filtroEstado.set('LISTO')">Listos para Recoger</button>
-      <button class="pill-filter" [class.active]="filtroEstado() === 'PENDIENTE'" (click)="filtroEstado.set('PENDIENTE')">Pendientes de Pago</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'PENDIENTE_PAGO'" (click)="filtroEstado.set('PENDIENTE_PAGO')">Pendientes de Pago</button>
       <button class="pill-filter" [class.active]="filtroEstado() === 'ENTREGADO'" (click)="filtroEstado.set('ENTREGADO')">Entregados</button>
     } @else {
-      <button class="pill-filter" [class.active]="filtroEstado() === 'ENTREGADO'" (click)="filtroEstado.set('ENTREGADO')">Cobrados / Cerrados</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'PAGADO'" (click)="filtroEstado.set('PAGADO')">Cobrados / Cerrados</button>
     }
   </div>
 
@@ -49,22 +49,26 @@
       <div class="ticket-card" (click)="verDetalle(orden)">
         <div class="card-header">
           <span class="ticket-id">#{{ orden.id }}</span>
-          <span class="badge" [ngClass]="getBadgeClass(orden.estado)">{{ orden.estado }}</span>
+          <span class="badge" [ngClass]="getBadgeClass(orden)"> 
+            {{ orden.tipo === 'REPARACION' ? orden.estadoTaller : orden.estadoPago }} </span>
         </div>
         <div class="card-body">
           <p class="cliente"><strong>👤 {{ orden.clienteNombre || 'Cliente General' }}</strong></p>
-          <p class="servicio">👞 {{ orden.descripcionCorto || 'Reparación de calzado' }}</p>
-          <p class="fecha-limite" [ngClass]="{'retrasado': orden.estado !== 'LISTO' && orden.estado !== 'ENTREGADO'}">
-            📅 Prometido: {{ orden.fechaEntrega | date:'dd/MM/yyyy' }}
-          </p>
+          <p class="servicio">👞 {{ orden.descripcionCorto || 'Trabajo del taller' }}</p>
+          @if (orden.tipo === 'REPARACION') {
+            <p class="fecha-limite" [ngClass]="{'retrasado': orden.estadoTaller !== 'LISTO' && orden.estadoTaller !== 'ENTREGADO'}">
+              📅 Prometido: {{ orden.fechaPrometidaRecogida | date:'dd/MM/yyyy' }}
+            </p>
+          } @else {
+            <p class="fecha-limite">
+              💰 Total: {{ orden.total | currency:'EUR' }}
+            </p>
+          }
         </div>
         
         <div class="card-quick-actions" (click)="$event.stopPropagation()">
-          @if (filtroEstado() === 'EN_TALLER' && (orden.estado === 'PENDIENTE' || orden.estado === 'PAGADO')) {
-            <button class="btn-start" (click)="empezarTrabajo(orden.id)">▶️ Empezar</button>
-          }
-          @if (filtroEstado() === 'EN_TALLER' && orden.estado === 'EN_TALLER') {
-            <button class="btn-finish" (click)="finalizarReparacion(orden.id)">✔️ Terminar</button>
+          @if (orden.tipo === 'REPARACION' && orden.estadoTaller === 'EN_TALLER') {
+            <button class="btn-finish" (click)="finalizarReparacion(orden.id)">✔️ Terminar Trabajo</button>
           }
         </div>
       </div>
@@ -87,9 +91,9 @@
         <div class="modal-grid">
           <!-- INFO GENERAL -->
           <div class="info-section">
-            <p><strong>Cliente:</strong> {{ orden.clienteNombre }} ({{ orden.clienteTelefono }})</p>
+            <p><strong>Cliente:</strong> {{ orden.clienteNombre || 'Cliente de Mostrador' }} ({{ orden.clienteTelefono }})</p>
             <p><strong>Total:</strong> {{ orden.total | currency:'EUR' }}</p>
-            <p class="pendiente-text"><strong>Pendiente:</strong> {{ orden.importePendiente | currency:'EUR' }}</p>
+            <p class="pendiente-text"><strong>Pendiente de caja:</strong> {{ orden.importePendiente | currency:'EUR' }}</p>
             <hr>
 
             <p class="fecha-creacion-text">
@@ -100,6 +104,7 @@
             </p>
             <hr>
             
+            @if (orden.tipo === 'REPARACION') {
             <div class="edit-panel">
               <h3>📝 Notas de Reparación & Retrasos</h3>
               <div class="form-group">
@@ -112,6 +117,7 @@
               </div>
               <button class="btn-save-edit" (click)="guardarCambiosReparacion()">💾 Guardar Cambios</button>
             </div>
+          }
           </div>
 
           <!-- BOTONERA TÁCTIL DE ACCIONES CENTRALIZADA -->
@@ -123,35 +129,29 @@
                 🖨️ Generar / Imprimir PDF
               </button>
             
-            <div class="workflow-buttons">
-              @if (orden.estado === 'PENDIENTE' || orden.estado === 'PAGADO') {
-                <button class="btn-action start" (click)="empezarTrabajo(orden.id)">
-                  ▶️ Cambiar a 'Pendiente de Reparar'
-                </button>
-              }
-              
-              @if (orden.estado === 'EN_TALLER') {
-                <button class="btn-action finish" (click)="finalizarReparacion(orden.id)">
-                  🏁 Finalizar Reparación (Listo)
-                </button>
+            @if (orden.tipo === 'REPARACION' && orden.estadoTaller === 'EN_TALLER') {
+              <button class="btn-action finish" (click)="finalizarReparacion(orden.id)">
+                🏁 Finalizar trabajo (Mover a Estanteria)
+              </button>
               }
 
               <!-- ZONA DE COBROS: Habilitada en cualquier estado mientras deba dinero (menos Cancelada o Entregada) -->
-              @if (orden.importePendiente > 0 && orden.estado !== 'ENTREGADO' && orden.estado !== 'CANCELADA') {
-              <div class="zona-acciones-cobro">
-                <button type="button" class="btn-ir-cobrar" (click)="abrirPanelCobro()">
-                  {{ orden.estado === 'LISTO' ? '💵 Cobrar y Entregar' : '💵 Cobrar Anticipo' }}
-                </button>
-              </div>
-              } @else if (orden.importePendiente === 0 && orden.estado === 'LISTO') {
-                <button class="btn-action deliver-only" (click)="finalizarEntregaYCobro()">
-                  📦 Entregar al Cliente (Ya Pagado)
+              @if (orden.importePendiente > 0 && orden.estadoPago !== 'CANCELADO' && orden.estadoPago !== 'DEVUELTO') {
+                <div class="zona-acciones-cobro" style="margin-top: 1rem; width: 100%;">
+                  <button type="button" class="btn-ir-cobrar" (click)="abrirPanelCobro()" style="width: 100%;">
+                    {{ orden.estadoTaller === 'LISTO' ? '💵 Liquidar y Entregar Cliente' : '💵 Registrar Anticipo' }}
+                  </button>
+                </div>
+              } @else if (orden.importePendiente === 0 && orden.tipo === 'REPARACION' && orden.estadoTaller === 'LISTO') {
+                <button class="btn-action deliver-only" (click)="finalizarEntregaYCobro()" style="margin-top: 1rem; width: 100%;">
+                  📦 Entregar al Cliente (Ya Pagado al 100%)
                 </button>
               }
-              @if (orden.estado === 'PAGADO' || orden.estado === 'ENTREGADO' || orden.estado === 'LISTO') {
-                <div class="zona-acciones-devolucion">
-                  <button type="button" class="btn-ir-devolver" (click)="abrirPanelDevolucion()">
-                    🔄 Devolver Ticket (Rectificativa)
+
+              @if (orden.estadoPago === 'PAGADO' || orden.estadoTaller === 'ENTREGADO') {
+                <div class="zona-acciones-devolucion" style="margin-top: 1rem; width: 100%;">
+                  <button type="button" class="btn-ir-devolver" (click)="abrirPanelDevolucion()" style="width: 100%;">
+                    🔄 Solicitar Devolución (Factura Rectificativa)
                   </button>
                 </div>
               }
@@ -160,7 +160,6 @@
         </div>
       </div>
     </div>
-  </div>
   }
 
   <!-- 💰 KEYPAD NUMÉRICO DE COBROS (MODAL SECUNDARIO) -->
@@ -176,7 +175,7 @@
           <button [ngClass]="{'selected': metodoPago() === 'EFECTIVO'}" (click)="seleccionarMetodoPago('EFECTIVO')">💵 Efectivo</button>
           <button [ngClass]="{'selected': metodoPago() === 'TARJETA'}" (click)="seleccionarMetodoPago('TARJETA')">💳 Tarjeta</button>
           <button [ngClass]="{'selected': metodoPago() === 'TRANSFERENCIA'}" (click)="seleccionarMetodoPago('TRANSFERENCIA')">🏦 Transf.</button>
-          <button [ngClass]="{'selected': metodoPago() === 'OTROS'}" (click)="seleccionarMetodoPago('OTROS')">📦 Otros</button>
+          <button [ngClass]="{'selected': metodoPago() === 'OTRO'}" (click)="seleccionarMetodoPago('OTRO')">📦 Otro</button>
         </div>
 
         @if (metodoPago() === 'EFECTIVO') {
@@ -232,6 +231,7 @@
         <div class="payment-methods">
           <button type="button" [ngClass]="{'selected': metodoDevolucion() === 'EFECTIVO'}" (click)="metodoDevolucion.set('EFECTIVO')">💵 Devolver Efectivo</button>
           <button type="button" [ngClass]="{'selected': metodoDevolucion() === 'TARJETA'}" (click)="metodoDevolucion.set('TARJETA')">💳 Abonar a Tarjeta</button>
+          <button type="button" [ngClass]="{'selected': metodoDevolucion() === 'OTRO'}" (click)="metodoDevolucion.set('OTRO')">📦 Devolver Otro</button>
         </div>
 
         <div class="screen-display" style="margin-top: 1.5rem; background: #fff5f5; border-color: #feb2b2;">

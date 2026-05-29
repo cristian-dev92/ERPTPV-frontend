@@ -34,20 +34,29 @@ export class OrdenListComponent implements OnInit {
 
     // 2. Filtro secundario por Estado del flujo de caja/taller
     if (estadoActual !== 'TODOS') {
-      listaFiltrada = listaFiltrada.filter(orden => orden.estado === estadoActual);
+      if (estadoActual === 'EN_TALLER' || estadoActual === 'LISTO' || estadoActual === 'ENTREGADO') {
+        // Filtramos por ubicación física del calzado en el taller
+        listaFiltrada = listaFiltrada.filter(orden => orden.estadoTaller === estadoActual);
+      } else if (estadoActual === 'PENDIENTE_PAGO') {
+        // Filtramos reparaciones que tengan deudas acumuladas (PENDIENTE o ANTICIPO)
+        listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PENDIENTE' || orden.estadoPago === 'ANTICIPO');
+      } else if (estadoActual === 'PAGADO') {
+        // Filtramos las operaciones liquidadas financieramente al 100%
+        listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PAGADO');
+      }
     }
 
-    // 3. Filtro de búsqueda textual dinámica
+    // 3. Filtro de búsqueda textual dinámica por pantalla táctil
     if (busqueda) {
       listaFiltrada = listaFiltrada.filter(orden => {
         const cumpleId = orden.id?.toString().includes(busqueda);
         const cumpleCliente = orden.clienteNombre?.toLowerCase().includes(busqueda);
-        const cumpleNumFactura = orden.numeroFactura?.toLowerCase().includes(busqueda);
+        const cumpleNumFactura = orden.numeroTicket?.toLowerCase().includes(busqueda) || orden.numeroFactura?.toLowerCase().includes(busqueda);
         return cumpleId || cumpleCliente || cumpleNumFactura;
       });
     }
 
-    // Devolvemos acotado a 50 registros para mantener la fluidez táctil
+    // Devolvemos acotado a 50 registros para mantener la fluidez total
     return listaFiltrada.slice(0, 50);
   });
 
@@ -115,7 +124,7 @@ export class OrdenListComponent implements OnInit {
         
         window.URL.revokeObjectURL(urlDescarga);
       },
-      error: (err) => {
+      error: () => {
         this.uiService.mostrarToast('Error al generar el archivo PDF en el servidor.', 'error');
       }
     });
@@ -127,24 +136,31 @@ export class OrdenListComponent implements OnInit {
   }
 
   // Método para asignar clases CSS según el estado de la orden
-  getBadgeClass(estado: string): string {
-    switch (estado) {
-      case 'PAGADO': return 'badge-success';
-      case 'PENDIENTE': return 'badge-warning';
-      case 'EN_TALLER': return 'badge-info';
-      case 'LISTO': return 'badge-success';
-      case 'ENTREGADO': return 'badge-secondary';
-      case 'CANCELADA': case 'CANCELADO': return 'badge-danger';
-      default: return 'badge-info';
+  getBadgeClass(orden: any): string {
+    if (!orden) return 'badge-info';
+    // Si la orden está cancelada o devuelta financieramente
+    if (orden.estadoPago === 'CANCELADO') return 'badge-danger';
+    if (orden.estadoPago === 'DEVUELTO') return 'badge-danger';
+
+    // Para flujo prioritario del taller
+    if (orden.tipo === 'REPARACION') {
+      if (orden.estadoTaller === 'EN_TALLER') return 'badge-info';
+      if (orden.estadoTaller === 'LISTO') return 'badge-warning'; // Llama la atención para entrega
+      if (orden.estadoTaller === 'ENTREGADO') return 'badge-secondary';
     }
+
+    // Ventas directas liquidadas
+    if (orden.estadoPago === 'PAGADO') return 'badge-success';
+    
+    return 'badge-info';
   }
 
   // Método para abrir el modal de detalles de la orden
   verDetalle(orden: any) {
     this.ordenSeleccionada.set(orden);
     this.editandoNotas.set(orden.notas || '');
-    if (orden.fechaEntrega) { 
-      this.editandoFecha.set(new Date(orden.fechaEntrega).toISOString().split('T')[0]);
+    if (orden.fechaPrometidaRecogida) { 
+      this.editandoFecha.set(new Date(orden.fechaPrometidaRecogida).toISOString().split('T')[0]);
     } 
     else { 
       this.editandoFecha.set(''); 
@@ -168,7 +184,7 @@ export class OrdenListComponent implements OnInit {
         this.cargarDatosDelServidor(); 
         if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal(); 
       },
-      error: (err) => this.uiService.mostrarToast('Error al actualizar estado en taller', 'error')
+      error: () => this.uiService.mostrarToast('Error al actualizar estado en taller', 'error')
     });
   }
 
@@ -180,7 +196,7 @@ export class OrdenListComponent implements OnInit {
         this.cargarDatosDelServidor();
         if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal();
       },
-      error: (err) => this.uiService.mostrarToast('Error al finalizar reparación', 'error')
+      error: () => this.uiService.mostrarToast('Error al finalizar reparación', 'error')
     });
   }
 
@@ -227,7 +243,7 @@ export class OrdenListComponent implements OnInit {
     }
   }
 
-   seleccionarMetodoPago(metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTROS') {
+   seleccionarMetodoPago(metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO') {
     this.metodoPago.set(metodo);
     if (metodo === 'EFECTIVO') {
     this.importeEntregado.set('');
@@ -319,7 +335,7 @@ export class OrdenListComponent implements OnInit {
     };
 
     this.ordenService.procesarDevolucion(peticion).subscribe({
-      next: (res) => {
+      next: () => {
         this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada con éxito.`, 'success');
         this.cerrarPanelDevolucion();
         this.cerrarModal();

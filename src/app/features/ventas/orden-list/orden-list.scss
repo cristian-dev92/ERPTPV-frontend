@@ -678,18 +678,18 @@ $color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
 // 🔄 ENVOLTURAS Y BLOQUES DE ACCIÓN (Sustituyen los estilos inline del HTML)
 // =========================================================================
 .zona-acciones-cobro,
-.zona-acciones-entrega {
-  clear: both;
-  padding-top: 1.5rem;
-  text-align: right;
+.zona-acciones-entrega,
+.zona-acciones-devolucion {
+  text-align: center;
   width: 100%;
+  padding-top: 0; // El gap del contenedor .workflow-buttons ya hace el espaciado correcto
+  margin: 0;
 }
 
-.zona-acciones-devolucion {
-  clear: both;
-  padding-top: 1rem;
-  text-align: right;
-  width: 100%;
+// Forzar que los textos del input tipo fecha se rendericen bien en navegadores oscuros
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); // Hace que el iconito del calendario se vuelva blanco nativamente
+  cursor: pointer;
 }
 
 // =========================================================================
@@ -764,4 +764,20 @@ $color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
 button:disabled {
   cursor: not-allowed !important;
   pointer-events: none; // Evita que registre pulsaciones fantasma en pantallas táctiles
+}
+
+.btn-action.deliver-only {
+  background-color: $color-secondary;
+  border-bottom: 4px solid color.adjust($color-secondary, $lightness: -12%); /* Efecto 3D idéntico a btn-ir-cobrar */
+  transition: all 0.1s ease;
+
+  &:hover {
+    background-color: color.adjust($color-secondary, $lightness: 5%);
+  }
+
+  &:active {
+    transform: translateY(2px);
+    border-bottom-width: 1px;
+    filter: brightness(0.9);
+  }
 }
