@@ -197,18 +197,16 @@
   </div>
 
   <!-- SECCIÓN DERECHA: TICKET ACTUAL -->
-  <div class="ticket-section" [class.modo-devolucion]="modoDevolucion()">
-  <div class="header-ticket-dinamico">
-    <h2>{{ modoDevolucion() ? '🔄 Abono / Devolución' : '📋 Ticket Actual' }}</h2>
+  <div class="columna-derecha-mostrador">
 
-    <!-- Botón táctil para alternar entre Venta y Devolución Directa -->
-    <button type="button" 
-            class="btn-toggle-devolucion"
-            [class.activo]="modoDevolucion()"
-            (click)="toggleModoDevolucion()">
-      {{ modoDevolucion() ? '⚠️ Cancelar Abono' : '🔄 Devolución' }}
+  <div class="ticket-section" [class.modo-devolucion]="modoDevolucion()">
+
+   <div class="header-ticket-dinamico">
+    <h2>{{ modoDevolucion() ? '🔄 Abono / Devolución' : '📋 Ticket Actual' }}</h2>
+    <button type="button" class="btn-toggle-devolucion" [class.activo]="modoDevolucion()" (click)="toggleModoDevolucion()">
+        {{ modoDevolucion() ? '⚠️ Cancelar Abono' : '🔄 Devolución' }}
     </button>
-  </div>
+   </div>
 
   <!-- SECCIÓN CLIENTE -->
   <div class="seccion-cliente-ticket">
@@ -260,7 +258,7 @@
     
     <!-- SECCIÓN DE LÍNEAS DEL TICKET -->
     <div class="lineas-ticket">
-    @for (item of carrito(); track $index) {
+     @for (item of carrito(); track $index) {
       <div class="linea">
         <!-- Izquierda: Nombre y Controles de cantidad -->
         <div class="info-producto">
@@ -365,9 +363,18 @@
                   (click)="metodoPagoSeleccionado.set('TARJETA')">
             💳 Tarjeta
           </button>
+          <button type="button" 
+                  [class.activo]="metodoPagoSeleccionado() === 'TRANSFERENCIA'"
+                  (click)="metodoPagoSeleccionado.set('TRANSFERENCIA')">
+            🏦 Transf.
+          </button>
+          <button type="button" 
+                  [class.activo]="metodoPagoSeleccionado() === 'OTROS'"
+                  (click)="metodoPagoSeleccionado.set('OTROS')">
+            📲 Otros
+          </button>
         </div>
       </div>
-
     </div>
 
     <!-- RESUMEN FINAL Y BOTÓN DE COBRO -->
@@ -398,138 +405,90 @@
         {{ modoDevolucion() ? '🔄 CONFIRMAR Y DEVOLVER DINERO' : '💰 PROCESAR OPERACIÓN' }}
       </button>
     </div>
-  </div>
-</div>
-
-<!-- MODAL FLOTANTE DE RESULTADO DE ENVÍO A AEAT -->
-@if (datosFacturaAeat()) {
-  <div class="modal-aeat-overlay">
-    <div class="modal-aeat-box">
-      
-      <div class="modal-header">
-        <span class="badge-verifaktu">🛡️ VERI*FACTU</span>
-        <h3>Factura Simplificada Registrada</h3>
+   
+  </div> 
+  <div class="panel-historial-wrapper">
+    <div class="historial-header" (click)="toggleHistorial()">
+      <div class="header-info">
+        <span class="icono">🕒</span>
+        <h3>Últimas Ventas del Turno</h3>
+        <span class="contador-badge">
+          {{ historialTickets().length }} tickets
+        </span>
       </div>
       
-      <div class="modal-split-body">
-        
-        <div class="panel-previsualizacion-pdf">
-          @if (cargandoPDF()) {
-            <div class="spinner-pdf-loader">
-              <span>🔄 Cargando diseño de ticket térmico...</span>
-            </div>
-          } @else if (urlSeguraPdf()) {
-            <iframe id="iframeTicketPdf" [src]="urlSeguraPdf()" class="visor-ticket-frame"></iframe>
-          } @else {
-            <div class="error-pdf-placeholder">⚠️ El PDF no se cargó correctamente.</div>
-          }
-        </div>
-
-        <div class="panel-datos-fiscales">
-          <p class="success-msg">La información ha sido remitida en tiempo real a la Sede Electrónica de la AEAT.</p>
-          
-          <div class="ticket-legal-info">
-            <div><span>Identificador legal:</span> <strong>{{ datosFacturaAeat()?.ref }}</strong></div>
-            <div><span>Hora Emisión:</span> <span>{{ datosFacturaAeat()?.fecha }}</span></div>
-            <div><span>Importe Total:</span> <strong>{{ datosFacturaAeat()?.total | currency:'EUR' }}</strong></div>
-          </div>
-
-          <div class="qr-container">
-            <div class="qr-placeholder-graphics">
-              <span>🔳</span>
-            </div>
-            <p class="qr-caption">Escanee este código QR para verificar la validez del documento en la web de la Agencia Tributaria.</p>
-          </div>
-        </div>
-
-      </div>
-      
-      <div class="modal-footer">
-        <button class="btn-imprimir-ticket" 
-                [disabled]="!urlSeguraPdf()" 
-                (click)="imprimirIframeTicket()">
-          🖨️ Lanzar a Impresora de Tickets
-        </button>
-        
-        <button class="btn-cerrar-modal" (click)="cerrarReciboAeat()">
-          Continuar (Nueva Venta) ➔
-        </button>
-      </div>
-
+      <button type="button" class="btn-toggle-flecha" [class.rotado]="mostrarHistorial()">
+        ▼
+      </button>
     </div>
-  </div>
-}
 
-<!-- PANEL HISTORIAL DE TICKETS (ZONA INFERIOR) -->
-<div class="panel-historial-wrapper">
-  
-  <!-- Cabecera del Panel (Control de visibilidad táctil) -->
-  <div class="historial-header" (click)="toggleHistorial()">
-    <div class="header-info">
-      <span class="icono">🕒</span>
-      <h3>Últimas Ventas del Turno</h3>
-      <span class="contador-badge">
-        {{ historialTickets().length }} tickets
-      </span>
-    </div>
-    
-    <!-- Flecha indicadora (gira si está abierto) -->
-    <button type="button" class="btn-toggle-flecha" [class.rotado]="mostrarHistorial()">
-      ▼
-    </button>
-  </div>
-
-  <!-- Contenido del Historial (Se muestra/oculta de forma reactiva) -->
-  @if (mostrarHistorial()) {
-    <div class="historial-body">
-      <table class="tabla-historial">
-        <thead>
-          <tr>
-            <th>Nº Ticket</th>
-            <th>Hora</th>
-            <th>Cliente</th>
-            <th class="text-derecha">Total</th>
-            <th class="text-centro">Estado AEAT</th>
-            <th class="text-centro">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (ticket of historialTickets(); track ticket.id) {
+    @if (mostrarHistorial()) {
+      <div class="historial-body">
+        <table class="tabla-historial">
+          <thead>
             <tr>
-              <td class="txt-negrita">#{{ ticket.numeroFactura }}</td>
-              <td class="txt-mutado">{{ ticket.fecha | date:'HH:mm' }}</td>
-              <td>
-                {{ ticket.cliente?.nombre || 'Cliente General' }}
-              </td>
-              <td class="text-derecha txt-precio">
-                {{ ticket.total | currency:'EUR' }}
-              </td>
-              <td class="text-centro">
-                <!-- Estado del envío simulado -->
-                <span class="badge-estado" [class]="ticket.estadoAeat.toLowerCase()">
-                  <span class="punto-indicador"></span>
-                  {{ ticket.estadoAeat }}
-                </span>
-              </td>
-              <td class="text-centro">
-                <button type="button" 
-                        (click)="reimprimirTicket(ticket)" 
-                        class="btn-reimprimir">
-                  🖨️ Reimprimir
-                </button>
-              </td>
+              <th>Nº Ticket</th>
+              <th>Hora</th>
+              <th>Cliente</th>
+              <th class="text-derecha">Total</th>
+              <th class="text-centro">Estado AEAT</th>
+              <th class="text-centro">Financiero</th>
+              <th class="text-centro">Taller</th>
+              <th class="text-centro">Acciones Táctiles</th>
             </tr>
-          } @empty {
-            <tr>
-              <td colspan="6" class="tabla-vacia">
-                📭 No se han realizado ventas en este turno todavía.
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
+          </thead>
+          <tbody>
+            @for (ticket of historialTickets(); track ticket.id) {
+              <tr>
+                <td class="txt-negrita">#{{ ticket.numeroFactura || ticket.id }}</td>
+                <td class="txt-mutado">{{ (ticket.fecha || ticket['createdAt'] || ticket['fechaCreacion']) | date:'HH:mm' }}</td>
+                <td>{{ ticket.cliente?.nombre || 'Cliente General' }}</td>
+                <td class="text-derecha txt-precio">{{ ticket.total | currency:'EUR' }}</td>
+                <td class="text-centro">
+                  <span class="badge-estado" [ngClass]="ticket.estadoAeat === 'ENVIADO' ? 'enviado' : 'pendiente'">
+                    <span class="punto-indicador"></span>
+                    {{ ticket.estadoAeat || 'PENDIENTE' }}
+                  </span>
+                </td>
+                <td class="text-centro">
+                  <span class="badge-financiero" [ngClass]="ticket.estadoPago || 'PENDIENTE'">
+                    {{ ticket.estadoPago || 'PENDIENTE' }}
+                  </span>
+                </td>
+                <td class="text-centro">
+                  <span class="badge-taller" [ngClass]="ticket.estadoTaller || 'EN_TALLER'">
+                    {{ ticket.estadoTaller || 'VENTA  ' }}
+                  </span>
+                </td>
+                <td class="text-centro celdas-botones-tactiles">
+                  <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
+                  @if (ticket.cliente) {
+                    <button type="button" (click)="descargarFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
+                  }
+                  @if (ticket.estadoTaller === 'LISTO' && ticket.estadoPago === 'PAGADO') {
+                    <button type="button" (click)="entregarReparacionHistorial(ticket)" class="btn-accion-tvc entregar">✓ Entregar</button>
+                  }
+                  @if (ticket.estadoPago !== 'PAGADO' && ticket.estadoPago !== 'CANCELADO') {
+                    <button type="button" (click)="liquidarOrdenHistorial(ticket)" class="btn-accion-tvc cobrar-pendiente">💰 Liquidar</button>
+                  }
+                  @if (ticket.estadoTaller !== 'ENTREGADO' && ticket.estadoPago !== 'CANCELADO') {
+                    <button type="button" (click)="anularOrdenHistorial(ticket)" class="btn-accion-tvc anular">✕ Anular</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="tabla-vacia">
+                  📭 No se han realizado ventas en este turno todavía.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
 </div>
 
 <!-- MODAL FLOTANTE DEL KEYPAD TÁCTIL PARA MODIFICAR PRECIOS -->

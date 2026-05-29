@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal, effect, computed } from '@angular/core';
-import { OrdenService } from '../../../core/services/orden.service';
+import { MetodoPago, OrdenService } from '../../../core/services/orden.service';
 import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiService } from '../../../core/services/ui.service';
@@ -60,7 +60,7 @@ export class OrdenListComponent implements OnInit {
 
   // Signals para el panel de cobro
   mostrarModalCobro = signal<boolean>(false);
-  metodoPago = signal<'EFECTIVO' | 'TARJETA'>('EFECTIVO');
+  metodoPago = signal<MetodoPago>('EFECTIVO');
   importeEntregado = signal<string>(''); 
   cambioAOfrecer = computed(() => {
     if (this.metodoPago() === 'TARJETA') return 0;
@@ -71,12 +71,13 @@ export class OrdenListComponent implements OnInit {
 
   // --- SIGNALS PARA DEVOLUCIONES (VÍA A) ---
   mostrarModalDevolucion = signal<boolean>(false);
-  metodoDevolucion = signal<'EFECTIVO' | 'TARJETA'>('EFECTIVO');
+  metodoDevolucion = signal<MetodoPago>('EFECTIVO');
+  http: any;
 
   // --- CONSTRUCTOR Y CICLO DE VIDA ---
   constructor() {
     effect(() => {
-      // Pasamos el tipo como argumento de consulta
+      this.filtroTipo();
       this.cargarDatosDelServidor();
     });
   }
@@ -87,8 +88,7 @@ export class OrdenListComponent implements OnInit {
 
   // Descargamos todo el volumen de órdenes para filtrarlo reactivamente en memoria sin sobrecargar la red
   cargarDatosDelServidor() {
-    // Nota: Usamos el método genérico del servicio. Si getOrdenesPorEstado requiriera mapeo, 
-    // Javi ya nos devuelve los DTOs con los campos "tipo" y "estado" listos.
+    // Nota: Usamos el método genérico del servicio.
     this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
       next: (data) => this.ordenes.set(data),
       error: (err) => this.uiService.mostrarToast('Error al cargar el histórico: ' + (err.error?.message || err.message), 'error')
@@ -134,7 +134,7 @@ export class OrdenListComponent implements OnInit {
       case 'EN_TALLER': return 'badge-info';
       case 'LISTO': return 'badge-success';
       case 'ENTREGADO': return 'badge-secondary';
-      case 'CANCELADA': return 'badge-danger';
+      case 'CANCELADA': case 'CANCELADO': return 'badge-danger';
       default: return 'badge-info';
     }
   }
@@ -142,9 +142,9 @@ export class OrdenListComponent implements OnInit {
   // Método para abrir el modal de detalles de la orden
   verDetalle(orden: any) {
     this.ordenSeleccionada.set(orden);
-    this.editandoNotas.set(orden.notasReparacion || '');
+    this.editandoNotas.set(orden.notas || '');
     if (orden.fechaEntrega) { 
-      this.editandoFecha.set(orden.fechaEntrega.substring(0, 10)); 
+      this.editandoFecha.set(new Date(orden.fechaEntrega).toISOString().split('T')[0]);
     } 
     else { 
       this.editandoFecha.set(''); 
@@ -156,21 +156,25 @@ export class OrdenListComponent implements OnInit {
     this.ordenSeleccionada.set(null);
   }
 
+  // =========================================================================
+  // ⚙️ RESOLUCIÓN DEL CAMBIO DE ESTADO: FLUJO DE TRABAJO DEL TALLER
+  // =========================================================================
+
   // Métodos para cambiar el estado de la orden
   empezarTrabajo(ordenId: number) {
-   this.ordenService.cambiarEstado(ordenId, 'EN_TALLER').subscribe({
+   this.ordenService.editarReparacion(ordenId, this.editandoNotas(), this.editandoFecha()).subscribe({
       next: () => { 
         this.uiService.mostrarToast('¡Trabajo iniciado en taller!', 'success'); 
         this.cargarDatosDelServidor(); 
         if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal(); 
       },
-      error: (err) => this.uiService.mostrarToast('Error al iniciar: ' + (err.error?.message || err.message), 'error')
+      error: (err) => this.uiService.mostrarToast('Error al actualizar estado en taller', 'error')
     });
   }
 
   // Método para marcar la reparación como finalizada (pasar a LISTO)
   finalizarReparacion(ordenId: number) {
-    this.ordenService.cambiarEstado(ordenId, 'LISTO').subscribe({
+    this.ordenService.editarReparacion(ordenId, this.editandoNotas(), this.editandoFecha()).subscribe({
       next: () => {
         this.uiService.mostrarToast('Reparación finalizada. Pasada a "Listos para recoger".', 'success');
         this.cargarDatosDelServidor();
@@ -185,15 +189,16 @@ export class OrdenListComponent implements OnInit {
     const orden = this.ordenSeleccionada();
     if (!orden) return;
 
-    this.ordenService.editarReparacion(orden.id, this.editandoNotas(), this.editandoFecha()).subscribe({
-      next: (ordenActualizada) => {
-        this.uiService.mostrarToast('Ticket actualizado correctamente.', 'success');
-        this.cargarDatosDelServidor();
-        this.cerrarModal();
-      },
-      error: (err) => this.uiService.mostrarToast('Error al actualizar el ticket', 'error')
-    });
-  }
+ // Volvemos a usar tu servicio que es lo correcto
+  this.ordenService.editarReparacion(orden.id, this.editandoNotas(), this.editandoFecha()).subscribe({
+    next: () => {
+      this.uiService.mostrarToast('Ticket actualizado correctamente.', 'success');
+      this.cargarDatosDelServidor();
+      this.cerrarModal();
+    },
+    error: () => this.uiService.mostrarToast('Error al actualizar el ticket', 'error')
+  });
+}
 
   // --- MÉTODOS DE COBRO ---
   abrirPanelCobro() {
@@ -222,17 +227,19 @@ export class OrdenListComponent implements OnInit {
     }
   }
 
-   seleccionarMetodoPago(metodo: 'EFECTIVO' | 'TARJETA') {
+   seleccionarMetodoPago(metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTROS') {
     this.metodoPago.set(metodo);
-    if (metodo === 'TARJETA') this.importeEntregado.set('');
+    if (metodo === 'EFECTIVO') {
+    this.importeEntregado.set('');
   }
+}
 
   finalizarEntregaYCobro() {
     const orden = this.ordenSeleccionada();
     if (!orden) return;
 
     const totalCobrar = orden.importePendiente;
-    const entregado = this.metodoPago() === 'TARJETA' 
+    const entregado = this.metodoPago() !== 'EFECTIVO' 
     ? totalCobrar 
     : (parseFloat(this.importeEntregado()) || 0);
 
@@ -241,18 +248,18 @@ export class OrdenListComponent implements OnInit {
     return;
   } 
 
-  // NUEVO COMPORTAMIENTO: Solo cerramos a ENTREGADO si el zapato ya estaba LISTO.
+  // Solo cerramos a ENTREGADO si el zapato ya estaba LISTO.
   const ejecutarCambioEstado = () => {
     if (orden.estado === 'LISTO') {
         // Estaba listo, cobramos y cerramos el ciclo
-        this.ordenService.cambiarEstado(orden.id, 'ENTREGADO').subscribe({
+        this.ordenService.entregarOrden(orden.id).subscribe({
         next: () => {
             this.uiService.mostrarToast('¡Ticket completado! Orden cobrada y ENTREGADA.', 'success');
             this.cerrarPanelCobro();
             this.cerrarModal(); 
             this.cargarDatosDelServidor();
         },
-        error: (errEstado) => this.uiService.mostrarToast('Problema al marcar como ENTREGADO.', 'error')
+        error: () => this.uiService.mostrarToast('Problema al marcar como ENTREGADO.', 'error')
         });
     } else {
         // Estaba en taller o pendiente. Es un pago por adelantado. NO cerramos el ticket.
@@ -264,7 +271,7 @@ export class OrdenListComponent implements OnInit {
   };
 
   this.ordenService.cobrar(orden.id, this.metodoPago()).subscribe({
-    next: (resCobro) => {
+    next: () => {
       ejecutarCambioEstado();
     },
     error: (errCobro) => {

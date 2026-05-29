@@ -22,6 +22,10 @@ export class InventarioListComponent implements OnInit {
   // Estado de carga
   loading = signal<boolean>(true);
 
+  // Estado para mostrar el modal de confirmación de anticipar stock
+  mostrarModalConfirmar = signal<boolean>(false);
+  articuloAAnticipar = signal<{ id: number, nombre: string } | null>(null);
+
   ngOnInit(): void {
     this.cargarArticulos();
   }
@@ -39,24 +43,38 @@ export class InventarioListComponent implements OnInit {
       }
     });
   }
-  // Función para borrar un artículo de forma segura
-  
-  eliminarProducto(id: number, nombre: string): void {
-    const seguro = confirm(`¿Estás seguro de que deseas eliminar el artículo "${nombre}" del catálogo?`);
-    if (!seguro) return;
 
-    this.articuloService.eliminarArticulo(id).subscribe({
+  // Función para borrar un artículo de forma segura
+  eliminarProducto(id: number, nombre: string): void {
+    // Guardamos los datos del artículo que queremos borrar y abrimos el modal moderno
+    this.articuloAAnticipar.set({ id, nombre });
+    this.mostrarModalConfirmar.set(true);
+  }
+
+  // 🔑 3. Añade la función que se ejecutará cuando el usuario pulse "SÍ, ELIMINAR"
+  confirmarEliminacionDefinitiva(): void {
+  const articulo = this.articuloAAnticipar();
+  if (!articulo) return;
+
+    this.articuloService.eliminarArticulo(articulo.id).subscribe({
       next: () => {
         this.uiService.mostrarToast('📦 Artículo eliminado del catálogo correctamente', 'success');
         
         // Actualizamos la señal reactiva eliminando el ítem de la lista al instante
-        this.articulos.update(listaActual => listaActual.filter(item => item.id !== id));
+        this.articulos.update(listaActual => listaActual.filter(item => item.id !== articulo.id));
+        this.cerrarModalConfirmar();
       },
       error: (err) => {
         console.error('Error al eliminar producto:', err);
         this.uiService.mostrarToast('No se pudo eliminar el artículo. Es posible que esté asociado a un ticket existente.', 'error');
+        this.cerrarModalConfirmar();
       }
     });
   }
+
+  cerrarModalConfirmar(): void {
+  this.mostrarModalConfirmar.set(false);
+  this.articuloAAnticipar.set(null);
+ }
 
 }

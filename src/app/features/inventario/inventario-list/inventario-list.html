@@ -61,3 +61,19 @@
     </tbody>
   </table>
 }
+
+@if (mostrarModalConfirmar()) {
+  <div class="modal-backdrop confir-backdrop">
+    <div class="modal-confirm-content">
+      <div class="modal-confirm-icon">⚠️</div>
+      <h2>¿Confirmar eliminación?</h2>
+      <p>Vas a eliminar permanentemente el artículo <strong>"{{ articuloAAnticipar()?.nombre }}"</strong> del catálogo.</p>
+      <p class="advertencia-sub">Esta acción no se puede deshacer.</p>
+      
+      <div class="confirm-actions">
+        <button class="btn-cancel-modal" (click)="cerrarModalConfirmar()">No, cancelar</button>
+        <button class="btn-confirm-modal" (click)="confirmarEliminacionDefinitiva()">Sí, eliminar artículo</button>
+      </div>
+    </div>
+  </div>
+}

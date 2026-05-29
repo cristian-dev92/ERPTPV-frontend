@@ -152,3 +152,94 @@
     transform: scale(0.96);
   }
 }
+
+// Fondo oscuro translúcido para centrar el modal
+.confir-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(2px); // Sutil efecto difuminado premium
+}
+
+// Contenedor del modal moderno estilo tarjeta de confirmación
+.modal-confirm-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  animation: scale-up-modal 0.15s ease-out;
+
+  .modal-confirm-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  h2 {
+    color: #1a202c;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: #4a5568;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+  }
+
+  .advertencia-sub {
+    color: #a0aec0;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Botonera alineada
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+
+  button {
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    flex: 1; // Hace que ambos botones tengan exactamente el mismo tamaño equilibrado
+  }
+
+  .btn-cancel-modal {
+    background-color: #edf2f7;
+    color: #4a5568;
+    &:hover { background-color: #e2e8f0; }
+  }
+
+  .btn-confirm-modal {
+    background-color: #e53e3e; // Rojo potente de borrado
+    color: white;
+    &:hover { 
+      background-color: #c53030;
+      box-shadow: 0 4px 12px rgba(229, 62, 62, 0.2);
+    }
+    &:active { transform: scale(0.97); }
+  }
+}
+
+// Animación de entrada suave
+@keyframes scale-up-modal {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

@@ -3,7 +3,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { forkJoin, map, Observable, tap } from 'rxjs';
 
 // Mapeo exacto de los Schemas de Java para que tu Front vaya sobre seguro
-export type TipoOrden = 'VENTA_DIRECTA' | 'REPARACION';
+export type TipoOrden = 'VENTA_DIRECTA' | 'REPARACION' | 'DEVOLUCION';
+
+export type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTROS';
 
 export interface NuevaLineaDTO {
   articuloId: number;
@@ -27,7 +29,7 @@ export interface LineaDevolucionDTO {
 
 export interface DevolucionRequest {
   ordenOrigenId: number | null; // null si es devolución manual sin ticket
-  metodoPago: 'EFECTIVO' | 'TARJETA';
+  metodoPago: MetodoPago;
   lineas: LineaDevolucionDTO[];
 }
 
@@ -43,43 +45,48 @@ export class OrdenService {
   }
 
   // 2. Cobrar ticket completo (Usa RequestParams '?metodoPago=...')
-  cobrar(id: number, metodoPago: string): Observable<any> {
+  cobrar(id: number, metodoPago: MetodoPago): Observable<any> {
     return this.http.post(`${this.API_URL}/${id}/cobrar`, null, {
       params: { metodoPago }
     });
   }
 
   // 3. Registrar señal/anticipo (Usa RequestParams '?importe=...&metodoPago=...')
-  registrarAnticipo(id: number, importe: number, metodoPago: string): Observable<any> {
+  registrarAnticipo(id: number, importe: number, metodoPago: MetodoPago): Observable<any> {
     return this.http.post(`${this.API_URL}/${id}/anticipo`, null, {
-      params: { importe, metodoPago }
+      params: { 
+        importe: importe.toString(), // Convertimos a string para los params
+        metodoPago }
     });
   }
 
-  // 4. Cambiar estado (Taller, Listo, etc)
-  cambiarEstado(id: number, nuevoEstado: string): Observable<any> {
-    return this.http.patch(`${this.API_URL}/${id}/estado`, null, {
-      params: new HttpParams().set('nuevoEstado', nuevoEstado)
-    });
+  // 4. Acción ultra rápida: Terminar en taller (Botón verde del operario)
+  terminarReparacion(id: number): Observable<any> {
+    return this.http.patch(`${this.API_URL}/${id}/terminar`, null);
   }
 
-  // 5. Consultas
-  getOrdenesHoy(): Observable<any> {
-    return this.http.get(`${this.API_URL}/hoy`);
+  // 5. Marcar como entregado en el mostrador (Acción rápida)
+  entregarOrden(id: number): Observable<any> {
+    return this.http.patch(`${this.API_URL}/${id}/entregar`, null);
   }
 
-  // 6. Consulta por estado (PAGADO, PENDIENTE, EN_TALLER)
+  // 6. Cancelar/Anular una orden por completo (Solo si no se ha cobrado nada o solo tiene un anticipo registrado)
+  cancelarOrden(id: number): Observable<any> {
+  return this.http.post(`${this.API_URL}/${id}/cancelar`, null);
+  }
+
+  // 7. Consulta por estado (PAGADO, PENDIENTE, EN_TALLER)
   getOrdenesPorEstado(estado: string): Observable<any[]> {
   if (estado === 'TODAS' || estado === 'TODOS') {
     // Lanzamos peticiones en paralelo a los estados reales que expone tu Enum en Java
     // Cambia o añade estados si tu Enum 'EstadoTaller' usa otros nombres (ej. PENDIENTE, EN_TALLER, LISTO, ENTREGADO)
     return forkJoin([
-      this.http.get<any[]>(`${this.API_URL}/estado/PENDIENTE`),
-      this.http.get<any[]>(`${this.API_URL}/estado/EN_TALLER`),
-      this.http.get<any[]>(`${this.API_URL}/estado/LISTO`)
+      this.http.get<any[]>(`${this.API_URL}/estado/EN_TALLER`), // Solo las que están en taller
+      this.http.get<any[]>(`${this.API_URL}/estado/LISTO`),     // Solo las que ya están listas
+      this.http.get<any[]>(`${this.API_URL}/estado/ENTREGADO`)
     ]).pipe(
       // Juntamos todos los arrays devueltos en un único listado plano para el historial
-      map(([pendientes, enTaller, listos]) => [...pendientes, ...enTaller, ...listos])
+      map(([enTaller, listos, entregados]) => [...enTaller, ...listos, ...entregados])
     );
   }
 
@@ -87,36 +94,38 @@ export class OrdenService {
   return this.http.get<any[]>(`${this.API_URL}/estado/${estado}`);
 }
 
-  // Para la pestaña del taller del zapatero, queremos mostrar solo las órdenes que están en estado "EN_TALLER" y de tipo "REPARACION"
+  // 8. Para el panel del zapatero: muestra las órdenes que están operativas en "EN_TALLER" 
   getOrdenesTaller(): Observable<any[]> {
-   return this.getOrdenesPorEstado('EN_TALLER');
+    return this.http.get<any[]>(`${this.API_URL}/taller-combined`);
   }
 
-  // NUEVO: Editar notas o retrasar fecha (Punto 3)
-  editarReparacion(id: number, notas: string, fecha: string): Observable<any> {
+  // 9. Editar notas de reparación o la fecha prometida de recogida
+  editarReparacion(id: number, nuevasNotas: string, nuevaFecha: string): Observable<any> {
     return this.http.put(`${this.API_URL}/${id}/reparacion`, null, {
       params: new HttpParams()
-        .set('notasReparacion', notas)
-        .set('nuevaFecha', fecha) // Formato YYYY-MM-DD
+        .set('nuevasNotas', nuevasNotas)
+        .set('nuevaFecha', nuevaFecha) // Formato YYYY-MM-DD
     });
   }
 
-  // Descargar PDF del ticket
+  // 10.Descargar PDF del ticket
   getTicketPdf(ordenId: number): Observable<Blob> {
-    return this.http.get(`${this.API_URL}/${ordenId}/ticket`, { responseType: 'blob' });
+    return this.http.get(`${this.API_URL}/${ordenId}/pdf`, { responseType: 'blob' });
   }
 
-  // 🔄 Procesar devolución (Vía A y Vía B) - Envía Factura Rectificativa DEV-26
+  // 11. Descargar Factura oficial en formato A4
+  getFacturaPdf(ordenId: number): Observable<Blob> {
+  return this.http.get(`${this.API_URL}/${ordenId}/factura-pdf`, { responseType: 'blob' });
+  } 
+
+  // 12. Procesar devolución (Vía A y Vía B) - Envía Factura Rectificativa DEV-26
   procesarDevolucion(peticion: DevolucionRequest): Observable<any> {
     return this.http.post(`${this.API_URL}/devolucion`, peticion);
   }
   
-  // 🖨️ Descarga el PDF térmico de 80mm en segundo plano y lo manda a la impresora
+  // 13. Descarga el PDF térmico de 80mm en segundo plano y lo manda a la impresora
   imprimirTicket(id: number): Observable<Blob> {
-    // Apuntamos al endpoint de tu nuevo OrdenPdfController
-    const url = `/api/ordenes/${id}/pdf`;
-
-    return this.http.get(url, { responseType: 'blob' }).pipe(
+    return this.getTicketPdf(id).pipe(
       tap((blob: Blob) => {
         // 1. Creamos la URL temporal en la memoria del navegador
         const blobUrl = window.URL.createObjectURL(blob);

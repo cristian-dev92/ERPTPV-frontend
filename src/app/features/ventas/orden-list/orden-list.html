@@ -91,6 +91,14 @@
             <p><strong>Total:</strong> {{ orden.total | currency:'EUR' }}</p>
             <p class="pendiente-text"><strong>Pendiente:</strong> {{ orden.importePendiente | currency:'EUR' }}</p>
             <hr>
+
+            <p class="fecha-creacion-text">
+              <strong>📅 Registrado el:</strong> 
+              {{ (orden.fecha || orden['createdAt'] || orden['fechaCreacion']) | date:'dd/MM/yyyy' }} 
+              a las 
+              {{ (orden.fecha || orden['createdAt'] || orden['fechaCreacion']) | date:'HH:mm' }}
+            </p>
+            <hr>
             
             <div class="edit-panel">
               <h3>📝 Notas de Reparación & Retrasos</h3>
@@ -167,6 +175,8 @@
         <div class="payment-methods">
           <button [ngClass]="{'selected': metodoPago() === 'EFECTIVO'}" (click)="seleccionarMetodoPago('EFECTIVO')">💵 Efectivo</button>
           <button [ngClass]="{'selected': metodoPago() === 'TARJETA'}" (click)="seleccionarMetodoPago('TARJETA')">💳 Tarjeta</button>
+          <button [ngClass]="{'selected': metodoPago() === 'TRANSFERENCIA'}" (click)="seleccionarMetodoPago('TRANSFERENCIA')">🏦 Transf.</button>
+          <button [ngClass]="{'selected': metodoPago() === 'OTROS'}" (click)="seleccionarMetodoPago('OTROS')">📦 Otros</button>
         </div>
 
         @if (metodoPago() === 'EFECTIVO') {

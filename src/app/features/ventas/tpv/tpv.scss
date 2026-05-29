@@ -163,15 +163,25 @@
 }
 
 /* --- SECCIÓN TICKET (DERECHA) --- */
+.columna-derecha-mostrador {
+  display: block !important;         // Rompe cualquier flexbox rígido heredado
+  height: auto !important;           // Altura totalmente libre hacia abajo
+  min-height: 100vh;
+  overflow-y: visible !important;    // Permite que la página crezca de forma infinita si hace falta
+}
+
 .ticket-section {
-  display: flex;
+  display: block;                         // Rompe cualquier flexbox rígido heredado
   flex-direction: column;
   background: white;
   padding: 15px;
   border-radius: 12px;
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-  height: 100%;
+  flex: none;                 
+  height: auto;
+  margin-bottom: 1.5rem;
+  min-height: 0;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 
 
@@ -188,6 +198,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 
   h2 {
     margin: 0;
@@ -231,9 +242,11 @@
 }
 
 .lineas-ticket {
+  display: block;                       // Rompe cualquier flexbox rígido heredado
   flex-grow: 1;
-  overflow-y: auto;
+  overflow-y: visible;
   margin: 15px 0;
+  height: auto;
 
   .linea {
     display: flex;
@@ -528,9 +541,9 @@
 
     .input-descuento-global {
       width: 80px;
-      background-color: #f8f9fa;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: white;
+      background-color: #ffffff;
+      border: 2px solid #cbd5e1;
+      color: #ea580c;
       padding: 0.5rem;
       border-radius: 8px;
       text-align: center;
@@ -793,21 +806,23 @@
   /* Selectores estilo Switch/Botonera TPV */
   .selector-botones {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
     gap: 8px;
+    width: 100%;
 
     button {
       background: white;
       border: 2px solid #dee2e6;
       min-height: 48px;
-      padding: 10px;
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 6px 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
       color: #6c757d;
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 6px;
@@ -1173,12 +1188,27 @@ app-clientes {
 
 /* --- PANEL HISTORIAL DE PEDIDOS --- */
 .panel-historial-wrapper {
-  margin-top: 1.5rem;
+  display: block !important;
+  position: relative !important;
+  width: 370% !important;
+  max-width: 1600px !important;
+  left: 20px !important;   /* Margen fijo a la izquierda de la pantalla */
+  right: 20px !important;
+  transform: translateX(-73%) !important;
+  clear: both !important;
+  float: none !important;
+  box-sizing: border-box !important;
+  margin-top: 2rem !important;
+  margin-bottom: 3rem;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  flex-shrink: 0;
   background-color: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+ 
 
   .historial-header {
     padding: 1.25rem 1.5rem;
@@ -1227,17 +1257,42 @@ app-clientes {
   }
 
   .historial-body {
+    width: 100%;
     max-height: 260px;
     overflow-y: auto;
     overflow-x: auto;
   }
 
+  .historial-body::-webkit-scrollbar {
+    width: 12px !important; /* Más ancha para el dedo */
+  }
+
+  .historial-body::-webkit-scrollbar-track {
+    background: #f1f5f9; 
+    border-radius: 4px;
+  }
+  
+  .historial-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1; 
+    border-radius: 4px;
+    border: 2px solid #f1f5f9;
+  }
+
+  .historial-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; 
+  }
+  
   .tabla-historial {
     width: 100%;
+    height: 220px;
+    max-height: 220px;
     border-collapse: collapse;
     text-align: left;
     font-size: 1rem;
     color: #475569;
+    overflow-y: scroll !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 
     thead {
       background-color: #f1f5f9;
@@ -1264,8 +1319,10 @@ app-clientes {
 
       td {
         padding: 1rem 1.5rem;
+        display: table-cell;
       }
     }
+
 
     // Utilidades de texto
     .text-derecha { text-align: right; }
