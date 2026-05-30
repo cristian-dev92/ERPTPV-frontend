@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, input } from '@angular/core';
+import { Component, OnInit, inject, signal, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService, ClienteDTO, NuevoClienteRequest } from '../../core/services/cliente.service';
@@ -15,6 +15,9 @@ export class ClientesComponent implements OnInit {
   private clienteService = inject(ClienteService);
   private uiService = inject(UiService);
   modoModalSolo = input<boolean>(false);
+
+  //Emitir el cliente seleccionado o creado hacia el componente TPV
+  onClienteSeleccionado = output<ClienteDTO>();
 
   clientes = signal<ClienteDTO[]>([]);
   mostrarModalRegistro = signal<boolean>(false);
@@ -101,6 +104,11 @@ export class ClientesComponent implements OnInit {
     this.mostrarModalRegistro.set(false);
   }
 
+  seleccionarCliente(cliente: ClienteDTO) {
+    this.onClienteSeleccionado.emit(cliente); // Mandamos el objeto completo al TPV
+    this.uiService.mostrarToast(`👤 Cliente "${cliente.nombre}" vinculado a la venta`, 'success');
+  }
+
   guardarCliente() {
     const datos = this.nuevoCliente();
 
@@ -118,6 +126,7 @@ export class ClientesComponent implements OnInit {
       next: (clienteCreado) => {
         this.uiService.mostrarToast(`👤 Ficha de "${clienteCreado.nombre}" creada con éxito`, 'success');
         this.clientes.update(list => [clienteCreado, ...list]);
+        this.onClienteSeleccionado.emit(clienteCreado);
         this.cerrarModal();
       },
       error: (err) => {

@@ -422,74 +422,76 @@
       </button>
     </div>
 
+    <!-- CUERPO DEL HISTORIAL, SOLO VISIBLE SI mostrarHistorial() ES TRUE -->
     @if (mostrarHistorial()) {
-      <div class="historial-body">
-        <table class="tabla-historial">
-          <thead>
-            <tr>
-              <th>Nº Ticket</th>
-              <th>Hora</th>
-              <th>Cliente</th>
-              <th class="text-derecha">Total</th>
-              <th class="text-centro">Estado AEAT</th>
-              <th class="text-centro">Financiero</th>
-              <th class="text-centro">Taller</th>
-              <th class="text-centro">Acciones Táctiles</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (ticket of historialTickets(); track ticket.id) {
-              <tr>
-                <td class="txt-negrita">#{{ ticket.numeroFactura || ticket.id }}</td>
-                <td class="txt-mutado">{{ (ticket.fecha || ticket['createdAt'] || ticket['fechaCreacion']) | date:'HH:mm' }}</td>
-                <td>{{ ticket.cliente?.nombre || 'Cliente General' }}</td>
-                <td class="text-derecha txt-precio">{{ ticket.total | currency:'EUR' }}</td>
-                <td class="text-centro">
-                  <span class="badge-estado" [ngClass]="ticket.estadoAeat === 'ENVIADO' ? 'enviado' : 'pendiente'">
-                    <span class="punto-indicador"></span>
-                    {{ ticket.estadoAeat || 'PENDIENTE' }}
-                  </span>
-                </td>
-                <td class="text-centro">
-                  <span class="badge-financiero" [ngClass]="ticket.estadoPago || 'PENDIENTE'">
-                    {{ ticket.estadoPago || 'PENDIENTE' }}
-                  </span>
-                </td>
-                <td class="text-centro">
-                  <span class="badge-taller" [ngClass]="ticket.estadoTaller || 'EN_TALLER'">
-                    {{ ticket.estadoTaller || 'VENTA  ' }}
-                  </span>
-                </td>
-                <td class="text-centro celdas-botones-tactiles">
-                  <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
-                  @if (ticket.cliente) {
-                    <button type="button" (click)="descargarFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
-                  }
-                  @if (ticket.estadoTaller === 'LISTO' && ticket.estadoPago === 'PAGADO') {
-                    <button type="button" (click)="entregarReparacionHistorial(ticket)" class="btn-accion-tvc entregar">✓ Entregar</button>
-                  }
-                  @if (ticket.estadoPago !== 'PAGADO' && ticket.estadoPago !== 'CANCELADO') {
-                    <button type="button" (click)="liquidarOrdenHistorial(ticket)" class="btn-accion-tvc cobrar-pendiente">💰 Liquidar</button>
-                  }
-                  @if (ticket.estadoTaller !== 'ENTREGADO' && ticket.estadoPago !== 'CANCELADO') {
-                    <button type="button" (click)="anularOrdenHistorial(ticket)" class="btn-accion-tvc anular">✕ Anular</button>
-                  }
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="8" class="tabla-vacia">
-                  📭 No se han realizado ventas en este turno todavía.
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-  </div>
+  <div class="historial-body">
+    <table class="tabla-historial">
+      <thead>
+        <tr>
+          <th>Nº Ticket</th>
+          <th>Hora</th>
+          <th>Cliente</th>
+          <th class="text-derecha">Total</th>
+          <th class="text-centro">Estado AEAT</th>
+          <th class="text-centro">Financiero</th>
+          <th class="text-centro">Taller</th>
+          <th class="text-centro">Acciones Táctiles</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (ticket of historialTickets(); track ticket.id) {
+          <tr>
+            <td class="txt-negrita">#{{ ticket.numeroTicket || ticket.id }}</td>
+            <td class="txt-mutado">{{ (ticket.fecha || ticket['createdAt'] || ticket['fechaCreacion']) | date:'HH:mm' }}</td>
+            <td>{{ ticket.cliente?.nombre || 'Cliente General' }}</td>
+            <td class="text-derecha txt-precio">{{ ticket.total | currency:'EUR' }}</td>
+            <td class="text-centro">
+              <span class="badge-estado" [ngClass]="ticket.estadoAeat === 'ENVIADO' ? 'enviado' : 'pendiente'">
+                <span class="punto-indicador"></span>
+                {{ ticket.estadoAeat || 'PENDIENTE' }}
+              </span>
+            </td>
+            <td class="text-centro">
+              <span class="badge-financiero" [ngClass]="ticket.estadoPago || 'PENDIENTE'">
+                {{ ticket.estadoPago || 'PENDIENTE' }}
+              </span>
+            </td>
+            <td class="text-centro">
+              <span class="badge-taller" [ngClass]="ticket.tipo === 'VENTA_DIRECTA' ? 'vendido' : (ticket.estadoTaller || 'EN_TALLER')">
+                {{ ticket.tipo === 'VENTA_DIRECTA' ? 'Vendido' : (ticket.estadoTaller || 'VENTA') }}
+              </span>
+            </td>
+            <td class="text-centro celdas-botones-tactiles">
+              
+              @if (ticket.numeroTicket && !ticket.numeroTicket.includes('TEMP')) {
+                
+                <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
+                
+                @if (ticket.cliente) {
+                  <button type="button" (click)="descargarFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
+                }
+                
+                @if (ticket.estadoPago === 'PAGADO' && $any(ticket).estadoPago !== 'DEVOLUCION' && ticket.estadoTaller !== 'CANCELADO') {
+                  <button type="button" (click)="devolverTicketCompleto(ticket)" class="btn-accion-tvc devolucion" title="Devolver el ticket completo (todas las cosas)">🔄 Devolución</button>
+                }
 
-</div>
+              } @else {
+                <span class="txt-mutado" style="font-size: 0.9rem;">Guardando en BD...</span>
+              }
+
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="tabla-vacia">
+              📭 No se han realizado ventas en este turno todavía.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
 
 <!-- MODAL FLOTANTE DEL KEYPAD TÁCTIL PARA MODIFICAR PRECIOS -->
 @if (indiceItemEditandoPrecio() !== null) {
@@ -626,4 +628,45 @@
   }
   </div>
 }
-<app-clientes #componenteClientes [modoModalSolo]="true"></app-clientes>
+<!-- CONTENEDOR DE PREVISUALIZACIÓN DEL TICKET -->
+@if (isTicketVisible()) {
+  <div class="modal-ticket-overlay">
+    <div class="modal-ticket-content">
+      
+      <!-- Cabecera idéntica a tus otros modales -->
+      <div class="modal-header">
+        <h3>🖨️ Recibo de Operación</h3>
+        <button class="btn-cerrar" (click)="isTicketVisible.set(false)">&times;</button>
+      </div>
+
+      <!-- Cuerpo del Modal: Datos del ticket e Iframe con el PDF -->
+      <div class="modal-body">
+        <div class="detalles-ticket-preview">
+          <span><strong>Nº Ticket oficial:</strong> {{ numeroTicketActual() }}</span>
+        </div>
+
+        <!-- Spinner por si el backend tarda un pelín en generar el chorro del PDF -->
+        @if (cargandoPDF()) {
+          <div class="loading-pdf-stream">
+            ⏳ Generando vista de impresión...
+          </div>
+        }
+
+        <!-- Tu iframe seguro conectado al Signal -->
+        <iframe id="iframeTicketPdf" [src]="urlSeguraPdf()" class="iframe-preview-pdf"></iframe>
+      </div>
+
+      <!-- Botonera inferior con acciones táctiles adaptadas a tu estilo -->
+      <div class="acciones-ticket-preview">
+        <button type="button" class="btn-imprimir-recibo" (click)="imprimirIframeTicket()">
+          🖨️ IMPRIMIR TICKET (80mm)
+        </button>
+        <button type="button" class="btn-aceptar-keypad" (click)="cerrarReciboAeat()">
+          ➔ NUEVA OPERACIÓN / CONTINUAR
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+<app-clientes [modoModalSolo]="true" (onClienteSeleccionado)="asignarClienteEnMostrador($event)"></app-clientes>

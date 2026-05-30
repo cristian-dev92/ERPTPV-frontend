@@ -1,11 +1,13 @@
 <div class="clientes-container">
   
   @if (!modoModalSolo()) {
+  <!-- Encabezado: Se muestra si no es modal, o añadimos una versión compacta si lo es -->
   <header class="clientes-header">
     <div>
-      <h1>👤 Directorio de Clientes</h1>
-      <p>Gestione el historial de contacto y datos de facturación de vuestro taller.</p>
+      <h1>👤 {{ modoModalSolo() ? 'Seleccionar Cliente para la Venta' : 'Directorio de Clientes' }}</h1>
+      <p>{{ modoModalSolo() ? 'Haga clic sobre un cliente para vincularlo al mostrador.' : 'Gestione el historial de contacto y datos de facturación de vuestro taller.' }}</p>
     </div>
+    <!-- ¡Clave! Dejamos el botón de registrar siempre disponible para dar de alta clientes rápidos desde el TPV -->
     <button (click)="abrirModal()" class="btn-nuevo-cliente" type="button">
       ➕ Registrar Cliente
     </button>
@@ -22,7 +24,7 @@
 
   <!-- LISTADO DE CLIENTES -->
   <div class="tabla-wrapper">
-    <table class="zapatero-table">
+    <table class="zapatero-table" [class.tabla-modo-seleccion]="modoModalSolo()">
       <thead>
         <tr>
           <th>Nombre del Cliente</th>
@@ -30,7 +32,7 @@
           <th>✉️ Correo Electrónico</th>
           <th>🪪 Documento (DNI/NIF)</th>
           <th>📍 Ciudad</th>
-          <th>Estado</th>
+          <th>{{ modoModalSolo() ? 'Acción' : 'Estado' }}</th>
         </tr>
       </thead>
       <tbody>
@@ -43,15 +45,23 @@
         } @else {
           @for (c of clientes(); track c.id) {
             <tr>
+              <tr [class.fila-seleccionable]="modoModalSolo()" (click)="modoModalSolo() ? seleccionarCliente(c) : null">
               <td class="txt-negrita">{{ c.nombre }}</td>
               <td class="txt-telefono">{{ c.telefono }}</td>
               <td class="txt-email">{{ c.email || '-' }}</td>
               <td class="txt-mutado">{{ c.documentoIdentidad || '-' }}</td>
               <td>{{ c.ciudad || '-' }}</td>
               <td>
+                <!-- 🎯 CLAVE 2: Si es modo modal, pintamos un botón táctil de selección; si no, el badge normal de Estado -->
+                @if (modoModalSolo()) {
+                  <button type="button" class="btn-seleccionar-cliente-tvc" style="padding: 4px 8px; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 0.85rem; cursor: pointer;">
+                    Seleccionar
+                  </button>
+                } @else {
                 <span class="badge-activo" [class.badge-inactivo]="c.activo === false">
                   {{ c.activo !== false ? '🟢 Activo' : '🔴 Inactivo' }}
                 </span>
+              }
               </td>
             </tr>
           } @empty {

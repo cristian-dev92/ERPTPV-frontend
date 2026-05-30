@@ -2294,3 +2294,188 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
   border-color: #2563eb !important;
   border-bottom-color: #1d4ed8 !important;
 }
+
+/* ========================================================================= */
+/* 🖨️ MODAL DE PREVISUALIZACIÓN DE TICKET (ESTILO TACTIL TPV)                */
+/* ========================================================================= */
+
+.modal-ticket-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000; /* Prioridad absoluta por encima de otros teclados/modales */
+  animation: ticketFadeIn 0.2s ease-out;
+}
+
+.modal-ticket-content {
+  background: #ffffff;
+  width: 92%;
+  max-width: 580px;
+  height: 85vh;
+  max-height: 750px;
+  border-radius: 12px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ticketScaleUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+
+  /* Cabecera del modal */
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 1.5rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+
+    h3 {
+      margin: 0;
+      font-size: 1.35rem;
+      color: #212529;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .btn-cerrar {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      line-height: 1;
+      color: #adb5bd;
+      cursor: pointer;
+      padding: 0 0.5rem;
+      transition: color 0.15s ease;
+
+      &:hover, &:active {
+        color: #dc3545;
+      }
+    }
+  }
+
+  /* Cuerpo con el visor e información */
+  .modal-body {
+    flex: 1;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: #e9ecef; /* Contraste gris para recortar el blanco del ticket */
+    overflow-y: auto;
+
+    .detalles-ticket-preview {
+      background: #ffffff;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      border-left: 5px solid #0d6efd;
+      font-size: 1rem;
+      color: #495057;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      
+      strong {
+        color: #212529;
+      }
+    }
+
+    /* Estado de carga */
+    .loading-pdf-stream {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border-radius: 8px;
+      flex: 1;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #495057;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Contenedor del PDF Stream (Iframe) */
+    .iframe-preview-pdf {
+      width: 100%;
+      flex: 1;
+      border: 1px solid #ced4da;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  /* Botonera inferior (Grid distribuido equitativamente) */
+  .acciones-ticket-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    padding: 1.2rem 1.5rem;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+
+    button {
+      padding: 1.1rem 1rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      transition: filter 0.15s ease, transform 0.1s ease;
+
+      /* Feedback visual inmediato al pulsar en pantalla táctil */
+      &:active {
+        transform: scale(0.96);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    /* Botón: Imprimir ticket (Disparar impresora) */
+    .btn-imprimir-recibo {
+      background: #343a40; /* Gris oscuro industrial */
+      color: #ffffff;
+
+      &:hover {
+        filter: brightness(1.2);
+      }
+    }
+
+    /* Botón: Continuar (Devolver al TPV / Siguiente operación) */
+    .btn-aceptar-keypad {
+      background: #198754; /* Verde Éxito TPV */
+      color: #ffffff;
+
+      &:hover {
+        filter: brightness(1.1);
+      }
+    }
+  }
+}
+
+/* Animaciones fluidas */
+@keyframes ticketFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ticketScaleUp {
+  from { 
+    transform: scale(0.94); 
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}

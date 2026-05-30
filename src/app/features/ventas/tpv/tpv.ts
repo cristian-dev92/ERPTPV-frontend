@@ -39,15 +39,16 @@ export interface InfoVerifaktu {
 
 export interface TicketHistorial {
   id: number;
-  numeroFactura: string;
+  numeroTicket: string;
   fecha: Date;
   createdAt?: string | Date;       // 🌟 Añadido como opcional para soportar el backend
   fechaCreacion?: string | Date; // 🌟 Añadido como opcional para soportar el backend
   cliente: { nombre: string } | null;
   total: number;
   estadoAeat: 'ENVIADO' | 'PENDIENTE';
-  estadoPago?: 'PAGADO' | 'PARCIAL' | 'PENDIENTE' | 'CANCELADO';
+  estadoPago?: 'PAGADO' | 'PARCIAL' | 'PENDIENTE' | 'CANCELADO' | 'DEVOLUCION';
   estadoTaller?: 'EN_TALLER' | 'LISTO' | 'ENTREGADO' | 'CANCELADO';
+  tipo?: 'VENTA_DIRECTA' | 'REPARACION';
 }
 
 @Component({
@@ -175,9 +176,10 @@ export class TpvComponent implements OnInit {
   isTicketVisible = signal(false);
   idTicketOrigenDevolucion =signal<number | null>(null);
 
-  // Variables para mostrar el número de ticket y la hora en el recibo de venta, que se actualizan al finalizar cada venta o devolución
+  // Variables para mostrar el número de ticket y la hora en el recibo de venta
   numeroTicketActual = signal<string>('TKT-PROVISIONAL');
   horaTicketActual = signal<string>('');
+
 
   // Método que se ejecuta al cargar el componente, ideal para cargar los artículos y comprobar el estado de la caja
   ngOnInit() {
@@ -305,13 +307,15 @@ export class TpvComponent implements OnInit {
         this.idOperacionProcesada.set(devolucionGuardada.id);
 
         // Insertamos la devolución en el historial inferior (en negativo para que cuadre visualmente)
-        const ticketAbonoHistorial = {
+        const ticketAbonoHistorial: TicketHistorial = {
           id: devolucionGuardada.id,
-          numeroFactura: devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`, 
+          numeroTicket: devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`, 
           fecha: new Date(),
           cliente: this.clienteSeleccionado() ? { nombre: this.clienteSeleccionado()!.nombre } : null,
           total: -Math.abs(this.totalTicket()), // Lo pintamos en negativo en la lista
-          estadoAeat: 'PENDIENTE' as const // Marcamos como pendiente de envío a AEAT por ahora, hasta que implementemos ese flujo
+          estadoAeat: 'PENDIENTE',
+          estadoPago: 'DEVOLUCION', 
+          tipo: 'VENTA_DIRECTA'
         };
 
         this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
@@ -385,15 +389,17 @@ export class TpvComponent implements OnInit {
     this.ordenService.cobrar(id, this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO').subscribe({
       next: (res) => {
         this.uiService.mostrarToast('💰 ¡Venta cobrada al 100% correctamente en Caja!', 'success');
-
         // Guardamos la referencia de operación/ID para la llamada del PDF
         this.idOperacionProcesada.set(id);
+
+        // Actualizamos el número de ticket y la hora para mostrarlos en el recibo de venta
+        this.numeroTicketActual.set(res.numeroTicket);
+        this.horaTicketActual.set(new Date().toLocaleTimeString());
 
         // === NUEVO: INSERTAR EL TICKET EN EL HISTORIAL INFERIOR ===
         const nuevoTicket: TicketHistorial = {
           id: id,
-          // Si el back aún no te da un número de factura real, generamos uno temporal basado en el ID
-          numeroFactura: res.numeroFactura || `TEMP-${id}`, 
+          numeroTicket: res.numeroTicket, 
           fecha: new Date(),
           cliente: this.clienteSeleccionado() ? { nombre: this.clienteSeleccionado()!.nombre } : null,
           total: this.totalTicket(),
@@ -403,26 +409,16 @@ export class TpvComponent implements OnInit {
 
         // Lo metemos al principio de la lista usando .update() para que sea reactivo
         this.historialTickets.update(tickets => [nuevoTicket, ...tickets]);
-        // =========================================================
 
-        // Si el backend devuelve datos de AEAT para VeriFactu, los preparamos para mostrar en el modal de comprobación antes de cerrar el recibo
-        if (res.aeatQrUrl) {
-          this.datosFacturaAeat.set({
-            qr: res.aeatQrUrl,
-            ref: res.aeatIdentificador,
-            total: this.totalTicket(),
-            fecha: new Date().toLocaleTimeString()
-          });
-        } else {
-          // 🔥 DATOS DE RESERVA: Si el back no devuelve AEAT (modo local/pausado), 
-          // rellenamos el Signal igual para obligar al HTML a abrir el modal con el PDF.
+          // Módulo Veri*Factu
           this.datosFacturaAeat.set({
             qr: '',
-            ref: res.numeroFactura || `SIMULADO-${id}`, 
+            ref: res.numeroFTicket, 
             total: this.totalTicket(),
             fecha: new Date().toLocaleTimeString()
           });
-        }
+        // Mostramos el ticket de venta con el PDF previsualizado para que el cajero pueda imprimirlo o revisarlo antes de cerrar el recibo
+        this.isTicketVisible.set(true);
         // Lanzamos la generación del PDF ahora que tenemos ID y datos cargados
         this.generarYPrevisualizarTicket();
       },
@@ -432,18 +428,47 @@ export class TpvComponent implements OnInit {
 
   // Método para registrar un anticipo en una reparación
   private cobrarAnticipoTicket(id: number, importe: number, metodoPago: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO') {
+    // 🚀 CAMINO A: SI EL IMPORTE ES ZERO (No deja señal)
+  if (importe === 0) {
+    this.uiService.mostrarToast(`📋 Resguardo de depósito generado con éxito (Sin anticipo).`, 'success');
+
+    this.idOperacionProcesada.set(id);
+    
+    // Aquí usamos el ID de la orden para el número de ticket/resguardo
+    // Si tu backend genera otro código, puedes adaptarlo
+    this.numeroTicketActual.set(`REP-${id}`); 
+    this.horaTicketActual.set(new Date().toLocaleTimeString());
+    
+    this.datosFacturaAeat.set({
+      qr: '', // Los resguardos sin cobro no suelen requerir QR de VeriFactu inmediatamente
+      ref: `REP-${id}`,
+      total: 0,
+      fecha: new Date().toLocaleTimeString()
+    });
+
+    // Abrimos tu nueva ventana modal SCSS de previsualización
+    this.isTicketVisible.set(true);
+    
+    // Disparamos la generación del PDF. Tu backend recibirá el ID de la orden 
+    // y verá que al no tener anticipos asociados, debe pintar el "Resguardo de Taller" estándar.
+    this.generarYPrevisualizarTicket();
+    return; // Cortamos la ejecución aquí para que NO llame al servicio del backend erróneo
+  }
     this.ordenService.registrarAnticipo(id, importe, metodoPago).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.uiService.mostrarToast(`📉 ¡Anticipo de ${importe}€ registrado con éxito! El ticket queda pendiente del resto.`, 'success');
         // Seteamos datos para que salte tu modal VeriFactu y permita sacar el ticket/resguardo con el anticipo
         this.idOperacionProcesada.set(id);
+        this.numeroTicketActual.set(res.numeroTicket);
+        this.horaTicketActual.set(new Date().toLocaleTimeString());
         this.datosFacturaAeat.set({
           qr: '',
-          ref: `ANTICIPO-#${id}`,
+          ref: res.numeroTicket,
           total: importe,
           fecha: new Date().toLocaleTimeString()
         });
-
+        // Mostramos el ticket de anticipo con el PDF previsualizado para que el cajero pueda imprimirlo o revisarlo antes de cerrar el recibo
+        this.isTicketVisible.set(true);
         // Después de registrar el anticipo, previsualizamos el ticket con el importe del anticipo y dejamos la orden abierta para que el cajero pueda cobrar el resto más tarde.
         this.generarYPrevisualizarTicket();
       },
@@ -492,7 +517,7 @@ export class TpvComponent implements OnInit {
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = `Factura_${ticket.numeroFactura}.pdf`;
+        link.download = `Factura_${ticket.numeroTicket}.pdf`;
         link.click();
         window.URL.revokeObjectURL(blobUrl);
       },
@@ -533,7 +558,7 @@ export class TpvComponent implements OnInit {
     
     this.ordenService.cobrar(ticket.id, metodoPagoSeguro).subscribe({
       next: (res) => {
-        this.uiService.mostrarToast(`💰 Saldo de la Orden #${ticket.numeroFactura} liquidado con éxito.`, 'success');
+        this.uiService.mostrarToast(`💰 Saldo de la Orden #${ticket.numeroTicket} liquidado con éxito.`, 'success');
         // Refrescamos la lista para que cambie el badge financiero a PAGADO en caliente
         this.ordenService.getOrdenesPorEstado('TODAS').subscribe(t => this.historialTickets.set(t));
       },
@@ -557,12 +582,13 @@ export class TpvComponent implements OnInit {
 
    /* ➔ ACCIÓN DE CONTINUAR: Limpia todo el TPV y lo prepara para la siguiente venta */
   cerrarReciboAeat(): void {
+    this.isTicketVisible.set(false);
     this.urlSeguraPdf.set(null);
     this.datosFacturaAeat.set(null);
-    this.limpiarCarrito();
-    this.deseleccionarCliente();
     this.idOperacionProcesada.set(null);
     this.idOrdenPendienteAnticipo.set(null);
+    this.limpiarCarrito();
+    this.deseleccionarCliente();
   }
 
   // Método para limpiar el carrito y resetear estados después de finalizar una venta o reparación
@@ -576,13 +602,11 @@ export class TpvComponent implements OnInit {
     this.tipoOrdenSeleccionada.set('VENTA_DIRECTA'); // Reseteamos el tipo de orden a venta directa para la siguiente venta
     this.metodoPagoSeleccionado.set('EFECTIVO'); // Reseteamos el método de pago a efectivo para la siguiente venta
     this.seleccionarCategoria('TODOS'); // Reseteamos el filtro de categoría para mostrar todo el catálogo en la siguiente venta
-    this.datosFacturaAeat.set(null); // Limpiamos los datos de la factura AEAT para que no se muestren en la siguiente venta
-    this.idOperacionProcesada.set(null); // Reseteamos la referencia de operación procesada para el PDF para que no se asocie por error a la siguiente venta
-    this.modoDevolucion.set(false); // Cerramos el modo devolución por si acaso quedó activo
     this.cargandoPDF.set(false); // Reseteamos el estado de carga del PDF para la siguiente venta
     this.indiceItemEditandoPrecio.set(null); // Cerramos el keypad de precio por si acaso quedó abierto
     this.precioEnConstruccion.set(''); // Reseteamos el valor en construcción del precio para la siguiente venta
-    
+    this.numeroTicketActual.set('TKT-PROVISIONAL'); // Reseteamos el número de ticket para la siguiente venta
+    this.horaTicketActual.set(''); // Reseteamos la hora del ticket para la siguiente venta
   }
   
   // Métodos para manejar la búsqueda y selección de clientes en el TPV (útil para reparaciones)
@@ -649,7 +673,7 @@ export class TpvComponent implements OnInit {
 
   // Lógica para lanzar la reimpresión del ticket seleccionado
   reimprimirTicket(ticket: TicketHistorial) {
-    this.uiService.mostrarToast(`🖨️ Reenviando a impresora ticket #${ticket.numeroFactura}...`, 'success');
+    this.uiService.mostrarToast(`🖨️ Reenviando a impresora ticket #${ticket.numeroTicket}...`, 'success');
     
     // 🚀 Llamamos a tu servicio pasándole la ID del ticket
     this.ordenService.imprimirTicket(ticket.id).subscribe({
@@ -999,15 +1023,6 @@ toggleSinFechaRecogida(): void {
     this.abrirTecladoGeneral('CANTIDAD_ANTICIPO');
   }
 
-  /* El cliente NO quiere dejar anticipo */
-  responderNoAnticipo() {
-    this.uiService.mostrarToast('Orden de reparación guardada como PENDIENTE de cobro.', 'success');
-    this.limpiarCarrito();
-    this.deseleccionarCliente();
-    this.cerrarTecladoGeneral();
-    this.idOrdenPendienteAnticipo.set(null);
-  }
-
   /* Aplica la cantidad numérica introducida por el teclado táctil */
   aplicarCantidadAnticipo() {
     const valor = this.valorTecladoEnConstruccion();
@@ -1021,6 +1036,22 @@ toggleSinFechaRecogida(): void {
       this.idOrdenPendienteAnticipo.set(null);
     } else {
       this.uiService.mostrarToast(`Importe no válido. El máximo permitido es ${this.totalTicket()}€.`, 'warning');
+    }
+  }
+
+  /* ❌ Método para vincular directamente al botón "NO DEJA ANTICIPO" de tu interfaz */
+  responderNoAnticipo() {
+    const id = this.idOrdenPendienteAnticipo();
+    
+    if (id !== null) {
+      const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
+      
+      // Forzamos el cobro con un importe de 0€ para que genere el resguardo de taller directo
+      this.cobrarAnticipoTicket(id, 0, metodoPagoSeguro);
+      this.cerrarTecladoGeneral();
+      this.idOrdenPendienteAnticipo.set(null);
+    } else {
+      this.uiService.mostrarToast('No hay ninguna orden pendiente para procesar.', 'error');
     }
   }
 
@@ -1040,5 +1071,79 @@ toggleSinFechaRecogida(): void {
   this.tipoOrdenSeleccionada.set('VENTA_DIRECTA');
   this.metodoPagoSeleccionado.set('EFECTIVO');
  }
+
+ asignarClienteEnMostrador(cliente: Cliente) {
+  this.clienteSeleccionado.set(cliente);
+}
+
+/* 🔄 ACCIÓN TÁCTIL: Devuelve todo el contenido del ticket adaptándose al DevolucionRequest de Java */
+  devolverTicketCompleto(ticket: any): void {
+    // 1. Nos aseguramos de que el ticket tiene líneas o artículos dentro para poder devolverlos
+    // Nota: Dependiendo de cómo te devuelva el objeto el backend, puede llamarse 'lineas', 'items' o 'detalles'
+    const lineasTicket = ticket.lineas || ticket.items || ticket.detalles || [];
+
+    if (lineasTicket.length === 0) {
+      this.uiService.mostrarToast('⚠️ Este ticket no contiene artículos registrados para poder devolver.', 'warning');
+      return;
+    }
+
+    // 2. Confirmación táctil en el mostrador
+    const confirmar = confirm(`¿Estás seguro de que deseas realizar la DEVOLUCIÓN COMPLETA del ticket #${ticket.numeroTicket || ticket.id}? Se reincorporarán las ${lineasTicket.length} líneas de artículos al stock.`);
+    if (!confirmar) return;
+
+    this.uiService.mostrarToast('Procesando abono total...', 'success');
+
+    // 3. Construimos el JSON mapeando EXACTAMENTE al DevolucionRequest de Java que me has pasado
+    const requestDevolucion = {
+      ordenOrigenId: ticket.id, // Vinculamos la orden origen
+      metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO',
+      
+      // Mapeamos las líneas del historial al DTO estricto del Back. 
+      // Revisa si tu backend en el ticket original devuelve 'articuloId' o 'productoId' y 'cantidad'
+      lineas: lineasTicket.map((linea: any) => ({
+        articuloId: linea.articuloId || linea.productoId || linea.articulo?.id, 
+        cantidad: Math.abs(linea.cantidad) // Javi lo quiere en POSITIVO (ej: 1), nos aseguramos con Math.abs
+      }))
+    };
+
+    // 4. Llamamos al endpoint que SÍ está desarrollado en tu ordenService
+    this.ordenService.procesarDevolucion(requestDevolucion).subscribe({
+      next: (devolucionGuardada) => {
+        this.uiService.mostrarToast(`✅ Devolución del ticket #${ticket.numeroTicket || ticket.id} procesada con éxito.`, 'success');
+        
+        // Guardamos la referencia para el PDF si hiciera falta mostrar el comprobante
+        this.idOperacionProcesada.set(devolucionGuardada.id);
+
+        // Insertamos el abono generado en tu historial local en negativo para que cuadre visualmente
+        const ticketAbonoHistorial: TicketHistorial = {
+          id: devolucionGuardada.id,
+          numeroTicket: devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`, 
+          fecha: new Date(),
+          cliente: ticket.cliente ? { nombre: ticket.cliente.nombre } : null,
+          total: -Math.abs(ticket.total), // Lo pintamos en negativo en la parrilla inferior
+          estadoAeat: 'PENDIENTE',
+          estadoPago: 'DEVOLUCION',
+          tipo: 'VENTA_DIRECTA'
+        };
+
+        // Añadimos el nuevo ticket de abono arriba en la tabla del turno
+        this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
+
+        // Volvemos a pedir todas las órdenes al servidor para actualizar los badges del ticket original a 'DEVOLUCION' en caliente
+        this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+          next: (ticketsActualizados) => this.historialTickets.set(ticketsActualizados),
+          error: (err) => console.error('Error al actualizar parrilla tras abono:', err)
+        });
+
+        // Limpiamos los estados de selección del mostrador por seguridad
+        this.limpiarCarrito();
+        this.deseleccionarCliente();
+      },
+      error: (err) => {
+        console.error('Error en devolución automática:', err);
+        this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error?.message || err.error || 'Error en el servidor'), 'error');
+      }
+    });
+  }
 
 }
