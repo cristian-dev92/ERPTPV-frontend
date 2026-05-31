@@ -31,9 +31,9 @@ export class ArticuloFormComponent implements OnInit {
   idArticuloEdicion = signal<number | null>(null);
 
   // === ESTADOS PARA EL TECLADO TÁCTIL EN FORMULARIO ===
-  mostrarTeclado = signal<boolean>(false);
-  campoObjetivo = signal<'PRECIO' | 'IVA' | null>(null);
-  valorTeclado = signal<string>('');
+  mostrarTecladoGeneral = signal<boolean>(false);
+  inputObjetivoTeclado = signal<string>('');
+  valorTecladoEnConstruccion = signal<string>('');
 
    // Inyección de dependencias
   private articuloService = inject(ArticuloService);
@@ -44,6 +44,7 @@ export class ArticuloFormComponent implements OnInit {
   
   // Señal limpia para almacenar los proveedores reales del Backend
   proveedores = signal<ProveedorDTO[]>([]);
+  filtroProveedor = signal<string>('');
 
   ngOnInit(): void {
     this.cargarProveedores();
@@ -67,7 +68,6 @@ export class ArticuloFormComponent implements OnInit {
           this.idProveedor.set(articulo.idProveedor ?? null);
           this.precioFinal.set(articulo.precioFinal);
           this.porcentajeIva.set(articulo.porcentajeIva);
-          // Mapeamos el campo 'notas' del backend a tu señal 'notasReparacion'
           this.notasReparacion.set(articulo.notas || '');
         },
         error: (err) => {
@@ -84,7 +84,6 @@ export class ArticuloFormComponent implements OnInit {
     this.proveedorservice.obtenerMisProveedores().subscribe({
       next: (data: ProveedorDTO[]) => {
         this.proveedores.set(data);
-        console.log('Proveedores cargados del backend:', data);
       },
       error: (err: any) => {
         console.error('Error al cargar proveedores:', err);
@@ -93,8 +92,118 @@ export class ArticuloFormComponent implements OnInit {
     });
   }
 
+// === MÉTODOS DEL TECLADO GENERAL ===
+  abrirTecladoGeneralForm(
+    objetivo: 'NOMBRE' | 'PRECIO' | 'IVA' | 'STOCK_INICIAL' | 'STOCK_MINIMO' | 'NOTAS' | 'BUSCAR_PROVEEDOR', 
+    valorActual: string = ''
+  ) {
+    this.inputObjetivoTeclado.set(objetivo);
+    this.valorTecladoEnConstruccion.set(valorActual);
+    this.mostrarTecladoGeneral.set(true);
+  }
 
-  // Cálculo de la Base Imponible en tiempo real (Solo Visual)
+  pulsarTeclaGeneral(caracter: string) {
+    const actual = this.valorTecladoEnConstruccion();
+    const objetivo = this.inputObjetivoTeclado();
+
+    // Validaciones de punto decimal para Precio e IVA
+    if (caracter === '.' && actual.includes('.')) return;
+    if (actual.includes('.') && actual.split('.')[1].length >= 2 && (objetivo === 'PRECIO' || objetivo === 'IVA')) return;
+
+    this.valorTecladoEnConstruccion.update(val => val + caracter);
+  }
+
+  borrarUltimoCaracterGeneral() {
+    this.valorTecladoEnConstruccion.update(val => val.slice(0, -1));
+  }
+
+  limpiarTecladoGeneral() {
+    this.valorTecladoEnConstruccion.set('');
+  }
+
+  cerrarTecladoGeneral() {
+    this.mostrarTecladoGeneral.set(false);
+  }
+
+  aplicarTextoAlFormulario() {
+    const objetivo = this.inputObjetivoTeclado();
+    const valor = this.valorTecladoEnConstruccion();
+
+    if (objetivo === 'NOMBRE') this.nombre.set(valor);
+    if (objetivo === 'NOTAS') this.notasReparacion.set(valor);
+    if (objetivo === 'BUSCAR_PROVEEDOR') this.filtroProveedor.set(valor);
+    
+    if (objetivo === 'PRECIO') {
+      const num = parseFloat(valor) || 0;
+      this.precioFinal.set(num === 0 ? null : num);
+    }
+    if (objetivo === 'IVA') {
+      this.porcentajeIva.set(parseFloat(valor) || 0);
+    }
+    if (objetivo === 'STOCK_INICIAL') {
+      const num = parseInt(valor, 10);
+      this.stockInicial.set(isNaN(num) ? null : num);
+    }
+    if (objetivo === 'STOCK_MINIMO') {
+      const num = parseInt(valor, 10);
+      this.stockMinimo.set(isNaN(num) ? null : num);
+    }
+
+    this.mostrarTecladoGeneral.set(false);
+  }
+
+  guardarArticulo(): void {
+    if (!this.nombre() || this.precioFinal() === null) {
+      this.uiService.mostrarToast('Por favor, rellena los campos obligatorios.', 'error');
+      return;
+    }
+
+    // Comprobación a prueba de valores incorrectos o menores de 0
+    const valorPrecio = this.precioFinal();
+    if (valorPrecio === null || valorPrecio <= 0) {
+      this.uiService.mostrarToast('El precio final debe ser mayor que 0.', 'error');
+      return;
+    }
+
+    const articuloPayload = {
+      nombre: this.nombre(),
+      tipo: this.tipo(),
+      stock: this.tipo() === 'PRODUCTO' ? this.stockInicial() : null,
+      stockMinimo: this.tipo() === 'PRODUCTO' ? this.stockMinimo() : null,
+      idProveedor: this.idProveedor() ? Number(this.idProveedor()) : null,
+      precioFinal: this.precioFinal() ?? 0,
+      porcentajeIva: this.porcentajeIva(),
+      notas: this.notasReparacion().trim(),
+      activo: true
+    };
+
+    const idEdicion = this.idArticuloEdicion();
+
+    if (idEdicion) {
+      this.articuloService.actualizarArticulo(idEdicion, articuloPayload).subscribe({
+        next: () => {
+          this.uiService.mostrarToast('Artículo actualizado con éxito', 'success');
+          this.router.navigate(['/inventario']);
+        },
+        error: () => this.uiService.mostrarToast('Error al guardar las modificaciones', 'error')
+      });
+    } else {
+      this.articuloService.crearArticulo(articuloPayload).subscribe({
+        next: () => {
+          this.uiService.mostrarToast('Artículo creado con éxito', 'success');
+          this.router.navigate(['/inventario']);
+        },
+        error: () => this.uiService.mostrarToast('Error al crear el artículo', 'error')
+      });
+    }
+  }
+
+  cancelarYVolver() {
+    this.mostrarTecladoGeneral.set(false);
+    this.router.navigate(['/inventario']);
+  }
+  
+  // 🎯 Cálculo de la Base Imponible en tiempo real (Solo Visual)
   precioBaseVisual = computed(() => {
     const pvp = this.precioFinal();
     const iva = this.porcentajeIva();
@@ -107,124 +216,5 @@ export class ArticuloFormComponent implements OnInit {
     // Lo devolvemos formateado a 2 decimales para la vista
     return baseImponible.toFixed(2);
   });
-
-  // Envío del formulario al Backend
-  guardarArticulo(): void {
-    if (!this.nombre() || !this.precioFinal()) {
-      this.uiService.mostrarToast('Por favor, rellena los campos obligatorios.', 'error');
-      return;
-    }
-
-    // Comprobación a prueba de nulls
-    const valorPrecio = this.precioFinal();
-    if (valorPrecio === null || valorPrecio === undefined || valorPrecio <= 0) {
-      this.uiService.mostrarToast('El precio final debe ser mayor que 0.', 'error');
-      return;
-    }
-
-    // Construimos el JSON exactamente como lo espera el refactor del núcleo financiero
-    const articuloPayload = {
-      nombre: this.nombre(),
-      tipo: this.tipo(),
-      stock: this.tipo() === 'PRODUCTO' ? this.stockInicial() : null,
-      stockMinimo: this.tipo() === 'PRODUCTO' ? this.stockMinimo() : null,
-      idProveedor: this.idProveedor() ? Number(this.idProveedor()) : null,
-      precioFinal: this.precioFinal() ?? 0, // Aseguramos que no sea null
-      porcentajeIva: this.porcentajeIva(),  // Envía el número limpio (21, 10, etc.)
-      notas: this.notasReparacion().trim(), // Incluimos las notas de reparación
-      activo: true // Puedes ajustar esto según tu lógica de negocio
-    };
-
-   const idEdicion = this.idArticuloEdicion();
-
-    if (idEdicion) {
-      // 🚀 MODO EDICIÓN: Llama a actualizarArticulo
-      this.articuloService.actualizarArticulo(idEdicion, articuloPayload).subscribe({
-        next: () => {
-          this.uiService.mostrarToast('Artículo actualizado con éxito', 'success');
-          this.router.navigate(['/inventario']);
-        },
-        error: (err) => {
-          console.error('Error al actualizar artículo:', err);
-          this.uiService.mostrarToast('Error al guardar las modificaciones', 'error');
-        }
-      });
-    } else {
-      // ➕ MODO CREACIÓN: Llama a crearArticulo original
-      this.articuloService.crearArticulo(articuloPayload).subscribe({
-        next: () => {
-          this.uiService.mostrarToast('Artículo creado con éxito', 'success');
-          this.router.navigate(['/inventario']);
-        },
-        error: (err) => {
-          console.error('Error al crear artículo:', err);
-          this.uiService.mostrarToast('Error al crear el artículo', 'error');
-        }
-      });
-    }
-  }
-
-/* Abre el teclado en pantalla para el precio o el IVA */
-  abrirTeclado(objetivo: 'PRECIO' | 'IVA') {
-    this.campoObjetivo.set(objetivo);
-    
-    if (objetivo === 'PRECIO') {
-      this.valorTeclado.set(this.precioFinal() ? this.precioFinal()!.toString() : '');
-    } else {
-      this.valorTeclado.set(this.porcentajeIva().toString());
-    }
-    
-    this.mostrarTeclado.set(true);
-  }
-
-  /* Procesa las pulsaciones del teclado virtual */
-  pulsarTecla(tecla: string) {
-    const actual = this.valorTeclado();
-    
-    // Validar decimales (solo un punto y máximo dos decimales)
-    if (tecla === '.' && actual.includes('.')) return;
-    // Limitar a dos decimales
-    if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
-
-    this.valorTeclado.set(actual + tecla);
-    this.actualizarCampoEnTiempoReal();
-  }
-
-  borrarCaracter() {
-    const actual = this.valorTeclado();
-    if (actual.length > 0) {
-      this.valorTeclado.set(actual.slice(0, -1));
-      this.actualizarCampoEnTiempoReal();
-    }
-  }
-
-  limpiarTeclado() {
-    this.valorTeclado.set('');
-    this.actualizarCampoEnTiempoReal();
-  }
-
-  private actualizarCampoEnTiempoReal() {
-    const cadena = this.valorTeclado();
-    // Si termina en punto (ej: "25."), no forzamos el parseo para dejar que el usuario escriba los decimales
-    if (cadena.endsWith('.')) return; 
-
-    const valorNum = parseFloat(cadena) || 0;
-    if (this.campoObjetivo() === 'PRECIO') {
-      this.precioFinal.set(valorNum === 0 ? null : valorNum);
-    } else {
-      this.porcentajeIva.set(valorNum);
-    }
-  }
-
-  cerrarTeclado() {
-    this.mostrarTeclado.set(false);
-    this.campoObjetivo.set(null);
-    this.valorTeclado.set('');
-  }
-
-  cancelarYVolver() {
-    this.cerrarTeclado();
-    this.router.navigate(['/inventario']);
-  }
 
 }

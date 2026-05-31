@@ -6,7 +6,10 @@
     <!-- Nombre -->
     <div class="form-group full-width">
       <label for="nombre">Nombre del Artículo *</label>
-      <input type="text" id="nombre" [value]="nombre()" (input)="nombre.set($any($event.target).value)" placeholder="Ej. Reparación de tapas de cuero" required />
+      <input type="text" id="nombre" [value]="nombre()" 
+      (click)="abrirTecladoGeneralForm('NOMBRE', nombre())"
+      (input)="nombre.set($any($event.target).value)" 
+      placeholder="Ej. Reparación de tapas de cuero" required />
     </div>
 
     <!-- Tipo -->
@@ -21,10 +24,16 @@
     <!-- Proveedor -->
     <div class="form-group">
       <label for="proveedor">Proveedor</label>
-      <select id="proveedor" [value]="idProveedor() ?? ''" (change)="idProveedor.set(+$any($event.target).value)">
+      <select id="proveedor" [value]="idProveedor() ?? ''" 
+      (click)="abrirTecladoGeneralForm('BUSCAR_PROVEEDOR', proveedores().find(p => p.id === idProveedor())?.nombre || '')"
+      placeholder="Escriba para filtrar lista..." 
+      class="search-input"
+      (change)="idProveedor.set(+$any($event.target).value)">
         <option value="" disabled selected>Selecciona un proveedor</option>
         @for (prov of proveedores(); track prov.id) {
           <option [value]="prov.id">{{ prov.nombre }}</option>
+        } @empty {
+          <option value="" disabled>⚠️ No hay coincidencias para tu búsqueda</option>
         }
       </select>
     </div>
@@ -33,12 +42,18 @@
     @if (tipo() === 'PRODUCTO') {
       <div class="form-group animacion-fade">
         <label for="stockInicial">Stock Inicial</label>
-        <input type="number" id="stockInicial" [value]="stockInicial()" (input)="stockInicial.set(+$any($event.target).value)" placeholder="0" min="0" />
+        <input type="number" id="stockInicial" 
+        [value]="stockInicial()" 
+        (click)="abrirTecladoGeneralForm('STOCK_INICIAL', stockInicial()?.toString() || '')"
+        (input)="stockInicial.set(+$any($event.target).value)" placeholder="0" min="0" />
       </div>
 
       <div class="form-group animacion-fade">
         <label for="stockMinimo">Stock Mínimo</label>
-        <input type="number" id="stockMinimo" [value]="stockMinimo()" (input)="stockMinimo.set(+$any($event.target).value)" placeholder="0" min="0" />
+        <input type="number" id="stockMinimo" 
+        [value]="stockMinimo()" 
+        (click)="abrirTecladoGeneralForm('STOCK_MINIMO', stockMinimo()?.toString() || '')" 
+        (input)="stockMinimo.set(+$any($event.target).value)" placeholder="0" min="0" />
       </div>
     }
 
@@ -47,10 +62,13 @@
       <label for="precioFinal">Precio (PVP con IVA) *</label>
       <div class="input-contenedor-tactil">
         <div class="input-dinero">
-          <input type="number" id="precioFinal" step="0.01" [value]="precioFinal()" (input)="precioFinal.set(+$any($event.target).value)" placeholder="0.00" required />
+          <input type="number" id="precioFinal" step="0.01" 
+          [value]="precioFinal()" 
+          (click)="abrirTecladoGeneralForm('PRECIO', precioFinal()?.toString() || '')"
+          (input)="precioFinal.set(+$any($event.target).value)" placeholder="0.00" required />
           <span class="addon">€</span>
         </div>
-        <button type="button" class="btn-teclado-form" (click)="abrirTeclado('PRECIO')">⌨️</button>
+        <button type="button" class="btn-teclado-form" (click)="abrirTecladoGeneralForm('PRECIO', precioFinal()?.toString() || '')">⌨️</button>
       </div>
     </div>
 
@@ -58,10 +76,14 @@
         <label for="porcentajeIva">Porcentaje de IVA *</label>
         <div class="input-contenedor-tactil">
           <div class="input-porcentaje">
-            <input type="number" id="porcentajeIva" step="0.1" [value]="porcentajeIva()" (input)="porcentajeIva.set(+$any($event.target).value)" placeholder="21" required />
+            <input type="number" id="porcentajeIva" step="0.1"
+             [value]="porcentajeIva()"
+             (click)="abrirTecladoGeneralForm('IVA', porcentajeIva().toString() || '')"
+             (input)="porcentajeIva.set(+$any($event.target).value)" placeholder="21" required />
             <span class="addon">%</span>
         </div>
-        <button type="button" class="btn-teclado-form" (click)="abrirTeclado('IVA')">⌨️</button>
+        <button type="button" class="btn-teclado-form" 
+        (click)="abrirTecladoGeneralForm('IVA', porcentajeIva().toString() || '')">⌨️</button>
       </div>
     </div>
 
@@ -79,6 +101,7 @@
         id="notasReparacion" 
         rows="3" 
         [value]="notasReparacion()" 
+        (focus)="abrirTecladoGeneralForm('NOTAS', notasReparacion() || '')"
         (input)="notasReparacion.set($any($event.target).value)" 
         placeholder="Ej: Ubicación en estantería B3, proveedor tarda 4 días, notas de costes extra..."></textarea>
     </div>
@@ -91,31 +114,68 @@
   </form>
 </div>
 
-@if (mostrarTeclado()) {
-  <div class="modal-teclado-overlay">
+@if (mostrarTecladoGeneral()) {
+  <div class="modal-teclado-general-container">
     
-    <div class="teclado-header">
-      <span class="teclado-titulo">
-        Teclado Táctil: @if(campoObjetivo() === 'PRECIO') { Introducir PVP } @else { Porcentaje de IVA }
+    <div class="teclado-general-header">
+      <span class="titulo-contexto">
+        Teclado Táctil: 
+        @if(inputObjetivoTeclado() === 'NOMBRE'){ Nombre del Artículo }
+        @if(inputObjetivoTeclado() === 'PRECIO'){ PVP Final con IVA (€) }
+        @if(inputObjetivoTeclado() === 'IVA'){ Tipo de Gravamen IVA (%) }
+        @if(inputObjetivoTeclado() === 'STOCK_INICIAL'){ Unidades de Entrada }
+        @if(inputObjetivoTeclado() === 'STOCK_MINIMO'){ Umbral Alerta de Stock }
+        @if(inputObjetivoTeclado() === 'NOTAS'){ Anotaciones de Almacén }
+        @if(inputObjetivoTeclado() === 'BUSCAR_PROVEEDOR'){ Filtrar Distribuidor }
       </span>
-      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTeclado()">&times;</button>
+      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
     </div>
 
-    <div class="teclado-pantalla">
-      <span class="valor-actual">{{ valorTeclado() || '0' }}</span>
-      <button type="button" class="btn-vaciar" (click)="limpiarTeclado()">❌ Vaciar</button>
+    <div class="teclado-general-pantalla">
+      <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
+      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
     </div>
 
-    <div class="teclado-rejilla-botones">
-      @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
-        <button type="button" class="btn-tecla" (click)="pulsarTecla(num)">{{ num }}</button>
+    <div class="teclado-general-wrapper-keys">
+
+      @if (inputObjetivoTeclado() === 'PRECIO' || inputObjetivoTeclado() === 'IVA' || inputObjetivoTeclado() === 'STOCK_INICIAL' || inputObjetivoTeclado() === 'STOCK_MINIMO') {
+        <div class="grid-numerico-descuento">
+          @for (num of ['1','2','3','4','5','6','7','8','9','0']; track num) {
+            <button type="button" class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
+          }
+          @if (inputObjetivoTeclado() === 'PRECIO' || inputObjetivoTeclado() === 'IVA') {
+            <button type="button" class="btn-tecla-accion" (click)="pulsarTeclaGeneral('.')">.</button>
+          }
+          <button type="button" class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ BORRAR</button>
+        </div>
       }
-      <button type="button" class="btn-tecla btn-borrar" (click)="borrarCaracter()">⌫</button>
+      
+      @else {
+        <div class="fila-qwerty">
+          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P','1','2','3']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['A','S','D','F','G','H','J','K','L','4','5','6']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['Z','X','C','V','B','N','M','@','.','7','8','9']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          <button type="button" class="btn-tecla-alpha btn-cero" (click)="pulsarTeclaGeneral('0')">0</button>
+          <button type="button" class="btn-tecla-alpha btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+          <button type="button" class="btn-tecla-alpha btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
+        </div>
+      }
+      
+      <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarTextoAlFormulario()">
+        ✔ ACEPTAR Y APLICAR
+      </button>
     </div>
-
-    <button type="button" class="btn-aceptar-teclado" (click)="cerrarTeclado()">
-      ✔ ACEPTAR
-    </button>
-    
   </div>
 }

@@ -29,7 +29,7 @@ export class AuthService {
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/login`, credentials).pipe(
       tap(response => {
-        console.log('Lo que llega del servidor:', response);
+
         // Al recibir respuesta, guardamos el token
         localStorage.setItem('token_zapatero', response.token);
         // GUARDAMOS EL NOMBRE

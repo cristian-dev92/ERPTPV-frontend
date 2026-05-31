@@ -3,6 +3,16 @@
   <button class="btn-primary" routerLink="nuevo">+ Nuevo Artículo</button>
 </div>
 
+<!-- BARRA DE BÚSQUEDA TÁCTIL -->
+  <div class="search-bar-container">
+    <input type="text" 
+           [value]="terminoBusqueda()"
+           (input)="terminoBusqueda.set($any($event.target).value);"
+           (click)="abrirTecladoBusqueda()"
+           placeholder="🔍 Busque por nombre completo o número de teléfono comercial..." 
+           class="search-input">
+  </div>
+
 @if (loading()) {
   <p>Cargando catálogo de zapatos...</p>
 } @else {
@@ -17,7 +27,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (item of articulos(); track item.id) {
+      @for (item of articulosFiltrados(); track item.id) {
         <tr>
           <td><strong>{{ item.nombre }}</strong></td>
           <td>
@@ -74,6 +84,50 @@
         <button class="btn-cancel-modal" (click)="cerrarModalConfirmar()">No, cancelar</button>
         <button class="btn-confirm-modal" (click)="confirmarEliminacionDefinitiva()">Sí, eliminar artículo</button>
       </div>
+    </div>
+  </div>
+}
+
+@if (mostrarTecladoGeneral()) {
+  <div class="modal-teclado-general-container">
+    
+    <div class="teclado-general-header">
+      <span class="titulo-contexto">Filtrar Inventario por Nombre</span>
+      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
+    </div>
+
+    <div class="teclado-general-pantalla">
+      <span class="texto-construccion" style="color: #38bdf8; font-size: 2rem; font-weight: bold;">
+        {{ valorTecladoEnConstruccion() || 'Escriba el nombre del artículo...' }}
+      </span>
+      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+    </div>
+
+    <div class="teclado-general-wrapper-keys">
+      <div class="fila-qwerty">
+        @for (letra of ['Q','W','E','R','T','Y','U','I','O','P','1','2','3']; track letra) {
+          <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+        }
+      </div>
+      <div class="fila-qwerty">
+        @for (letra of ['A','S','D','F','G','H','J','K','L','4','5','6']; track letra) {
+          <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+        }
+      </div>
+      <div class="fila-qwerty">
+        @for (letra of ['Z','X','C','V','B','N','M','@','.','7','8','9']; track letra) {
+          <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+        }
+      </div>
+      <div class="fila-qwerty">
+        <button type="button" class="btn-tecla-alpha btn-cero" (click)="pulsarTeclaGeneral('0')">0</button>
+        <button type="button" class="btn-tecla-alpha btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+        <button type="button" class="btn-tecla-alpha btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
+      </div>
+      
+      <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarBusqueda()">
+        🔍 APLICAR FILTRO DE BÚSQUEDA
+      </button>
     </div>
   </div>
 }

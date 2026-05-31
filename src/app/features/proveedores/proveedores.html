@@ -10,6 +10,15 @@
     </button>
   </header>
 
+  <div class="search-bar-container" style="margin-bottom: 20px;">
+    <input type="text" 
+           [value]="filtroBusqueda()"
+           (input)="filtroBusqueda.set($any($event.target).value); buscarProveedores()"
+           (click)="abrirTecladoGeneralForm('BUSQUEDA', undefined, filtroBusqueda())"
+           placeholder="🔍 Busque proveedor por razón social, CIF o teléfono..." 
+           class="search-input">
+  </div>
+
   <!-- LISTADO DE PROVEEDORES -->
   <div class="tabla-wrapper">
     <table class="zapatero-table">
@@ -23,7 +32,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (p of proveedores(); track p.id) {
+        @for (p of proveedoresFiltrados(); track p.id) {
           <tr>
             <td class="txt-negrita">{{ p.nombre }}</td>
             <td class="txt-mutado">{{ p.cif || '-' }}</td>
@@ -36,7 +45,7 @@
         } @empty {
           <tr>
             <td colspan="5" class="tabla-vacia">
-              📭 No hay proveedores registrados todavía para tu zapatería.
+              📭 No hay proveedores registrados todavía.
             </td>
           </tr>
         }
@@ -60,6 +69,7 @@
               <label for="p-nombre">Razón Social / Nombre comercial *</label>
               <input type="text" id="p-nombre" name="nombre" 
                      [(ngModel)]="nuevoProveedor().nombre" 
+                     (click)="abrirTecladoGeneralForm('NOMBRE', undefined, nuevoProveedor().nombre)"
                      placeholder="Ej: Vibram S.A." required>
             </div>
 
@@ -68,6 +78,7 @@
                 <label for="p-cif">C.I.F. o N.I.F.</label>
                 <input type="text" id="p-cif" name="cif" 
                        [(ngModel)]="nuevoProveedor().cif" 
+                       (click)="abrirTecladoGeneralForm('CIF', undefined, nuevoProveedor().cif)"
                        placeholder="A12345678">
               </div>
 
@@ -75,6 +86,7 @@
                 <label for="p-telefono">Teléfono Comercial</label>
                 <input type="text" id="p-telefono" name="telefono" 
                        [(ngModel)]="nuevoProveedor().telefono" 
+                       (click)="abrirTecladoGeneralForm('TELEFONO', undefined, nuevoProveedor().telefono)"
                        placeholder="912 345 678">
               </div>
             </div>
@@ -83,6 +95,7 @@
               <label for="p-email">Email para Pedidos Directos</label>
               <input type="email" id="p-email" name="email" 
                      [(ngModel)]="nuevoProveedor().emailPedidos" 
+                     (click)="abrirTecladoGeneralForm('EMAIL', undefined, nuevoProveedor().emailPedidos)"
                      placeholder="pedidos@proveedor.com">
             </div>
 
@@ -90,6 +103,7 @@
               <label for="p-direccion">Dirección Postal / Almacén</label>
               <input type="text" id="p-direccion" name="direccion" 
                      [(ngModel)]="nuevoProveedor().direccion" 
+                     (click)="abrirTecladoGeneralForm('DIRECCION', undefined, nuevoProveedor().direccion)"
                      placeholder="Polígono Ind. Alces, Nave 4">
             </div>
 
@@ -104,3 +118,65 @@
     </div>
   }
 </div>
+
+@if (mostrarTecladoGeneral()) {
+  <div class="modal-teclado-general-container">
+    
+    <div class="teclado-general-header">
+      <span class="titulo-contexto">
+        Teclado Táctil: 
+        @if(inputObjetivoTeclado() === 'NOMBRE'){ Razón Social }
+        @if(inputObjetivoTeclado() === 'TELEFONO'){ Teléfono Comercial}
+        @if(inputObjetivoTeclado() === 'CIF'){ Identificación CIF/NIF }
+        @if(inputObjetivoTeclado() === 'EMAIL'){ Correo Electrónico }
+        @if(inputObjetivoTeclado() === 'DIRECCION'){ Dirección Almacén }
+        @if(inputObjetivoTeclado() === 'BUSQUEDA'){ Buscador de Distribuidores }
+      </span>
+      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
+    </div>
+
+    <div class="teclado-general-pantalla">
+      <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
+      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+    </div>
+
+    <div class="teclado-general-wrapper-keys">
+
+      @if (inputObjetivoTeclado() === 'TELEFONO') {
+        <div class="grid-numerico-descuento">
+          @for (num of ['1','2','3','4','5','6','7','8','9','0']; track num) {
+            <button type="button" class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
+          }
+          <button type="button" class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ BORRAR</button>
+        </div>
+      }
+      
+      @else {
+        <div class="fila-qwerty">
+          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P','1','2','3']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['A','S','D','F','G','H','J','K','L','4','5','6']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['Z','X','C','V','B','N','M','@','.','7','8','9']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          <button type="button" class="btn-tecla-alpha btn-cero" (click)="pulsarTeclaGeneral('0')">0</button>
+          <button type="button" class="btn-tecla-alpha btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+          <button type="button" class="btn-tecla-alpha btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
+        </div>
+      }
+      
+      <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarTextoAlFormulario()">
+        ✔ ACEPTAR Y APLICAR
+      </button>
+    </div>
+  </div>
+}

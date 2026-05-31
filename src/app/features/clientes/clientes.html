@@ -18,6 +18,7 @@
     <input type="text" 
            [value]="filtroBusqueda()"
            (input)="filtroBusqueda.set($any($event.target).value); buscarClientes()"
+           (click)="abrirTecladoGeneralForm('BUSQUEDA', undefined, filtroBusqueda())"
            placeholder="🔍 Busque por nombre completo o número de teléfono comercial..." 
            class="search-input">
   </div>
@@ -93,6 +94,7 @@
               <label for="c-nombre">Nombre y Apellidos *</label>
               <input type="text" id="c-nombre" name="nombre" 
                      [(ngModel)]="nuevoCliente().nombre" 
+                     (click)="abrirTecladoGeneralForm('NOMBRE', undefined, nuevoCliente().nombre)"
                      placeholder="Ej: Carmen García" required>
             </div>
 
@@ -101,6 +103,7 @@
                 <label for="c-telefono">Teléfono Comercial *</label>
                 <input type="text" id="c-telefono" name="telefono" 
                        [(ngModel)]="nuevoCliente().telefono" 
+                       (click)="abrirTecladoGeneralForm('TELEFONO', undefined, nuevoCliente().telefono)"
                        placeholder="600123456" required>
               </div>
 
@@ -108,6 +111,7 @@
                 <label for="c-dni">D.N.I. / N.I.F.</label>
                 <input type="text" id="c-dni" name="documentoIdentidad" 
                        [(ngModel)]="nuevoCliente().documentoIdentidad" 
+                       (click)="abrirTecladoGeneralForm('DNI', undefined, nuevoCliente().documentoIdentidad)"
                        placeholder="12345678Z">
               </div>
             </div>
@@ -116,6 +120,7 @@
               <label for="c-email">Correo Electrónico</label>
               <input type="email" id="c-email" name="email" 
                      [(ngModel)]="nuevoCliente().email" 
+                     (click)="abrirTecladoGeneralForm('EMAIL', undefined, nuevoCliente().email)"
                      placeholder="carmen@correo.com">
             </div>
 
@@ -123,6 +128,7 @@
               <label for="c-direccion">Dirección Postal</label>
               <input type="text" id="c-direccion" name="direccion" 
                      [(ngModel)]="nuevoCliente().direccion" 
+                     (click)="abrirTecladoGeneralForm('DIRECCION', undefined, nuevoCliente().direccion)"
                      placeholder="Av. de la Constitución, 45 2ºB">
             </div>
 
@@ -131,13 +137,15 @@
                 <label for="c-cp">Código Postal</label>
                 <input type="text" id="c-cp" name="codigoPostal" 
                        [(ngModel)]="nuevoCliente().codigoPostal" 
+                       (click)="abrirTecladoGeneralForm('CP', undefined, nuevoCliente().codigoPostal)"
                        placeholder="28080">
               </div>
 
               <div class="form-group">
                 <label for="c-ciudad">Ciudad</label>
                 <input type="text" id="c-ciudad" name="ciudad" 
-                       [(ngModel)]="nuevoCliente().ciudad" 
+                       [(ngModel)]="nuevoCliente().ciudad"
+                       (click)="abrirTecladoGeneralForm('CIUDAD', undefined, nuevoCliente().ciudad)" 
                        placeholder="Madrid">
               </div>
             </div>
@@ -153,3 +161,67 @@
     </div>
   }
 </div>
+
+@if (mostrarTecladoGeneral()) {
+  <div class="modal-teclado-general-container">
+    
+    <div class="teclado-general-header">
+      <span class="titulo-contexto">
+        Teclado Táctil: 
+        @if(inputObjetivoTeclado().includes('NOMBRE')){ Nombre y Apellidos }
+        @if(inputObjetivoTeclado().includes('TELEFONO')){ Teléfono Comercial }
+        @if(inputObjetivoTeclado().includes('DNI') || inputObjetivoTeclado().includes('CIF')){ DNI / NIF }
+        @if(inputObjetivoTeclado().includes('EMAIL')){ Correo Electrónico }
+        @if(inputObjetivoTeclado().includes('DIRECCION')){ Dirección Postal }
+        @if(inputObjetivoTeclado().includes('CP')){ Código Postal }
+        @if(inputObjetivoTeclado().includes('CIUDAD')){ Ciudad }
+        @if(inputObjetivoTeclado().includes('BUSQUEDA')){ Búsqueda de Clientes }
+      </span>
+      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
+    </div>
+
+    <div class="teclado-general-pantalla">
+      <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
+      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+    </div>
+
+    <div class="teclado-general-wrapper-keys">
+
+      @if (inputObjetivoTeclado().endsWith('TELEFONO') || inputObjetivoTeclado().endsWith('CP')) {
+        <div class="grid-numerico-descuento">
+          @for (num of ['1','2','3','4','5','6','7','8','9','0']; track num) {
+            <button type="button" class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
+          }
+          <button type="button" class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ BORRAR</button>
+        </div>
+      }
+      
+      @else {
+        <div class="fila-qwerty">
+          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P','1','2','3']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['A','S','D','F','G','H','J','K','L','4','5','6']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['Z','X','C','V','B','N','M','@','.','7','8','9']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          <button type="button" class="btn-tecla-alpha btn-cero" (click)="pulsarTeclaGeneral('0')">0</button>
+          <button type="button" class="btn-tecla-alpha btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+          <button type="button" class="btn-tecla-alpha btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
+        </div>
+      }
+      
+      <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarTextoAlFormulario()">
+        ✔ ACEPTAR Y APLICAR
+      </button>
+    </div>
+  </div>
+}

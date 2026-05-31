@@ -16,8 +16,8 @@ export class OrdenListComponent implements OnInit {
   private uiService = inject(UiService);
   
   // Signals para el estado
-  filtroTipo = signal<string>('REPARACION');       // Pestaña principal (REPARACION, VENTA_DIRECTA, DEVOLUCION)
-  filtroEstado = signal<string>('TODOS');          // Sub-filtro de flujo (TODOS, EN_TALLER, LISTO, PENDIENTE, ENTREGADO)
+  filtroTipo = signal<string>('TALLER');           
+  filtroEstado = signal<string>('TODOS');       
 
   terminoBusqueda = signal<string>('');
   ordenes = signal<any[]>([]);
@@ -25,28 +25,74 @@ export class OrdenListComponent implements OnInit {
   // Computed para aplicar los filtros y búsqueda sobre el listado de órdenes
   ordenesAMostrar = computed(() => {
     const busqueda = this.terminoBusqueda().toLowerCase().trim();
-    const tipoActual = this.filtroTipo();
-    const estadoActual = this.filtroEstado();
+    const pestañaPrincipal = this.filtroTipo();
+    const subFiltro = this.filtroEstado();
     let listaFiltrada = this.ordenes();
 
-    // 1. Filtro duro por Tipo de Operación (Regla de Javi)
-    listaFiltrada = listaFiltrada.filter(orden => orden.tipo === tipoActual);
-
-    // 2. Filtro secundario por Estado del flujo de caja/taller
-    if (estadoActual !== 'TODOS') {
-      if (estadoActual === 'EN_TALLER' || estadoActual === 'LISTO' || estadoActual === 'ENTREGADO') {
-        // Filtramos por ubicación física del calzado en el taller
-        listaFiltrada = listaFiltrada.filter(orden => orden.estadoTaller === estadoActual);
-      } else if (estadoActual === 'PENDIENTE_PAGO') {
-        // Filtramos reparaciones que tengan deudas acumuladas (PENDIENTE o ANTICIPO)
+   // =========================================================================
+    // 1. Por estado de flujo físico del taller
+    // =========================================================================
+    
+    if (pestañaPrincipal === 'TALLER') {
+      // 🛠️ TALLER: Filtra únicamente lo que esté físicamente trabajándose
+      listaFiltrada = listaFiltrada.filter(orden => orden.estadoTaller === 'EN_TALLER');
+      
+      // Botones pequeños de Taller: Filtran por estadoPago
+      if (subFiltro === 'PENDIENTE_PAGO') {
         listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PENDIENTE' || orden.estadoPago === 'ANTICIPO');
-      } else if (estadoActual === 'PAGADO') {
-        // Filtramos las operaciones liquidadas financieramente al 100%
+      } else if (subFiltro === 'PAGADO') {
         listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PAGADO');
+      }
+    } 
+    
+    else if (pestañaPrincipal === 'LISTO_RECOGER') {
+      // 📦 LISTO PARA RECOGER: Filtra calzado terminado esperando al cliente
+      listaFiltrada = listaFiltrada.filter(orden => orden.estadoTaller === 'LISTO');
+      
+      // Botones pequeños de Listo para Recoger: Filtran por estadoPago
+      if (subFiltro === 'PAGADO') {
+        listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PAGADO');
+      } else if (subFiltro === 'PENDIENTE_PAGO') {
+        listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PENDIENTE' || orden.estadoPago === 'ANTICIPO');
+      }
+    } 
+    
+    else if (pestañaPrincipal === 'CERRADOS') {
+      // 📁 TICKETS CERRADOS: Calzado entregado, ventas directas de mostrador o abonos/devoluciones
+      listaFiltrada = listaFiltrada.filter(orden =>
+        orden.estadoTaller === 'ENTREGADO' || 
+        (orden.tipoOrden || orden.tipo) === 'VENTA_DIRECTA'|| 
+        (orden.tipoOrden || orden.tipo) === 'DEVOLUCION' || 
+        orden.estadoPago === 'DEVOLUCION' ||
+        orden.estadoPago === 'DEVUELTO'
+      );
+      
+      
+      // Botones pequeños de Tickets Cerrados: Filtran por la variable 'tipo'
+      if (subFiltro === 'VENTA_DIRECTA') {
+        listaFiltrada = listaFiltrada.filter(orden =>
+          (orden.tipoOrden || orden.tipo) === 'VENTA_DIRECTA' && 
+          orden.estadoPago !== 'DEVOLUCION' && 
+          orden.estadoPago !== 'DEVUELTO'
+         );
+        } else if (subFiltro === 'REPARACION') {
+        listaFiltrada = listaFiltrada.filter(orden => 
+          (orden.tipoOrden || orden.tipo) === 'REPARACION' && 
+          orden.estadoPago !== 'DEVOLUCION' && 
+          orden.estadoPago !== 'DEVUELTO'
+        );
+      } else if (subFiltro === 'DEVOLUCION') {
+        listaFiltrada = listaFiltrada.filter(orden => 
+          (orden.tipoOrden || orden.tipo) === 'DEVOLUCION' || 
+          orden.estadoPago === 'DEVOLUCION' || 
+          orden.estadoPago === 'DEVUELTO'
+        );
       }
     }
 
-    // 3. Filtro de búsqueda textual dinámica por pantalla táctil
+    // =========================================================================
+    // 2. BUSCADOR DINÁMICO TÁCTIL
+    // =========================================================================
     if (busqueda) {
       listaFiltrada = listaFiltrada.filter(orden => {
         const cumpleId = orden.id?.toString().includes(busqueda);
@@ -56,21 +102,18 @@ export class OrdenListComponent implements OnInit {
       });
     }
 
-    // Devolvemos acotado a 50 registros para mantener la fluidez total
+    // Paginación en memoria a 50 elementos para que la tablet rinda al 100%
     return listaFiltrada.slice(0, 50);
   });
 
-  // 👁️ Guarda la orden que queremos ver en el modal.
+  // --- EL RESTO DE TU LÓGICA DE COBROS, DETALLES Y PDF SE QUEDA EXACTAMENTE IGUAL ---
   ordenSeleccionada = signal<any | null>(null);
-
-  // --- SIGNALS DE EDICIÓN ---
-  editandoNotas = signal<string>('');
-  editandoFecha = signal<string>('');
-
-  // Signals para el panel de cobro
+  editandoNotas: string = '';
+  editandoFecha: string = '';
   mostrarModalCobro = signal<boolean>(false);
   metodoPago = signal<MetodoPago>('EFECTIVO');
   importeEntregado = signal<string>(''); 
+  
   cambioAOfrecer = computed(() => {
     if (this.metodoPago() === 'TARJETA') return 0;
     const total = this.ordenSeleccionada()?.importePendiente || 0;
@@ -78,12 +121,9 @@ export class OrdenListComponent implements OnInit {
     return entregado > total ? entregado - total : 0;
   });
 
-  // --- SIGNALS PARA DEVOLUCIONES (VÍA A) ---
   mostrarModalDevolucion = signal<boolean>(false);
   metodoDevolucion = signal<MetodoPago>('EFECTIVO');
-  http: any;
 
-  // --- CONSTRUCTOR Y CICLO DE VIDA ---
   constructor() {
     effect(() => {
       this.filtroTipo();
@@ -95,137 +135,99 @@ export class OrdenListComponent implements OnInit {
     this.cargarDatosDelServidor();
   }
 
-  // Descargamos todo el volumen de órdenes para filtrarlo reactivamente en memoria sin sobrecargar la red
   cargarDatosDelServidor() {
-    // Nota: Usamos el método genérico del servicio.
     this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
-      next: (data) => this.ordenes.set(data),
-      error: (err) => this.uiService.mostrarToast('Error al cargar el histórico: ' + (err.error?.message || err.message), 'error')
+      next: (data) => {
+        this.ordenes.set(data);
+      },
+      error: (err) => this.uiService.mostrarToast('Error al cargar la gestión de tickets: ' + (err.error?.message || err.message), 'error')
     });
   }
 
-  // 📄 Método para descargar/imprimir el PDF desde el Backend de Javi
   descargarPdfTicket(ordenId: number) {
     this.uiService.mostrarToast('Generando PDF del ticket...');
-    
     this.ordenService.getTicketPdf(ordenId).subscribe({
       next: (blob: Blob) => {
-        // Creamos una URL local con los bytes del PDF que escupió Spring Boot
         const urlDescarga = window.URL.createObjectURL(blob);
-        
-        // Opción A: Abrirlo en una pestaña nueva listo para imprimir directamente en el TPV
         window.open(urlDescarga, '_blank');
-
-        // Opción B (Comentada por si prefieres descarga directa):
-        // const a = document.createElement('a');
-        // a.href = urlDescarga;
-        // a.download = `ticket-${ordenId}.pdf`;
-        // a.click();
-        
         window.URL.revokeObjectURL(urlDescarga);
       },
-      error: () => {
-        this.uiService.mostrarToast('Error al generar el archivo PDF en el servidor.', 'error');
-      }
+      error: () => this.uiService.mostrarToast('Error al generar el archivo PDF en el servidor.', 'error')
     });
   }
 
-  // Limpiar el buscador con un clic táctil
-  limpiarBuscador() {
-    this.terminoBusqueda.set('');
-  }
+  limpiarBuscador() { this.terminoBusqueda.set(''); }
 
-  // Método para asignar clases CSS según el estado de la orden
   getBadgeClass(orden: any): string {
     if (!orden) return 'badge-info';
-    // Si la orden está cancelada o devuelta financieramente
-    if (orden.estadoPago === 'CANCELADO') return 'badge-danger';
-    if (orden.estadoPago === 'DEVUELTO') return 'badge-danger';
-
-    // Para flujo prioritario del taller
-    if (orden.tipo === 'REPARACION') {
-      if (orden.estadoTaller === 'EN_TALLER') return 'badge-info';
-      if (orden.estadoTaller === 'LISTO') return 'badge-warning'; // Llama la atención para entrega
-      if (orden.estadoTaller === 'ENTREGADO') return 'badge-secondary';
-    }
-
-    // Ventas directas liquidadas
+    if (orden.estadoPago === 'CANCELADO' || orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') return 'badge-danger';
+    if (orden.estadoTaller === 'EN_TALLER') return 'badge-info';
+    if (orden.estadoTaller === 'LISTO') return 'badge-warning';
+    if (orden.estadoTaller === 'ENTREGADO') return 'badge-secondary';
     if (orden.estadoPago === 'PAGADO') return 'badge-success';
-    
     return 'badge-info';
   }
 
-  // Método para abrir el modal de detalles de la orden
   verDetalle(orden: any) {
     this.ordenSeleccionada.set(orden);
-    this.editandoNotas.set(orden.notas || '');
+    this.editandoNotas = orden.notas || orden.notasReparacion || '';
     if (orden.fechaPrometidaRecogida) { 
-      this.editandoFecha.set(new Date(orden.fechaPrometidaRecogida).toISOString().split('T')[0]);
-    } 
-    else { 
-      this.editandoFecha.set(''); 
+      this.editandoFecha = new Date(orden.fechaPrometidaRecogida).toISOString().split('T')[0];
+    } else { 
+      this.editandoFecha = ''; 
     }
   }
 
-  // Método para cerrar el modal de detalles
-  cerrarModal() {
-    this.ordenSeleccionada.set(null);
-  }
+  cerrarModal() { this.ordenSeleccionada.set(null); }
 
-  // =========================================================================
-  // ⚙️ RESOLUCIÓN DEL CAMBIO DE ESTADO: FLUJO DE TRABAJO DEL TALLER
-  // =========================================================================
-
-  // Métodos para cambiar el estado de la orden
   empezarTrabajo(ordenId: number) {
-   this.ordenService.editarReparacion(ordenId, this.editandoNotas(), this.editandoFecha()).subscribe({
-      next: () => { 
-        this.uiService.mostrarToast('¡Trabajo iniciado en taller!', 'success'); 
-        this.cargarDatosDelServidor(); 
-        if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal(); 
-      },
-      error: () => this.uiService.mostrarToast('Error al actualizar estado en taller', 'error')
-    });
-  }
+    this.ordenService.editarReparacion(ordenId, this.editandoNotas, this.editandoFecha).subscribe({
+       next: () => { 
+         this.uiService.mostrarToast('¡Trabajo iniciado en taller!', 'success'); 
+         this.cargarDatosDelServidor(); 
+         if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal(); 
+       },
+       error: () => this.uiService.mostrarToast('Error al actualizar estado en taller', 'error')
+     });
+   }
 
-  // Método para marcar la reparación como finalizada (pasar a LISTO)
   finalizarReparacion(ordenId: number) {
-    this.ordenService.editarReparacion(ordenId, this.editandoNotas(), this.editandoFecha()).subscribe({
+    this.ordenService.editarReparacion(ordenId, this.editandoNotas, this.editandoFecha).subscribe({
       next: () => {
-        this.uiService.mostrarToast('Reparación finalizada. Pasada a "Listos para recoger".', 'success');
-        this.cargarDatosDelServidor();
-        if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal();
+        this.ordenService.terminarReparacion(ordenId).subscribe({
+          next: () => {
+            this.uiService.mostrarToast('Reparación finalizada. Pasada a "Listos para recoger".', 'success');
+            this.cargarDatosDelServidor();
+            if (this.ordenSeleccionada()?.id === ordenId) this.cerrarModal();
+          },
+          error: () => this.uiService.mostrarToast('Error al terminar reparación', 'error')
+        });
       },
       error: () => this.uiService.mostrarToast('Error al finalizar reparación', 'error')
     });
   }
 
-  // Método para cancelar la orden
   guardarCambiosReparacion() {
     const orden = this.ordenSeleccionada();
     if (!orden) return;
 
- // Volvemos a usar tu servicio que es lo correcto
-  this.ordenService.editarReparacion(orden.id, this.editandoNotas(), this.editandoFecha()).subscribe({
-    next: () => {
-      this.uiService.mostrarToast('Ticket actualizado correctamente.', 'success');
-      this.cargarDatosDelServidor();
-      this.cerrarModal();
-    },
-    error: () => this.uiService.mostrarToast('Error al actualizar el ticket', 'error')
-  });
-}
+    this.ordenService.editarReparacion(orden.id, this.editandoNotas, this.editandoFecha).subscribe({
+      next: () => {
+        this.uiService.mostrarToast('Ticket actualizado correctamente.', 'success');
+        this.cargarDatosDelServidor();
+        this.cerrarModal();
+      },
+      error: () => this.uiService.mostrarToast('Error al actualizar el ticket', 'error')
+    });
+  }
 
-  // --- MÉTODOS DE COBRO ---
   abrirPanelCobro() {
     this.importeEntregado.set('');
     this.metodoPago.set('EFECTIVO');
     this.mostrarModalCobro.set(true);
   } 
 
-  cerrarPanelCobro() {
-    this.mostrarModalCobro.set(false);
-  }
+  cerrarPanelCobro() { this.mostrarModalCobro.set(false); }
 
   presionarTecla(valor: string) {
     const actual = this.importeEntregado();
@@ -243,88 +245,75 @@ export class OrdenListComponent implements OnInit {
     }
   }
 
-   seleccionarMetodoPago(metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO') {
+  seleccionarMetodoPago(metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO') {
     this.metodoPago.set(metodo);
-    if (metodo === 'EFECTIVO') {
-    this.importeEntregado.set('');
+    if (metodo === 'EFECTIVO') this.importeEntregado.set('');
   }
-}
 
   finalizarEntregaYCobro() {
     const orden = this.ordenSeleccionada();
     if (!orden) return;
-
     const totalCobrar = orden.importePendiente;
-    const entregado = this.metodoPago() !== 'EFECTIVO' 
-    ? totalCobrar 
-    : (parseFloat(this.importeEntregado()) || 0);
+    const entregado = this.metodoPago() !== 'EFECTIVO' ? totalCobrar : (parseFloat(this.importeEntregado()) || 0);
 
-  if (this.metodoPago() === 'EFECTIVO' && entregado < totalCobrar) {
-    this.uiService.mostrarToast(`El importe entregado (${entregado}€) es menor que el total pendiente (${totalCobrar}€)`, 'warning');
-    return;
-  } 
+    if (this.metodoPago() === 'EFECTIVO' && entregado < totalCobrar) {
+      this.uiService.mostrarToast(`El importe entregado (${entregado}€) es menor que el total pendiente (${totalCobrar}€)`, 'warning');
+      return;
+    } 
 
-  // Solo cerramos a ENTREGADO si el zapato ya estaba LISTO.
-  const ejecutarCambioEstado = () => {
-    if (orden.estado === 'LISTO') {
-        // Estaba listo, cobramos y cerramos el ciclo
+    const ejecutarCambioEstado = () => {
+      if (orden.estadoTaller === 'LISTO') {
         this.ordenService.entregarOrden(orden.id).subscribe({
-        next: () => {
+          next: () => {
             this.uiService.mostrarToast('¡Ticket completado! Orden cobrada y ENTREGADA.', 'success');
             this.cerrarPanelCobro();
             this.cerrarModal(); 
             this.cargarDatosDelServidor();
-        },
-        error: () => this.uiService.mostrarToast('Problema al marcar como ENTREGADO.', 'error')
+          },
+          error: () => this.uiService.mostrarToast('Problema al marcar como ENTREGADO.', 'error')
         });
-    } else {
-        // Estaba en taller o pendiente. Es un pago por adelantado. NO cerramos el ticket.
+      } else {
         this.uiService.mostrarToast('¡Pago adelantado registrado! El ticket sigue en proceso.', 'success');
         this.cerrarPanelCobro();
         this.cerrarModal(); 
         this.cargarDatosDelServidor();
-    }
-  };
-
-  this.ordenService.cobrar(orden.id, this.metodoPago()).subscribe({
-    next: () => {
-      ejecutarCambioEstado();
-    },
-    error: (errCobro) => {
-      if (errCobro.status === 400 && typeof errCobro.error === 'string' && errCobro.error.includes('ya ha sido cobrado')) {
-        ejecutarCambioEstado();
-      } else {
-        this.uiService.mostrarToast('Error al procesar el pago: ' + (errCobro.error || errCobro.message), 'error');
       }
-    }
-  });
- }
+    };
 
- // Abre el selector de método de devolución
+    this.ordenService.cobrar(orden.id, this.metodoPago()).subscribe({
+      next: () => ejecutarCambioEstado(),
+      error: (errCobro) => {
+        if (errCobro.status === 400 && typeof errCobro.error === 'string' && errCobro.error.includes('ya ha sido cobrado')) {
+          ejecutarCambioEstado();
+        } else {
+          this.uiService.mostrarToast('Error al procesar el pago: ' + (errCobro.error || errCobro.message), 'error');
+        }
+      }
+    });
+  }
+
   abrirPanelDevolucion() {
     this.metodoDevolucion.set('EFECTIVO');
     this.mostrarModalDevolucion.set(true);
   }
 
-  cerrarPanelDevolucion() {
-    this.mostrarModalDevolucion.set(false);
-  }
+  cerrarPanelDevolucion() { this.mostrarModalDevolucion.set(false); }
 
-  // Lanza la petición al nuevo endpoint de Javi
   confirmarDevolucionTicket() {
     const orden = this.ordenSeleccionada();
     if (!orden) return;
 
-    // Mapeamos las líneas del ticket original tal y como el backend las espera (IDs y cantidades en positivo)
-    // Nota: Si en tu objeto orden las líneas vienen como 'lineas', adáptalo. 
-    // Si devuelves el ticket entero, mapeamos sus artículos:
-    const lineasDev = (orden.lineas || []).map((l: any) => ({
-      articuloId: l.articuloId || l.id, // Según cómo te devuelva Javi el campo en el DTO
+   const detallesOriginales = orden.detalles || [];
+
+    const lineasDev = detallesOriginales.map((l: any) => {
+      return{
+      articuloId: l.articuloId || l.articulo?.id,
       cantidad: l.cantidad
-    }));
+      }
+    }).filter((l: any) => l.articuloId != null);
 
     if (lineasDev.length === 0) {
-      this.uiService.mostrarToast('No hay artículos válidos en este ticket para devolver', 'warning');
+      this.uiService.mostrarToast('Este ticket no contiene ningún detalle o artículo para devolver', 'warning');
       return;
     }
 
@@ -336,15 +325,68 @@ export class OrdenListComponent implements OnInit {
 
     this.ordenService.procesarDevolucion(peticion).subscribe({
       next: () => {
-        this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada con éxito.`, 'success');
+        this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada.`, 'success');
         this.cerrarPanelDevolucion();
         this.cerrarModal();
-        this.cargarDatosDelServidor(); // Recarga la pestaña actual
+        this.cargarDatosDelServidor();
       },
-      error: (err) => {
-        this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error || err.message), 'error');
-      }
+      error: (err) => this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error || err.message), 'error')
     });
   }
+
+  // --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---
+mostrarTeclado = signal<boolean>(false);
+inputActivo = signal<string>(''); // 'busqueda', 'notas', 'fecha'
+
+// Distribución de teclas para el teclado táctil del TPV
+lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
+lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '_', '.'];
+lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+
+// Abre el teclado y registra sobre qué campo estamos trabajando
+activarTeclado(campo: string) {
+  this.inputActivo.set(campo);
+  this.mostrarTeclado.set(true);
+}
+
+// Cierra el panel del teclado
+cerrarTeclado() {
+  this.mostrarTeclado.set(false);
+  this.inputActivo.set('');
+}
+
+// Procesa la pulsación de cada letra/número en la pantalla
+escribirTeclado(caracter: string) {
+  const campo = this.inputActivo();
+  
+  if (campo === 'busqueda') {
+    this.terminoBusqueda.set(this.terminoBusqueda() + caracter);
+  } else if (campo === 'notas') {
+    this.editandoNotas += caracter;
+  }
+}
+
+// Borrar el último carácter (Tecla Retroceso ⌫)
+borrarUltimoCaracter() {
+  const campo = this.inputActivo();
+  
+  if (campo === 'busqueda') {
+    const actual = this.terminoBusqueda();
+    this.terminoBusqueda.set(actual.slice(0, -1));
+  } else if (campo === 'notas') {
+    this.editandoNotas = this.editandoNotas.slice(0, -1);
+  }
+}
+
+// Añadir espacio (Tecla Espaciadora)
+insertarEspacio() {
+  const campo = this.inputActivo();
+  if (campo === 'busqueda') {
+    this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
+  } else if (campo === 'notas') {
+    this.editandoNotas += ' ';
+  }
+}
 
 }

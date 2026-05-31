@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { Articulo } from '../../../core/models/articulo.model';
 import { CurrencyPipe } from '@angular/common';
@@ -22,9 +22,27 @@ export class InventarioListComponent implements OnInit {
   // Estado de carga
   loading = signal<boolean>(true);
 
+  // Estado para el término de búsqueda
+  terminoBusqueda = signal<string>('');
+
+  // === MAQUINARIA DEL TECLADO TÁCTIL MASTER ===
+  mostrarTecladoGeneral = signal<boolean>(false);
+  valorTecladoEnConstruccion = signal<string>('');
+
   // Estado para mostrar el modal de confirmación de anticipar stock
   mostrarModalConfirmar = signal<boolean>(false);
   articuloAAnticipar = signal<{ id: number, nombre: string } | null>(null);
+
+  // 🎯 FILTRADO EN TIEMPO REAL CON COMPUTED
+  articulosFiltrados = computed(() => {
+    const buscar = this.terminoBusqueda().toLowerCase().trim();
+    if (!buscar) return this.articulos();
+    
+    return this.articulos().filter(item => 
+      item.nombre.toLowerCase().includes(buscar) || 
+      (item.notas && item.notas.toLowerCase().includes(buscar))
+    );
+  });
 
   ngOnInit(): void {
     this.cargarArticulos();
@@ -44,6 +62,37 @@ export class InventarioListComponent implements OnInit {
     });
   }
 
+  // === MÉTODOS DEL TECLADO TÁCTIL PARA LA BÚSQUEDA ===
+  abrirTecladoBusqueda() {
+    this.valorTecladoEnConstruccion.set(this.terminoBusqueda());
+    this.mostrarTecladoGeneral.set(true);
+  }
+
+  pulsarTeclaGeneral(caracter: string) {
+    this.valorTecladoEnConstruccion.update(val => val + caracter);
+  }
+
+  borrarUltimoCaracterGeneral() {
+    this.valorTecladoEnConstruccion.update(val => val.slice(0, -1));
+  }
+
+  limpiarTecladoGeneral() {
+    this.valorTecladoEnConstruccion.set('');
+  }
+
+  cerrarTecladoGeneral() {
+    this.mostrarTecladoGeneral.set(false);
+  }
+
+  aplicarBusqueda() {
+    this.terminoBusqueda.set(this.valorTecladoEnConstruccion());
+    this.mostrarTecladoGeneral.set(false);
+  }
+
+  buscarArticulos() {
+    // Se mantiene por compatibilidad si se quita el readonly para PC físico
+  }
+  
   // Función para borrar un artículo de forma segura
   eliminarProducto(id: number, nombre: string): void {
     // Guardamos los datos del artículo que queremos borrar y abrimos el modal moderno

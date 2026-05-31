@@ -4,6 +4,7 @@
  * o un SERVICIO (como una reparación).
  */
 export interface Articulo {
+  notas: any;
   
   /** * ID único del artículo. 
    * Es opcional (?) porque cuando creamos un zapato nuevo en el frontend, 

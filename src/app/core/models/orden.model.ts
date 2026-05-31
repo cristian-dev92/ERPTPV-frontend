@@ -1,51 +1,37 @@
-import { Articulo } from './articulo.model';
 
-/**
- * Representa una línea individual dentro de un ticket.
- */
 export interface LineaOrden {
   articuloId: number;
   nombreArticulo: string; // Para mostrar en el ticket sin volver a consultar la API
   cantidad: number;
   precioUnitario: number;
   subtotal: number;
+  notasReparacion?: string;
 }
 
-/**
- * Interfaz principal para las Ventas y Reparaciones.
- * Es el "Contrato" que sigue los Flujos A y B del README técnico.
- */
 export interface Orden {
   id?: number;
-  fecha?: Date;
-  
-  /** * Tipo de operación:
-   * VENTA: Venta directa de productos/servicios.
-   * REPARACION: Requiere gestión de entrega y posibles anticipos.
-   */
-  tipo: 'VENTA' | 'REPARACION';
-
-  /** * Estado actual de la orden:
-   * PENDIENTE: Creada pero no pagada totalmente.
-   * PAGADO: Cobro completado.
-   * CANCELADA: El stock se devuelve y se anula la venta.
-   */
-  estado: 'PENDIENTE' | 'PAGADO' | 'CANCELADA';
-
-  /** Total acumulado de la suma de las líneas */
+  numeroTicket?: string;
+  fechaCreacion?: string;
+  tipo: 'VENTA_DIRECTA' | 'REPARACION';
+  estadoPago: 'PENDIENTE' | 'PAGADO' | 'ANTICIPO';
+  estadoTaller?: 'EN_TALLER' | 'LISTO' | 'ENTREGADO' | 'NO_APLICA';
   total: number;
-
-  /** * Cantidad ya entregada por el cliente. 
-   * Si es menor al total y tipo es REPARACION, es un "Anticipo".
-   */
+  totalBaseImponible?: number;
+  totalIva?: number;
   importePagado: number;
-
-  /** El desglose de los productos o arreglos que se cobran */
-  lineas: LineaOrden[];
+  importePendiente?: number;
 
   /** ID del cliente (opcional para tickets anónimos) */
   clienteId?: number;
-
-  /** Nombre del empleado que realizó la venta (extraído del token) */
-  vendedor?: string;
+  clienteNombre?: string;   
+  clienteTelefono?: string;
+  empleadoNombre?: string;  
+  notasReparacion?: string;  
+  detalles?: any[];
+  // Mantén esta propiedad temporal SOLO para que los botones viejos del HTML no rompan el tipado
+  cliente?: {
+    id?: number;
+    nombre?: string;
+    telefono?: string;
+  } | null;
 }

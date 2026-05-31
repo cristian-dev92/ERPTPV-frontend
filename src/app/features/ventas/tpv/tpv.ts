@@ -44,6 +44,9 @@ export interface TicketHistorial {
   createdAt?: string | Date;       // 🌟 Añadido como opcional para soportar el backend
   fechaCreacion?: string | Date; // 🌟 Añadido como opcional para soportar el backend
   cliente: { nombre: string } | null;
+  clienteNombre?: string;     
+  clienteTelefono?: string;   
+  clienteId?: number | null;
   total: number;
   estadoAeat: 'ENVIADO' | 'PENDIENTE';
   estadoPago?: 'PAGADO' | 'PARCIAL' | 'PENDIENTE' | 'CANCELADO' | 'DEVOLUCION';
@@ -402,9 +405,15 @@ export class TpvComponent implements OnInit {
           numeroTicket: res.numeroTicket, 
           fecha: new Date(),
           cliente: this.clienteSeleccionado() ? { nombre: this.clienteSeleccionado()!.nombre } : null,
+          clienteNombre: this.clienteSeleccionado()?.nombre || 'Cliente General',
+          clienteTelefono: this.clienteSeleccionado()?.telefono || '',
+          clienteId: this.clienteSeleccionado()?.id || null,
           total: this.totalTicket(),
           // Como la AEAT está pausada en el back, lo marcamos como PENDIENTE de envío por ahora
-          estadoAeat: 'PENDIENTE' 
+          estadoAeat: 'PENDIENTE',
+          estadoPago: 'PAGADO',
+          tipo: this.tipoOrdenSeleccionada() === 'VENTA_DIRECTA' ? 'VENTA_DIRECTA' : 'REPARACION',
+          estadoTaller: this.tipoOrdenSeleccionada() === 'REPARACION' ? 'EN_TALLER' : 'CANCELADO'
         };
 
         // Lo metemos al principio de la lista usando .update() para que sea reactivo
@@ -677,7 +686,9 @@ export class TpvComponent implements OnInit {
     
     // 🚀 Llamamos a tu servicio pasándole la ID del ticket
     this.ordenService.imprimirTicket(ticket.id).subscribe({
-      next: () => console.log('Reimprimiendo ticket ID:', ticket.id),
+      next: () => {
+        this.uiService.mostrarToast(`🖨️ Ticket #${ticket.numeroTicket} reimpresso con éxito.`, 'success');
+      },
       error: (err: any) => {
         console.error('Error al reimprimir:', err);
         this.uiService.mostrarToast('No se pudo recuperar el documento para imprimir.', 'error');
@@ -1073,7 +1084,9 @@ toggleSinFechaRecogida(): void {
  }
 
  asignarClienteEnMostrador(cliente: Cliente) {
-  this.clienteSeleccionado.set(cliente);
+  // Reutilizamos toda la lógica (guarda objeto, guarda ID y limpia búsquedas)
+  this.seleccionarCliente(cliente);
+  this.clienteSeleccionadoId.set(cliente.id);
 }
 
 /* 🔄 ACCIÓN TÁCTIL: Devuelve todo el contenido del ticket adaptándose al DevolucionRequest de Java */
@@ -1088,9 +1101,13 @@ toggleSinFechaRecogida(): void {
     }
 
     // 2. Confirmación táctil en el mostrador
-    const confirmar = confirm(`¿Estás seguro de que deseas realizar la DEVOLUCIÓN COMPLETA del ticket #${ticket.numeroTicket || ticket.id}? Se reincorporarán las ${lineasTicket.length} líneas de artículos al stock.`);
-    if (!confirmar) return;
+    this.uiService.mostrarToast(`¿Estás seguro de que deseas realizar la DEVOLUCIÓN COMPLETA del ticket #${ticket.numeroTicket || ticket.id}? Se reincorporarán las ${lineasTicket.length} líneas de artículos al stock.`, 'warning');
 
+    if (!confirm()) {
+      this.uiService.mostrarToast('Devolución cancelada por el operario.', 'warning');
+      return; // Si el operario pulsa "Cancelar", detiene el proceso de forma segura
+    }
+      
     this.uiService.mostrarToast('Procesando abono total...', 'success');
 
     // 3. Construimos el JSON mapeando EXACTAMENTE al DevolucionRequest de Java que me has pasado

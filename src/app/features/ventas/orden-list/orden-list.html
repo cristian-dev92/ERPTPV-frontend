@@ -2,14 +2,14 @@
   
   <!-- 🎛️ BARRA DE PESTAÑAS TÁCTILES -->
   <div class="tpv-tabs">
-    <button [ngClass]="{'active': filtroTipo() === 'REPARACION'}" (click)="filtroTipo.set('REPARACION'); filtroEstado.set('TODOS')">
-      🛠️ Reparaciones (Servicios)
+    <button [ngClass]="{'active': filtroTipo() === 'TALLER'}" (click)="filtroTipo.set('TALLER'); filtroEstado.set('TODOS')">
+      🛠️ Taller
     </button>
-    <button [ngClass]="{'active': filtroTipo() === 'VENTA_DIRECTA'}" (click)="filtroTipo.set('VENTA_DIRECTA'); filtroEstado.set('TODOS')">
-      💰 Ventas Directas (Mostrador)
+    <button [ngClass]="{'active': filtroTipo() === 'LISTO_RECOGER'}" (click)="filtroTipo.set('LISTO_RECOGER'); filtroEstado.set('TODOS')">
+      📦 Listo para Recoger
     </button>
-    <button [ngClass]="{'active': filtroTipo() === 'DEVOLUCION'}" (click)="filtroTipo.set('DEVOLUCION'); filtroEstado.set('TODOS')">
-      🔄 Devoluciones / Abonos
+    <button [ngClass]="{'active': filtroTipo() === 'CERRADOS'}" (click)="filtroTipo.set('CERRADOS'); filtroEstado.set('TODOS')">
+      📁 Tickets Cerrados
     </button>
   </div>
 
@@ -17,13 +17,20 @@
   <div class="sub-filtros-estados">
     <button class="pill-filter" [class.active]="filtroEstado() === 'TODOS'" (click)="filtroEstado.set('TODOS')">Todos</button>
     
-    @if (filtroTipo() === 'REPARACION') {
-      <button class="pill-filter" [class.active]="filtroEstado() === 'EN_TALLER'" (click)="filtroEstado.set('EN_TALLER')">En Taller</button>
-      <button class="pill-filter" [class.active]="filtroEstado() === 'LISTO'" (click)="filtroEstado.set('LISTO')">Listos para Recoger</button>
+    @if (filtroTipo() === 'TALLER') {
       <button class="pill-filter" [class.active]="filtroEstado() === 'PENDIENTE_PAGO'" (click)="filtroEstado.set('PENDIENTE_PAGO')">Pendientes de Pago</button>
-      <button class="pill-filter" [class.active]="filtroEstado() === 'ENTREGADO'" (click)="filtroEstado.set('ENTREGADO')">Entregados</button>
-    } @else {
-      <button class="pill-filter" [class.active]="filtroEstado() === 'PAGADO'" (click)="filtroEstado.set('PAGADO')">Cobrados / Cerrados</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'PAGADO'" (click)="filtroEstado.set('PAGADO')">Pagados</button>
+    } 
+    
+    @if (filtroTipo() === 'LISTO_RECOGER') {
+      <button class="pill-filter" [class.active]="filtroEstado() === 'PAGADO'" (click)="filtroEstado.set('PAGADO')">Pagados</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'PENDIENTE_PAGO'" (click)="filtroEstado.set('PENDIENTE_PAGO')">Pendientes de Pago</button>
+    }
+    
+    @if (filtroTipo() === 'CERRADOS') {
+      <button class="pill-filter" [class.active]="filtroEstado() === 'VENTA_DIRECTA'" (click)="filtroEstado.set('VENTA_DIRECTA')">Venta Directa</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'REPARACION'" (click)="filtroEstado.set('REPARACION')">Reparaciones</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'DEVOLUCION'" (click)="filtroEstado.set('DEVOLUCION')">Devoluciones</button>
     }
   </div>
 
@@ -35,6 +42,7 @@
         type="text" 
         [ngModel]="terminoBusqueda()" 
         (ngModelChange)="terminoBusqueda.set($event)" 
+        (click)="activarTeclado('busqueda')"
         placeholder="Buscar ticket por número o nombre de cliente..."
       />
       @if (terminoBusqueda()) {
@@ -50,14 +58,14 @@
         <div class="card-header">
           <span class="ticket-id">#{{ orden.id }}</span>
           <span class="badge" [ngClass]="getBadgeClass(orden)"> 
-            {{ orden.tipo === 'REPARACION' ? orden.estadoTaller : orden.estadoPago }} </span>
+            {{ orden.tipo === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO' ? 'DEVUELTO' : (orden.tipo === 'REPARACION' ? orden.estadoTaller : orden.estadoPago) }} </span>
         </div>
         <div class="card-body">
           <p class="cliente"><strong>👤 {{ orden.clienteNombre || 'Cliente General' }}</strong></p>
           <p class="servicio">👞 {{ orden.descripcionCorto || 'Trabajo del taller' }}</p>
           @if (orden.tipo === 'REPARACION') {
             <p class="fecha-limite" [ngClass]="{'retrasado': orden.estadoTaller !== 'LISTO' && orden.estadoTaller !== 'ENTREGADO'}">
-              📅 Prometido: {{ orden.fechaPrometidaRecogida | date:'dd/MM/yyyy' }}
+              📅 Fecha Recogida: {{ orden.fechaPrometidaRecogida | date:'dd/MM/yyyy' }}
             </p>
           } @else {
             <p class="fecha-limite">
@@ -91,7 +99,12 @@
         <div class="modal-grid">
           <!-- INFO GENERAL -->
           <div class="info-section">
-            <p><strong>Cliente:</strong> {{ orden.clienteNombre || 'Cliente de Mostrador' }} ({{ orden.clienteTelefono }})</p>
+            <p><strong>Cliente:</strong> 
+            {{ orden.clienteNombre || 'Cliente de Mostrador' }} 
+            @if (ordenSeleccionada()?.clienteTelefono) {
+              ({{ ordenSeleccionada().clienteTelefono }})
+            }
+            </p>
             <p><strong>Total:</strong> {{ orden.total | currency:'EUR' }}</p>
             <p class="pendiente-text"><strong>Pendiente de caja:</strong> {{ orden.importePendiente | currency:'EUR' }}</p>
             <hr>
@@ -109,7 +122,9 @@
               <h3>📝 Notas de Reparación & Retrasos</h3>
               <div class="form-group">
                 <label>Notas del taller:</label>
-                <textarea [(ngModel)]="editandoNotas" placeholder="Ej: Suela cosida, usar tinte marrón..."></textarea>
+                <textarea [(ngModel)]="editandoNotas" 
+                          (click)="activarTeclado('notas')" 
+                          placeholder="Ej: Suela cosida, usar tinte marrón..."></textarea>
               </div>
               <div class="form-group">
                 <label>Nueva Fecha de Entrega:</label>
@@ -247,3 +262,42 @@
   }
 
 </div>
+
+@if (mostrarTeclado()) {
+  <div class="tpv-teclado-virtual">
+    <div class="teclado-header">
+      <span>Escribiendo en: <strong>{{ inputActivo().toUpperCase() }}</strong></span>
+      <button class="btn-cerrar-teclado" (click)="cerrarTeclado()">❌ Cerrar</button>
+    </div>
+    
+    <div class="teclado-body">
+      <div class="teclado-fila">
+        @for (num of lineaNumeros; track num) {
+          <button type="button" (click)="escribirTeclado(num)">{{ num }}</button>
+        }
+      </div>
+
+      <div class="teclado-fila">
+        @for (letra of lineaLetras1; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+        }
+      </div>
+      <div class="teclado-fila">
+        @for (letra of lineaLetras2; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+        }
+      </div>
+      <div class="teclado-fila">
+        @for (letra of lineaLetras3; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+        }
+        <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫</button>
+      </div>
+
+      <div class="teclado-fila fila-especial">
+        <button type="button" class="btn-tecla-espacio" (click)="insertarEspacio()">ESPACIO</button>
+        <button type="button" class="btn-tecla-aceptar" (click)="cerrarTeclado()">ACEPTAR ✔️</button>
+      </div>
+    </div>
+  </div>
+}

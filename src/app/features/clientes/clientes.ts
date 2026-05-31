@@ -34,10 +34,69 @@ export class ClientesComponent implements OnInit {
     ciudad: ''
   });
 
+  // ⌨️ SIGNALS PARA EL CONTROL DEL TECLADO GENERAL
+  mostrarTecladoGeneral = signal<boolean>(false);
+  inputObjetivoTeclado = signal<string>('');
+  valorTecladoEnConstruccion = signal<string>('');
+
   ngOnInit() {
     this.cargarClientes();
   }
 
+  // ⌨️ MÉTODOS DEL TECLADO TÁCTIL
+  abrirTecladoGeneralForm(
+    objetivo: 'NOMBRE' | 'TELEFONO' | 'DNI' | 'EMAIL' | 'DIRECCION' | 'CP' | 'CIUDAD' | 'BUSQUEDA',
+  index?: number | null | undefined,
+  valorActualForm: string = '') 
+  {
+    this.inputObjetivoTeclado.set(objetivo);
+    this.valorTecladoEnConstruccion.set(valorActualForm || '');
+    this.mostrarTecladoGeneral.set(true);
+  }
+
+  pulsarTeclaGeneral(caracter: string) {
+    this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + caracter);
+  }
+
+  borrarUltimoCaracterGeneral() {
+    const actual = this.valorTecladoEnConstruccion();
+    this.valorTecladoEnConstruccion.set(actual.slice(0, -1));
+  }
+
+  limpiarTecladoGeneral() {
+    this.valorTecladoEnConstruccion.set('');
+  }
+
+  cerrarTecladoGeneral() {
+    this.mostrarTecladoGeneral.set(false);
+    this.inputObjetivoTeclado.set('');
+    this.valorTecladoEnConstruccion.set('');
+  }
+
+  // 🎯 VOLCAR EL TEXTO CONSTRUIDO AL SIGNAL NUEVOCLIENTE
+  aplicarTextoAlFormulario() {
+    const campo = this.inputObjetivoTeclado();
+    const valor = this.valorTecladoEnConstruccion();
+
+    this.nuevoCliente.update(cliente => {
+      const actualizacion = { ...cliente };
+      if (campo === 'NOMBRE') actualizacion.nombre = valor;
+      if (campo === 'TELEFONO') actualizacion.telefono = valor;
+      if (campo === 'DNI') actualizacion.documentoIdentidad = valor;
+      if (campo === 'EMAIL') actualizacion.email = valor.toLowerCase(); 
+      if (campo === 'DIRECCION') actualizacion.direccion = valor;
+      if (campo === 'CP') actualizacion.codigoPostal = valor;
+      if (campo === 'CIUDAD') actualizacion.ciudad = valor;
+      if (campo === 'BUSQUEDA'){ 
+        this.filtroBusqueda.set(valor);
+        this.buscarClientes();
+      }
+      return actualizacion;
+    });
+
+    this.cerrarTecladoGeneral();
+  }
+  
   cargarClientes() {
     this.cargando.set(true);
     this.clienteService.obtenerMisClientes().subscribe({

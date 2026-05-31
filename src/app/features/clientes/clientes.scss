@@ -46,7 +46,7 @@ $bg-light: #f8fafc;
 .search-bar-container {
   margin-bottom: 1.5rem;
   .search-input {
-    width: 100%;
+    width: 96%;
     padding: 12px 16px;
     border: 2px solid $border;
     border-radius: 10px;
@@ -149,5 +149,211 @@ $bg-light: #f8fafc;
     button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
     .btn-cancelar { background: #f1f5f9; color: #475569; &:hover { background: #e2e8f0; } }
     .btn-guardar { background: $primary; color: white; &:hover { background: #000; } }
+  }
+}
+
+// =========================================================================
+// ⌨️ TECLADO TÁCTIL GENERAL
+// =========================================================================
+.modal-teclado-general-container {
+  position: fixed; 
+  bottom: 10px; 
+  right: 20px; 
+  transform: translateX(-50%);
+  z-index: 999999 !important;
+  background: #1e293b;          /* Gris oscuro slate premium (a juego con tu cabecera de arqueo) */
+  padding: 25px; 
+  border-radius: 20px; 
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2); 
+  width: 900px;                 /* AGRANDADO: Ancho extendido para dar más separación a las filas alfabéticas */
+  border: 1px solid #334155;
+  box-sizing: border-box;
+  font-family: inherit;
+  animation: fadeInQuick 0.15s ease-out;
+
+  /* Cabecera del Teclado */
+  .teclado-general-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 15px; 
+    color: #ffffff;
+
+    .titulo-contexto {
+      font-weight: 700; 
+      font-size: 1.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;           /* Texto secundario claro */
+    }
+
+    .btn-cerrar-teclado {
+      background: #ef4444; 
+      border: none; 
+      color: white; 
+      border-radius: 6px; 
+      width: 42px;
+      height: 42px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+
+      &:active {
+        background: #b91c1c;
+      }
+    }
+  }
+
+  /* Pantalla de visualización del texto */
+  .teclado-general-pantalla {
+    background: #0f172a;        /* Fondo oscuro profundo */
+    color: #38bdf8;             /* Azul neón/vibrante de alta visibilidad en mostrador */
+    font-family: 'Courier New', Courier, monospace; 
+    padding: 18px; 
+    font-size: 2rem;          /* Letra en pantalla más grande */
+    font-weight: 700;
+    border-radius: 10px; 
+    margin-bottom: 20px; 
+    min-height: 70px;           /* Más alta */
+    border: 1px solid #1e293b;
+    word-break: break-all; 
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+
+    .btn-vaciar-pantalla {
+      color: #64748b; 
+      font-size: 1rem; 
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      background: #1e293b;
+      padding: 10px 16px;
+      border-radius: 6px;
+      transition: all 0.1s;
+
+      &:active {
+        background: #334155;
+        color: #f1f5f9;
+      }
+    }
+  }
+
+  /* Envoltura interna del teclado */
+  .teclado-general-wrapper-keys {
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px;                   /* Más separación entre filas */
+
+    /* Comportamiento base común para TODOS los botones del teclado */
+    button {
+      border: 1px solid #475569;
+      border-bottom: 4px solid #334155; /* Efecto relieve táctil */
+      border-radius: 8px; 
+      font-weight: 700; 
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.05s ease;
+
+      /* Al pulsar con el dedo: Efecto click físico instantáneo */
+      &:active {
+        transform: translateY(2px);
+        border-bottom-width: 1px;
+        filter: brightness(0.85);
+      }
+    }
+
+    // ==========================================
+    // 🔢 MODO NUMÉRICO (Para Descuento Global)
+    // ==========================================
+    .grid-numerico-descuento {
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 10px;
+
+      .btn-tecla-accion {
+        padding: 18px;          /* Botones numéricos ultra-altos */
+        font-size: 1.5rem; 
+        background: #334155; 
+        color: #ffffff;
+      }
+      /* 🔴 Botón de borrar del modo descuento (rojo y adaptado al grid) */
+      .btn-borrar-atras {
+        flex: unset;
+        width: 100%;
+        background: #ef4444 !important; 
+        border-color: #dc2626 !important;
+        border-bottom-color: #991b1b !important;
+        color: #ffffff !important;
+        font-size: 1.3rem;
+      }
+    }
+
+    // ==========================================
+    // 🔤 MODO ALFABÉTICO QWERTY (Artículos / Clientes)
+    // ==========================================
+    .fila-qwerty {
+      display: flex; 
+      gap: 12px;                 /* Separación holgada entre letras vecinas */
+      justify-content: center;
+      width: 100%;
+
+      .btn-tecla-alpha {
+        flex: 1; 
+        width: 85px;          /* Ancho extendido para facilitar el toque */
+        height: 75px;           /* ALTURA AGRANDADA: Espacio perfecto para dedos de operarios */
+        background: #334155; 
+        color: #ffffff; 
+        font-size: 1.8rem;     /* Letras más grandes por tecla */
+        padding: 0;
+      }
+
+      /* Modificadores específicos de la fila inferior */
+      .btn-cero {
+        flex: unset;
+        width: 85px;          /* Ancho extendido para facilitar el toque */
+        height: 75px;           /* Altura consistente con las letras */
+        font-size: 1.8rem;     /* Número más grande */
+      }
+
+      .btn-espacio {
+        flex: unset;
+        width: 460px;          /* Ancho extendido para facilitar el toque */
+        height: 75px;           /* Altura consistente con las letras */
+        background: #475569;    /* Tono diferente para la barra espaciadora */
+      }
+    }
+
+    /* Botón común de Borrar Carácter (Retroceso) */
+    .btn-borrar-atras {
+      flex: unset;
+      width: 120px;          /* Ocupa toda la fila para ser fácilmente accesible */
+      height: 75px;
+      background: #ef4444 !important; 
+      border-color: #dc2626 !important;
+      border-bottom-color: #991b1b !important;
+      color: #ffffff !important;
+      font-size: 1.4rem;
+    }
+
+    /* Botón gigante inferior de Confirmar */
+    .btn-aceptar-teclado-general {
+      margin-top: 8px; 
+      padding: 20px; 
+      background: #10b981;      /* Verde éxito corporativo */
+      border-color: #059669;
+      border-bottom-color: #047857;
+      color: white; 
+      font-size: 1.5rem; 
+      width: 100%;
+    }
   }
 }

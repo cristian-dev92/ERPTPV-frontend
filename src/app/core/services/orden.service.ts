@@ -83,7 +83,8 @@ export class OrdenService {
     return forkJoin([
       this.http.get<any[]>(`${this.API_URL}/estado/EN_TALLER`), // Solo las que están en taller
       this.http.get<any[]>(`${this.API_URL}/estado/LISTO`),     // Solo las que ya están listas
-      this.http.get<any[]>(`${this.API_URL}/estado/ENTREGADO`)
+      this.http.get<any[]>(`${this.API_URL}/estado/ENTREGADO`),
+      this.http.get<any[]>(`${this.API_URL}/estado/NO_APLICA`) // Si tienes un estado específico para ventas directas sin taller, etc.
     ]).pipe(
       // Juntamos todos los arrays devueltos en un único listado plano para el historial
       map(([enTaller, listos, entregados]) => [...enTaller, ...listos, ...entregados])
@@ -96,14 +97,14 @@ export class OrdenService {
 
   // 8. Para el panel del zapatero: muestra las órdenes que están operativas en "EN_TALLER" 
   getOrdenesTaller(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.API_URL}/taller-combined`);
+    return this.http.get<any[]>(`${this.API_URL}/estado/EN_TALLER`);
   }
 
   // 9. Editar notas de reparación o la fecha prometida de recogida
   editarReparacion(id: number, nuevasNotas: string, nuevaFecha: string): Observable<any> {
     return this.http.put(`${this.API_URL}/${id}/reparacion`, null, {
       params: new HttpParams()
-        .set('nuevasNotas', nuevasNotas)
+        .set('notasReparacion', nuevasNotas)
         .set('nuevaFecha', nuevaFecha) // Formato YYYY-MM-DD
     });
   }

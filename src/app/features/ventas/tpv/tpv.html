@@ -161,7 +161,7 @@
         placeholder="🔍 Buscar articulo..." 
         [value]="busquedaArticulo()"
         (input)="busquedaArticulo.set($any($event.target).value)"
-        (focus)="abrirTecladoGeneral('ARTICULO')"
+        (click)="abrirTecladoGeneral('ARTICULO')"
         class="form-control" />
     </div>
 
@@ -217,10 +217,9 @@
        <div class="buscador-fila-tactil">
 
         <input type="text" 
-               [ngModel]="busquedaCliente()" 
-               (ngModelChange)="buscarClientes($event)"
+               [value]="busquedaCliente()" 
                (input)="buscarClientes($any($event.target).value)"
-               (focus)="abrirTecladoGeneral('CLIENTE')"
+               (click)="abrirTecladoGeneral('CLIENTE')"
                placeholder="👤 Buscar cliente por nombre o tel...">
                
         <button (click)="abrirModal()" class="btn-nuevo-cliente" type="button">
@@ -278,7 +277,7 @@
             [value]="item.descuentoPorcentaje || 0" 
             min="0" max="100"
             (input)="actualizarDescuentoLinea($index, $event)"
-            (focus)="abrirTecladoGeneral('DESCUENTO_MANUAL')"
+            (click)="abrirTecladoGeneral('DESCUENTO_MANUAL')"
             class="input-descuento-manual">
         </div>
 
@@ -387,7 +386,7 @@
            [value]="descuentoGlobal()" 
            min="0" max="100"
            (input)="actualizarDescuentoGlobal($event)"
-           (focus)="abrirTecladoGeneral('DESCUENTO')"
+           (click)="abrirTecladoGeneral('DESCUENTO')"
            placeholder="0"
            class="input-descuento-global">
       </div>
@@ -442,8 +441,12 @@
         @for (ticket of historialTickets(); track ticket.id) {
           <tr>
             <td class="txt-negrita">#{{ ticket.numeroTicket || ticket.id }}</td>
-            <td class="txt-mutado">{{ (ticket.fecha || ticket['createdAt'] || ticket['fechaCreacion']) | date:'HH:mm' }}</td>
-            <td>{{ ticket.cliente?.nombre || 'Cliente General' }}</td>
+            <td class="txt-mutado">
+              {{ (ticket.fechaCreacion || ticket.fecha || ticket['createdAt']) | date:'HH:mm' }}
+            </td>
+            <td>
+              {{ ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General' }}
+            </td>
             <td class="text-derecha txt-precio">{{ ticket.total | currency:'EUR' }}</td>
             <td class="text-centro">
               <span class="badge-estado" [ngClass]="ticket.estadoAeat === 'ENVIADO' ? 'enviado' : 'pendiente'">
@@ -467,7 +470,7 @@
                 
                 <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
                 
-                @if (ticket.cliente) {
+                @if (ticket.clienteNombre && ticket.clienteNombre !== 'Cliente General'|| (ticket.cliente && ticket.cliente.nombre !== 'Cliente General')) {
                   <button type="button" (click)="descargarFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
                 }
                 
@@ -491,7 +494,9 @@
       </tbody>
     </table>
   </div>
-}
+  }
+ </div>
+</div>
 
 <!-- MODAL FLOTANTE DEL KEYPAD TÁCTIL PARA MODIFICAR PRECIOS -->
 @if (indiceItemEditandoPrecio() !== null) {
@@ -669,4 +674,4 @@
     </div>
   </div>
 }
-<app-clientes [modoModalSolo]="true" (onClienteSeleccionado)="asignarClienteEnMostrador($event)"></app-clientes>
+<app-clientes [modoModalSolo]="true" (onClienteSeleccionado)="seleccionarCliente($event)"></app-clientes>
