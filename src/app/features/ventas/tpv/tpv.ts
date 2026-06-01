@@ -1,15 +1,16 @@
 import { Component, inject, OnInit, signal, computed, ViewChild, HostListener } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
-import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO, MetodoPago } from '../../../core/services/orden.service';
+import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO } from '../../../core/services/orden.service';
 import { Articulo } from '../../../core/models/articulo.model';
-import { CurrencyPipe, DatePipe, DecimalPipe, NgClass } from '@angular/common';
+import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CajaService } from '../../../core/services/caja.service';
 import { ClienteService } from '../../../core/services/cliente.service';
 import { UiService } from '../../../core/services/ui.service';
 import { HttpClient } from "@angular/common/http";
 import { ClientesComponent } from '../../clientes/clientes';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Router } from "@angular/router";
+import { DomSanitizer } from '@angular/platform-browser';
 
 // Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
 export interface Cliente {
@@ -51,13 +52,13 @@ export interface TicketHistorial {
   estadoAeat: 'ENVIADO' | 'PENDIENTE';
   estadoPago?: 'PAGADO' | 'PARCIAL' | 'PENDIENTE' | 'CANCELADO' | 'DEVOLUCION';
   estadoTaller?: 'EN_TALLER' | 'LISTO' | 'ENTREGADO' | 'CANCELADO';
-  tipo?: 'VENTA_DIRECTA' | 'REPARACION';
+  tipo?: 'VENTA_DIRECTA' | 'REPARACION' | 'DEVOLUCION';
 }
 
 @Component({
   selector: 'app-tpv',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule, DecimalPipe, ClientesComponent, NgClass],
+  imports: [CurrencyPipe, DatePipe, FormsModule, ClientesComponent, NgClass],
   templateUrl: './tpv.html',
   styleUrl: './tpv.scss'
 })
@@ -69,10 +70,11 @@ export class TpvComponent implements OnInit {
   private clienteService = inject(ClienteService);
   public uiService = inject(UiService);
   private http: HttpClient = inject(HttpClient);
-  private sanitizer: DomSanitizer = inject(DomSanitizer);
   private bufferCodigoBarras: string = '';
   private ultimaPulsacion: number = 0;
-  @ViewChild('componenteClientes') componenteClientes!: ClientesComponent;
+  private router = inject(Router);
+  private sanitizer: DomSanitizer = inject(DomSanitizer);
+  @ViewChild(ClientesComponent) clientesComponent!: ClientesComponent;
 
   // Estados del catalogo tactil
   articulos = signal<Articulo[]>([]); // Lista completa de artículos cargada desde el backend
@@ -89,7 +91,7 @@ export class TpvComponent implements OnInit {
 
   // Estado del carrito de compra y caja
   carrito = signal<ItemCarrito[]>([]); // Aquí guardaremos { articuloId, nombre, cantidad, precio, notas }
-  saldoInicialInput: number = 150; // 150€ por defecto para cambio
+  saldoInicialInput: number = 0;
   descuentoGlobal = signal<number>(0); // Descuento global en porcentaje
   indiceLineaDescuentoActual = signal<number | null>(null); // Para saber a qué línea se le está aplicando un descuento manual específico
 
@@ -111,27 +113,8 @@ export class TpvComponent implements OnInit {
   datosFacturaAeat = signal<InfoVerifaktu | null>(null);
 
   // Comprobación segura de caja abierta (computed reacciona al signal del servicio)
+  cajaActual = this.cajaService.cajaActual;
   cajaAbierta = computed(() => !!this.cajaService.cajaActual());
-
-  // === ESTADOS PARA EL ARQUEO GUIADO ===
-  mostrarModalArqueo = signal<boolean>(false);
-  saldoTeoricoCaja = signal<number>(0); // Sustituir por el valor real que venga de tu servicio/caja
-  descuadreInput = signal<number>(0); 
-
-  // Desglose de monedas y billetes introducidos por el usuario
-  desgloseEfectivo = signal({
-    b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0,
-    m2: 0, m1: 0, m050: 0, m020: 0, m010: 0, m005: 0, m002: 0, m001: 0
-  });
-
-  // === ESTADOS PARA EL CIERRE DE CAJA ===
-  mostrarModalCierre = signal<boolean>(false);
-  saldoContadoInput: number | null = null; // Lo que el cajero cuenta físicamente
-
-  // Señal reactiva para guardar la URL segura del PDF y cargarla en el iframe
-  idOperacionProcesada = signal<number | string | null>(null);
-  cargandoPDF = signal<boolean>(false);
-  urlSeguraPdf = signal<SafeResourceUrl | null>(null);
 
   // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
   mostrarTecladoGeneral = signal<boolean>(false);
@@ -183,23 +166,24 @@ export class TpvComponent implements OnInit {
   numeroTicketActual = signal<string>('TKT-PROVISIONAL');
   horaTicketActual = signal<string>('');
 
+  // Estados para controlar el proceso de devolución manual sin ticket, que se activa al hacer clic en el botón rojo de "Devolución Manual"
+  mostrarModalDevolucion = false;
+  mensajeModalDevolucion = '';
+  ticketParaDevolver: any = null;
+
+  // Variable para guardar la ID de la operación que se acaba de procesar (venta o devolución) y que se usará para generar el PDF del ticket correspondiente
+  idOperacionProcesada = signal<number | string | null>(null); 
+  cargandoPDF = signal<boolean>(false);                        
+  urlSeguraPdf = signal<any>(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank')); // URL segura para incrustar el PDF generado por el backend en el iframe del TPV             
 
   // Método que se ejecuta al cargar el componente, ideal para cargar los artículos y comprobar el estado de la caja
   ngOnInit() {
     // 1. Cargamos artículos
     this.articuloService.getArticulos().subscribe(data => this.articulos.set(data));
     // 2. Comprobamos si la caja ya estaba abierta
-    this.cajaService.checkEstadoCaja().subscribe();
-    // 3. Cargamos el historial de tickets del día para mostrar en el panel inferior
-    this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
-    next: (tickets) => {
-      this.historialTickets.set(tickets);
-    },
-    error: (err) => {
-      console.error('Error cargando historial inicial:', err);
-      this.uiService.mostrarToast('No se pudo inicializar el historial de órdenes', 'error');
-    }
-  });
+    this.cajaService.checkEstadoCaja().subscribe({
+      error: (err: any) => console.error("Error al verificar estado de caja inicial en TPV", err)
+    });
   }
 
   // Método para cargar el catálogo de artículos desde el backend, que se ejecuta al hacer clic en el botón "Recargar Catálogo"
@@ -295,7 +279,7 @@ export class TpvComponent implements OnInit {
     const requestDevolucion = {
       // Si tenéis guardado el ID del ticket que se está devolviendo, se pone aquí. Si es anónimo/sin ticket, va null.
       ordenOrigenId: (this.idTicketOrigenDevolucion ? this.idTicketOrigenDevolucion() : null), 
-      metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO', // EFECTIVO, TARJETA, etc.
+      metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO',
       lineas: this.carrito().map(item => ({
         articuloId: item.articuloId,
         cantidad: Math.abs(item.cantidad) // Javi pide la cantidad en POSITIVO, nos aseguramos con Math.abs
@@ -306,8 +290,10 @@ export class TpvComponent implements OnInit {
       next: (devolucionGuardada) => {
         this.uiService.mostrarToast(`✅ Devolución procesada con éxito. Abono de ${this.totalTicket()}€ registrado.`, 'success');
         
-        // Guardamos la referencia para el PDF del ticket de abono/devolución
+        // Preparamos las referencias del ticket actual con los datos del abono generado
         this.idOperacionProcesada.set(devolucionGuardada.id);
+        this.numeroTicketActual.set(devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`);
+        this.horaTicketActual.set(new Date().toLocaleTimeString());
 
         // Insertamos la devolución en el historial inferior (en negativo para que cuadre visualmente)
         const ticketAbonoHistorial: TicketHistorial = {
@@ -315,6 +301,7 @@ export class TpvComponent implements OnInit {
           numeroTicket: devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`, 
           fecha: new Date(),
           cliente: this.clienteSeleccionado() ? { nombre: this.clienteSeleccionado()!.nombre } : null,
+          clienteNombre: this.clienteSeleccionado()?.nombre || 'Cliente General', // Para evitar fallos con NIF/Anónimos
           total: -Math.abs(this.totalTicket()), // Lo pintamos en negativo en la lista
           estadoAeat: 'PENDIENTE',
           estadoPago: 'DEVOLUCION', 
@@ -322,7 +309,6 @@ export class TpvComponent implements OnInit {
         };
 
         this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
-        this.limpiarCarrito(); // Limpiamos el carrito para que no quede la devolución ahí
 
         // Si el backend devolviera QR de VeriFactu para el abono, lo preparamos
         if (devolucionGuardada.aeatQrUrl || devolucionGuardada.aeatIdentificador) {
@@ -334,10 +320,15 @@ export class TpvComponent implements OnInit {
           });
         }
 
+        // Activamos el visor y forzamos la previsualización e impresión del ticket de abono
+        this.isTicketVisible.set(true);
+        this.generarYPrevisualizarTicket();
+
         // Limpiamos el estado de la devolución y el carrito
         if (this.desactivarModoDevolucion) this.desactivarModoDevolucion(); // Función tuya para apagar el botón rojo si la tienes
         this.limpiarCarrito();
         this.deseleccionarCliente();
+        if (this.idTicketOrigenDevolucion) this.idTicketOrigenDevolucion.set(null); // Reset de la orden ligada a la devolución para evitar confusiones en futuras operaciones
       },
       error: (err) => {
         console.error('Error en devolución:', err);
@@ -514,26 +505,55 @@ export class TpvComponent implements OnInit {
   }
 
   /* Acción del historial inferior para descargar el PDF oficial A4 regulado */
-  descargarFacturaA4(ticket: TicketHistorial): void {
-    if (!ticket.cliente) {
-      this.uiService.mostrarToast('⚠️ No se puede generar una factura formal A4 para una venta anónima. Debe registrar un cliente.', 'warning');
+  previsualizarFacturaA4(ticket: TicketHistorial): void {
+    // 🚀 1. Extraemos el nombre del cliente EXACTAMENTE igual que lo haces en tu HTML
+    const nombreCliente = ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General';
+    // 2. Verificación obligatoria de cliente (idéntica a tu lógica)
+    if (nombreCliente === 'Cliente General') {
+      this.uiService.mostrarToast('No se puede generar una factura formal A4 para una venta anónima. Debe registrar un cliente.', 'warning');
       return;
     }
 
-    this.uiService.mostrarToast(`📄 Descargando Factura A4 de ${ticket.cliente.nombre}...`, 'success');
+    // 2. Activamos los estados de carga y abrimos la pantalla del visor
+    this.cargandoPDF.set(true);
+    this.isTicketVisible.set(true); // Abre el modal donde está tu iframe
+
+    // Seteamos los textos informativos en el encabezado del recibo
+    this.idOperacionProcesada.set(ticket.id);
+    this.numeroTicketActual.set(ticket.numeroTicket);
+
+    // Controlamos la fecha por si viene en formato String o Date del back
+    const fechaSegura = ticket.fechaCreacion || ticket.fecha || ticket['createdAt'] || new Date();
+    this.horaTicketActual.set(new Date(fechaSegura).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+
     this.ordenService.getFacturaPdf(ticket.id).subscribe({
       next: (blob: Blob) => {
+        // Generamos la URL del binario recibido y forzamos la descarga del PDF oficial A4
         const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = `Factura_${ticket.numeroTicket}.pdf`;
-        link.click();
-        window.URL.revokeObjectURL(blobUrl);
+        // Saneamos la URL para que Angular permita incrustarla en el iframe seguro
+        const urlSaneada = this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl);
+        this.urlSeguraPdf.set(urlSaneada);
+        this.cargandoPDF.set(false);
+        this.uiService.mostrarToast('📄 Factura A4 generada. Lista para revisión.', 'success');
       },
       error: (err) => {
-        console.error('Error descargando A4:', err);
+        console.error('Error al previsualizar A4 desde historial:', err);
         this.uiService.mostrarToast('Error al recuperar la factura oficial del servidor.', 'error');
-      }
+        this.cargandoPDF.set(false);
+        this.isTicketVisible.set(false); // Cerramos el modal si falla el servidor
+        // Si el error es un Blob de tipo JSON, lo "desenterramos" para leerlo
+    if (err.error instanceof Blob && err.error.type === 'application/json') {
+      const lector = new FileReader();
+      lector.onload = () => {
+        const mensajeErrorJava = JSON.parse(lector.result as string);
+        console.error("💥 ERROR REAL DEL BACKEND:", mensajeErrorJava);
+        this.uiService.mostrarToast('Error en servidor: ' + (mensajeErrorJava.message || 'Fallo al renderizar A4'), 'error');
+      };
+      lector.readAsText(err.error);
+    } else {
+      this.uiService.mostrarToast('Error al recuperar la factura oficial.', 'error');
+    }
+  }
     });
   }
 
@@ -592,7 +612,7 @@ export class TpvComponent implements OnInit {
    /* ➔ ACCIÓN DE CONTINUAR: Limpia todo el TPV y lo prepara para la siguiente venta */
   cerrarReciboAeat(): void {
     this.isTicketVisible.set(false);
-    this.urlSeguraPdf.set(null);
+    this.urlSeguraPdf.set(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank'));
     this.datosFacturaAeat.set(null);
     this.idOperacionProcesada.set(null);
     this.idOrdenPendienteAnticipo.set(null);
@@ -722,13 +742,8 @@ export class TpvComponent implements OnInit {
   }
 
   // Abrir el modal de arqueo
-  abrirCierreCaja() {
-   // Reseteamos el desglose a cero para un nuevo recuento limpio
-    this.desgloseEfectivo.set({
-      b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0,
-      m2: 0, m1: 0, m050: 0, m020: 0, m010: 0, m005: 0, m002: 0, m001: 0
-    });
-    this.mostrarModalArqueo.set(true);  
+  abrirCierreCaja(): void {
+    this.router.navigate(['/caja']); 
   }
 
   // Aquí el método para abrir la caja, que se ejecuta al hacer clic en el botón "Abrir Caja"
@@ -741,6 +756,7 @@ export class TpvComponent implements OnInit {
     this.cajaService.abrirCaja(this.saldoInicialInput).subscribe({
       next: (caja) => {
         this.uiService.mostrarToast(`🚀 Caja abierta con un fondo de ${caja.saldoInicial}€`, 'success');
+        this.saldoInicialInput = 0;
         // Al abrirse, el signal cajaActual del servicio se actualiza y el TPV se desbloquea solo
       },
       error: (err) => this.uiService.mostrarToast('Error al abrir caja: ' + (err.error || err.message), 'error')
@@ -927,93 +943,6 @@ toggleSinFechaRecogida(): void {
     this.indiceLineaDescuentoActual.set(null);
   }
 
-  // Métodos auxiliares para el arqueo guiado
-  abrirArqueoGuiado() {
-    this.cajaService.obtenerSaldoTeoricoActual().subscribe({
-      next: (saldo) => {
-        this.saldoTeoricoCaja.set(saldo);
-      },
-      error: (err) => {
-        console.error('Error al recuperar el saldo teórico:', err);
-        this.uiService.mostrarToast('No se pudo calcular el saldo teórico de la sesión', 'error');
-      }
-    });
-    
-    // Reiniciamos el desglose al abrir
-    this.desgloseEfectivo.set({
-      b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0,
-      m2: 0, m1: 0, m050: 0, m020: 0, m010: 0, m005: 0, m002: 0, m001: 0
-    });
-    this.mostrarModalArqueo.set(true);
-  }
-
-  // Cambiar la cantidad de un billete o moneda específico
-  actualizarCantidadEfectivo(tipo: keyof ReturnType<typeof this.desgloseEfectivo>, valor: number) {
-    if (valor < 0) valor = 0;
-    this.desgloseEfectivo.update(actual => ({
-      ...actual,
-      [tipo]: valor
-    }));
-  }
-
-  // Computed o método para calcular el total real sumado en tiempo real
-  calcularTotalReal(): number {
-    const d = this.desgloseEfectivo();
-    return (
-      d.b500 * 500 + d.b200 * 200 + d.b100 * 100 + d.b50 * 50 + d.b20 * 20 + d.b10 * 10 + d.b5 * 5 +
-      d.m2 * 2 + d.m1 * 1 + d.m050 * 0.5 + d.m020 * 0.2 + d.m010 * 0.1 + d.m005 * 0.05 + d.m002 * 0.02 + d.m001 * 0.01
-    );
-  }
-
-  // Calcula la diferencia (Descuadre)
-  calcularDescuadre(): number {
-    return this.calcularTotalReal() - this.saldoTeoricoCaja();
-  }
-
-  // Método para confirmar el arqueo guiado y enviar los datos al backend
-  confirmarArqueo() {
-    // 1. Extraemos los valores de las métricas guiadas calculadas en tu componente
-    const saldoTeorico = this.saldoTeoricoCaja ? this.saldoTeoricoCaja() : 0;
-    const saldoReal = this.calcularTotalReal();
-    const descuadre = this.calcularDescuadre();
-    
-    // 2. Extraemos el desglose exacto de monedas/billetes mapeando el Record
-    const desglose = (this.desgloseEfectivo ? this.desgloseEfectivo() : {}) as Record<string, number>;
-
-    // 3. Construimos el DTO con la estructura estricta que exige tu 'cerrarCajaGuiado'
-    const arqueoDTO = {
-      saldoTeorico: this.saldoTeoricoCaja(),
-      saldoReal: this.calcularTotalReal(),
-      descuadre: this.calcularDescuadre(),
-      desglose: this.desgloseEfectivo()
-    };
-
-    console.log('Enviando arqueo guiado al servidor:', arqueoDTO);
-    
-    // Lanzamos la petición HTTP real de cierre de caja
-    this.cajaService.cerrarCajaGuiado(arqueoDTO).subscribe({
-      next: (response) => {
-        console.log('Arqueo guiado procesado y guardado con éxito:', response);
-        // Cerramos el modal de arqueo
-        this.mostrarModalArqueo.set(false);
-        this.uiService.mostrarToast('🔒 Turno finalizado y caja cerrada correctamente.', 'success');
-        
-        // Sincronización higiénica: Forzamos la actualización de la rejilla inferior de tickets
-        this.ordenService.getOrdenesPorEstado('TODAS').subscribe(tickets => this.historialTickets.set(tickets));
-      },
-      error: (err) => {
-        console.error('Error al intentar cerrar la caja:', err);
-        this.uiService.mostrarToast('Hubo un problema al registrar el cierre de caja. Revisa la consola.', 'error');
-      }
-    });
-  }
-  
-  /* Método auxiliar para obtener la cantidad actual de un billete/moneda en la plantilla */
-  obtenerCantidad(tipo: string): number {
-    const desglose = this.desgloseEfectivo() as Record<string, number>;
-    return desglose[tipo] || 0;
-  }
-
   toggleModoDevolucion() {
   this.modoDevolucion.update(activo => !activo);
   this.uiService.mostrarToast(
@@ -1069,9 +998,11 @@ toggleSinFechaRecogida(): void {
   // --- MÉTODOS DEL FORMULARIO DE REGISTRO PARA CLIENTES ---
   
   abrirModal() {
-   if (this.componenteClientes) {
-     this.componenteClientes.abrirModal(); // <-- Llama directamente al abrirModal() de tu Clientes.ts
-   }
+   if (this.clientesComponent) {
+     this.clientesComponent.abrirModal(); // <-- Llama directamente al abrirModal() de tu Clientes.ts
+   }else {
+    console.error('No se ha encontrado la referencia de <app-clientes> en la vista.');
+  }
  }
 
  limpiarFormularioMostrador() {
@@ -1091,8 +1022,12 @@ toggleSinFechaRecogida(): void {
 
 /* 🔄 ACCIÓN TÁCTIL: Devuelve todo el contenido del ticket adaptándose al DevolucionRequest de Java */
   devolverTicketCompleto(ticket: any): void {
+    // CONTROL DE SEGURIDAD: Si ya está devuelto, frenamos inmediatamente
+    if (ticket.estadoPago === 'DEVOLUCION') {
+      this.uiService.mostrarToast('⚠️ Este ticket ya figura como devuelto o abonado en el sistema.', 'warning');
+      return;
+    }
     // 1. Nos aseguramos de que el ticket tiene líneas o artículos dentro para poder devolverlos
-    // Nota: Dependiendo de cómo te devuelva el objeto el backend, puede llamarse 'lineas', 'items' o 'detalles'
     const lineasTicket = ticket.lineas || ticket.items || ticket.detalles || [];
 
     if (lineasTicket.length === 0) {
@@ -1100,13 +1035,29 @@ toggleSinFechaRecogida(): void {
       return;
     }
 
-    // 2. Confirmación táctil en el mostrador
-    this.uiService.mostrarToast(`¿Estás seguro de que deseas realizar la DEVOLUCIÓN COMPLETA del ticket #${ticket.numeroTicket || ticket.id}? Se reincorporarán las ${lineasTicket.length} líneas de artículos al stock.`, 'warning');
+    // Guardamos los datos para usarlos al pulsar "Aceptar"
+    this.ticketParaDevolver = ticket;
+    this.mensajeModalDevolucion = `¿Estás seguro de que deseas realizar la DEVOLUCIÓN COMPLETA del ticket #${ticket.numeroTicket || ticket.id}? Se reincorporarán las ${lineasTicket.length} líneas de artículos al stock.`;
+    
+    // Abrimos el modal de SCSS
+    this.mostrarModalDevolucion = true;
+  }
 
-    if (!confirm()) {
-      this.uiService.mostrarToast('Devolución cancelada por el operario.', 'warning');
-      return; // Si el operario pulsa "Cancelar", detiene el proceso de forma segura
-    }
+  // 2. Este método se ejecuta si le dan a "❌ Cancelar"
+  cancelarDevolucion(): void {
+    this.mostrarModalDevolucion = false;
+    this.ticketParaDevolver = null;
+    this.uiService.mostrarToast('Devolución cancelada por el operario.', 'warning');
+  }
+
+  // 3. Este método se ejecuta si le dan a "✓ Confirmar" (TODA TU LÓGICA INTACTA)
+  ejecutarDevolucionConfirmada(): void {
+    this.mostrarModalDevolucion = false; // Cerramos el modal primero
+    const ticket = this.ticketParaDevolver;
+
+    if (!ticket) return;
+
+    const lineasTicket = ticket.lineas || ticket.items || ticket.detalles || [];
       
     this.uiService.mostrarToast('Procesando abono total...', 'success');
 
@@ -1114,12 +1065,10 @@ toggleSinFechaRecogida(): void {
     const requestDevolucion = {
       ordenOrigenId: ticket.id, // Vinculamos la orden origen
       metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO',
-      
       // Mapeamos las líneas del historial al DTO estricto del Back. 
-      // Revisa si tu backend en el ticket original devuelve 'articuloId' o 'productoId' y 'cantidad'
       lineas: lineasTicket.map((linea: any) => ({
         articuloId: linea.articuloId || linea.productoId || linea.articulo?.id, 
-        cantidad: Math.abs(linea.cantidad) // Javi lo quiere en POSITIVO (ej: 1), nos aseguramos con Math.abs
+        cantidad: Math.abs(linea.cantidad) // Tiene que ser en POSITIVO, nos aseguramos con Math.abs
       }))
     };
 
@@ -1128,8 +1077,10 @@ toggleSinFechaRecogida(): void {
       next: (devolucionGuardada) => {
         this.uiService.mostrarToast(`✅ Devolución del ticket #${ticket.numeroTicket || ticket.id} procesada con éxito.`, 'success');
         
-        // Guardamos la referencia para el PDF si hiciera falta mostrar el comprobante
+       // Preparamos las referencias en el TPV para sacar el PDF térmico del abono
         this.idOperacionProcesada.set(devolucionGuardada.id);
+        this.numeroTicketActual.set(devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`);
+        this.horaTicketActual.set(new Date().toLocaleTimeString());
 
         // Insertamos el abono generado en tu historial local en negativo para que cuadre visualmente
         const ticketAbonoHistorial: TicketHistorial = {
@@ -1137,6 +1088,7 @@ toggleSinFechaRecogida(): void {
           numeroTicket: devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`, 
           fecha: new Date(),
           cliente: ticket.cliente ? { nombre: ticket.cliente.nombre } : null,
+          clienteNombre: ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General',
           total: -Math.abs(ticket.total), // Lo pintamos en negativo en la parrilla inferior
           estadoAeat: 'PENDIENTE',
           estadoPago: 'DEVOLUCION',
@@ -1145,6 +1097,10 @@ toggleSinFechaRecogida(): void {
 
         // Añadimos el nuevo ticket de abono arriba en la tabla del turno
         this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
+
+        // Activamos el visor modal e inyectamos el PDF térmico de la devolución en el iframe
+        this.isTicketVisible.set(true);
+        this.generarYPrevisualizarTicket();
 
         // Volvemos a pedir todas las órdenes al servidor para actualizar los badges del ticket original a 'DEVOLUCION' en caliente
         this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
@@ -1155,10 +1111,12 @@ toggleSinFechaRecogida(): void {
         // Limpiamos los estados de selección del mostrador por seguridad
         this.limpiarCarrito();
         this.deseleccionarCliente();
+        this.ticketParaDevolver = null;
       },
       error: (err) => {
         console.error('Error en devolución automática:', err);
         this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error?.message || err.error || 'Error en el servidor'), 'error');
+        this.ticketParaDevolver = null;
       }
     });
   }

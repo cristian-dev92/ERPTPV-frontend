@@ -59,8 +59,16 @@
             }
           </td>
           <td>
-            <button class="btn-edit" [routerLink]="['editar', item.id]">Editar</button>
-            <button class="btn-delete" (click)="eliminarProducto(item.id!, item.nombre)">Eliminar</button>
+            <div class="acciones-wrapper">
+            <button class="btn-edit" 
+                [routerLink]="['editar', item.id]">
+                ✏️ Editar
+            </button>
+            <button class="btn-delete" 
+                (click)="eliminarProducto(item.id!, item.nombre)">
+                🗑️ BORRAR
+            </button>
+           </div>
           </td>
         </tr>
       } @empty {

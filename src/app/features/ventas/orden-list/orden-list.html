@@ -23,8 +23,8 @@
     } 
     
     @if (filtroTipo() === 'LISTO_RECOGER') {
-      <button class="pill-filter" [class.active]="filtroEstado() === 'PAGADO'" (click)="filtroEstado.set('PAGADO')">Pagados</button>
       <button class="pill-filter" [class.active]="filtroEstado() === 'PENDIENTE_PAGO'" (click)="filtroEstado.set('PENDIENTE_PAGO')">Pendientes de Pago</button>
+      <button class="pill-filter" [class.active]="filtroEstado() === 'PAGADO'" (click)="filtroEstado.set('PAGADO')">Pagados</button>
     }
     
     @if (filtroTipo() === 'CERRADOS') {
@@ -61,8 +61,8 @@
             {{ orden.tipo === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO' ? 'DEVUELTO' : (orden.tipo === 'REPARACION' ? orden.estadoTaller : orden.estadoPago) }} </span>
         </div>
         <div class="card-body">
-          <p class="cliente"><strong>👤 {{ orden.clienteNombre || 'Cliente General' }}</strong></p>
-          <p class="servicio">👞 {{ orden.descripcionCorto || 'Trabajo del taller' }}</p>
+          <p class="cliente"><strong>👤 {{ orden.clienteNombre || orden.cliente?.nombre || 'Cliente General' }}</strong></p>
+          <p class="servicio">👞 {{ orden.descripcionCorto || (orden.tipo === 'VENTA_DIRECTA' ? 'VENTA' : (orden.tipo === 'REPARACION' ? 'REPARACIÓN' : (orden.tipo === 'DEVOLUCION' ? 'DEVOLUCIÓN' : 'Trabajo del taller'))) }}</p>
           @if (orden.tipo === 'REPARACION') {
             <p class="fecha-limite" [ngClass]="{'retrasado': orden.estadoTaller !== 'LISTO' && orden.estadoTaller !== 'ENTREGADO'}">
               📅 Fecha Recogida: {{ orden.fechaPrometidaRecogida | date:'dd/MM/yyyy' }}
@@ -100,9 +100,9 @@
           <!-- INFO GENERAL -->
           <div class="info-section">
             <p><strong>Cliente:</strong> 
-            {{ orden.clienteNombre || 'Cliente de Mostrador' }} 
-            @if (ordenSeleccionada()?.clienteTelefono) {
-              ({{ ordenSeleccionada().clienteTelefono }})
+            {{ orden.clienteNombre || orden.cliente?.nombre || 'Cliente de Mostrador' }} 
+            @if (orden.clienteTelefono) {
+              ({{ orden.clienteTelefono }})
             }
             </p>
             <p><strong>Total:</strong> {{ orden.total | currency:'EUR' }}</p>
@@ -140,8 +140,12 @@
             <h3>⚙️ Acciones Operativas</h3>
 
             <div class="workflow-buttons">
-              <button class="btn-action print-pdf" (click)="descargarPdfTicket(orden.id)">
-                🖨️ Generar / Imprimir PDF
+              <button class="btn-action print-ticket" (click)="descargarPdfTicket(orden.id)">
+                🖨️ Generar / Imprimir Ticket
+              </button>
+
+              <button class="btn-action print-factura" (click)="descargarFacturaA4(orden.id)">
+                📄 Generar / Imprimir Factura
               </button>
             
             @if (orden.tipo === 'REPARACION' && orden.estadoTaller === 'EN_TALLER') {
@@ -163,7 +167,10 @@
                 </button>
               }
 
-              @if (orden.estadoPago === 'PAGADO' || orden.estadoTaller === 'ENTREGADO') {
+              @if ((orden.estadoPago === 'PAGADO' || orden.estadoTaller === 'ENTREGADO')
+                    && orden.estadoPago !== 'DEVOLUCION' 
+                    && orden.estadoPago !== 'DEVUELTO'
+                    && orden.tipo !== 'DEVOLUCION') {
                 <div class="zona-acciones-devolucion" style="margin-top: 1rem; width: 100%;">
                   <button type="button" class="btn-ir-devolver" (click)="abrirPanelDevolucion()" style="width: 100%;">
                     🔄 Solicitar Devolución (Factura Rectificativa)
@@ -255,7 +262,7 @@
         </div>
 
         <button class="btn-submit-pay" style="background-color: #e53e3e; margin-top: 1.5rem;" (click)="confirmarDevolucionTicket()">
-          🔥 Confirmar Devolución y Emitir DEV-26
+          🔥 Confirmar Devolución
         </button>
       </div>
     </div>

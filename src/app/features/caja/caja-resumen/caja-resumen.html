@@ -1,107 +1,190 @@
-@if (turno()) {
-  <div class="caja-container">
+@if (cargando()) {
+  <div class="caja-loading">
+    <div class="spinner"></div>
+    <p>Sincronizando Estado de la Caja...</p>
+  </div>
+} @else {
+  
+  @if (cajaActual() === null) {
+    <div class="apertura-tactil-card">
+      <div class="icon-lock">🔓</div>
+      <h2>Turno de Caja Cerrado</h2>
+      <p>Es necesario declarar el fondo de caja inicial para operar el TPV.</p>
+      </div>
+  } @else {
     
-    <header class="caja-header">
-      <div>
-        <h1>📊 Informe del Turno de Caja</h1>
-        <p class="fecha-apertura">
-          <strong>Apertura:</strong> {{ turno()?.fechaHoraApertura | date:'dd/MM/yyyy HH:mm' }} 
-          @if (turno()?.fechaHoraCierre) {
-            <span class="separador">|</span> 
-            <strong>Cierre:</strong> {{ turno()?.fechaHoraCierre | date:'dd/MM/yyyy HH:mm' }}
-          } @else {
-            <span class="badge-abierta">🟢 Turno Activo</span>
-          }
-        </p>
+    <div class="caja-dashboard">
+      
+      <div class="caja-header-compact">
+        <div class="info-meta">
+          <span class="badge-active">● TURNO ACTIVO #{{ cajaActual()?.id }}</span>
+          <p>Operador: <strong>{{ cajaActual()?.nombreUsuarioApertura }}</strong></p>
+        </div>
+        <span class="fecha-meta">{{ cajaActual()?.fechaHoraApertura | date:'dd/MM/yy HH:mm' }}</span>
       </div>
-      <button class="btn-print" onclick="window.print()">🖨️ Imprimir Informe</button>
-    </header>
 
-    <div class="summary-grid">
-      <div class="card">
-        <small>Ventas Efectivo</small>
-        <h2>{{ totalVentasEfectivo() | currency:'EUR' }}</h2>
+      <div class="tarjetas-grid-compact">
+        <div class="tile-caja bg-neutral">
+          <span class="lbl">Fondo Inicial</span>
+          <span class="val">{{ cajaActual()?.saldoInicial | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-positivo">
+          <span class="lbl">Ventas Efectivo</span>
+          <span class="val">+ {{ cajaActual()?.totalVentasEfectivo | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-neutral">
+          <span class="lbl">Ventas Tarjeta</span>
+          <span class="val">{{ cajaActual()?.totalVentasTarjeta | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-neutral">
+          <span class="lbl">Transferencias</span>
+          <span class="val">{{ cajaActual()?.totalVentasTransferencia | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-neutral">
+          <span class="lbl">Otros Métodos</span>
+          <span class="val">{{ cajaActual()?.totalVentasOtros | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-positivo">
+          <span class="lbl">Anticipos (Fianza)</span>
+          <span class="val">+ {{ cajaActual()?.totalAnticipos | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-positivo">
+          <span class="lbl">Ingresos Manuales</span>
+          <span class="val">+ {{ cajaActual()?.totalIngresosManuales | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-negativo">
+          <span class="lbl">Gastos / Compras</span>
+          <span class="val">- {{ cajaActual()?.totalGastos | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-negativo">
+          <span class="lbl">Devoluciones</span>
+          <span class="val">- {{ cajaActual()?.totalDevoluciones | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-total">
+          <span class="lbl">Efectivo Teorico Esperado</span>
+          <span class="val">{{ cajaActual()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</span>
+        </div>
       </div>
-      <div class="card">
-        <small>Ventas Tarjeta</small>
-        <h2>{{ totalVentasTarjeta() | currency:'EUR' }}</h2>
+
+      <div class="caja-action-pad">
+        <button class="pad-btn btn-grey" (click)="mostrarModalMovimiento.set(true)">
+          <span class="icon">💸</span> Movimiento Manual
+        </button>
+        
+        <button class="pad-btn btn-blue" (click)="verPdf(cajaActual()!.id, '80mm')">
+          <span class="icon">🖨️</span> Ticket (80mm)
+        </button>
+        
+        <button class="pad-btn btn-blue" (click)="verPdf(cajaActual()!.id, 'a4')">
+          <span class="icon">📄</span> Folio (A4)
+        </button>
+        
+        <button class="pad-btn btn-red" (click)="mostrarModalCierre.set(true)">
+          <span class="icon">🔒</span> Cerrar Caja
+        </button>
       </div>
-      <div class="card">
-        <small>Anticipos</small>
-        <h2>{{ totalAnticipos() | currency:'EUR' }}</h2>
-      </div>
-      <div class="card">
-        <small>Ingresos Manuales</small>
-        <h2>{{ totalIngresos() | currency:'EUR' }}</h2>
-      </div>
-      <div class="card">
-        <small>Gastos</small>
-        <h2>-{{ totalGastos() | currency:'EUR' }}</h2>
-      </div>
-      <div class="card">
-        <small>Devoluciones</small>
-        <h2>-{{ totalDevoluciones() | currency:'EUR' }}</h2>
-      </div>
+
     </div>
 
-    <!-- Muestra el resultado final del arqueo si la caja ya está cerrada -->
-    @if (turno()?.estado === 'CERRADA') {
-      <div class="card-resultado-arqueo" [class.descuadre-alert]="turno()?.descuadre !== 0">
-        <h3>Recuento de Caja al Cierre</h3>
-        <div class="arqueo-grid">
-          <div>Esperado en Caja: <strong>{{ turno()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</strong></div>
-          <div>Contado Real: <strong>{{ turno()?.saldoFinalReal | currency:'EUR' }}</strong></div>
-          <div class="resultado-descuadre">
-            Descuadre: 
-            <strong [class.text-danger]="turno()?.descuadre < 0" [class.text-success]="turno()?.descuadre >= 0">
-              {{ turno()?.descuadre | currency:'EUR' }}
-            </strong>
+    @if (mostrarModalMovimiento()) {
+      <div class="modal-backdrop-blur">
+        <div class="modal-sheet-tactil">
+          <div class="sheet-header">
+            <h3>Registrar Caja Manual</h3>
+            <button class="close-tactil" (click)="mostrarModalMovimiento.set(false)">✕</button>
+          </div>
+          
+          <div class="tactil-form">
+            <div class="selector-tactil-grid">
+              <button type="button" class="select-opt positivo" 
+                      [class.active]="tipoMovimientoSeleccionado === 'INGRESO_MANUAL'"
+                      (click)="tipoMovimientoSeleccionado = 'INGRESO_MANUAL'">
+                🟢 INGRESO
+              </button>
+              <button type="button" class="select-opt negativo" 
+                      [class.active]="tipoMovimientoSeleccionado === 'GASTO'"
+                      (click)="tipoMovimientoSeleccionado = 'GASTO'">
+                🔴 GASTO
+              </button>
+            </div>
+
+            <div class="input-field-tactil">
+              <label>Importe (€)</label>
+              <input type="number" [(ngModel)]="montoMovimiento" placeholder="0.00" inputmode="decimal">
+            </div>
+
+            <div class="input-field-tactil">
+              <label>Concepto / Motivo</label>
+              <input type="text" [(ngModel)]="descripcionMovimiento" placeholder="Ej: Pago proveedor o cambio">
+            </div>
+
+            <button class="btn-confirm-tactil-action success" (click)="guardarMovimientoManual()">
+              ✓ Confirmar Registro
+            </button>
           </div>
         </div>
       </div>
     }
 
-    <div class="movimientos-section">
-      <h3>📜 Movimientos del Turno</h3>
+    @if (mostrarModalCierre()) {
+      <div class="modal-backdrop-blur">
+        <div class="modal-sheet-tactil">
+          <div class="sheet-header">
+            <h3>Cierre de Caja Operativo</h3>
+            <button class="close-tactil" (click)="mostrarModalCierre.set(false)">✕</button>
+          </div>
+          
+          <div class="tactil-form text-center">
+            <p class="instruction">Cuenta todo el dinero físico en billetes y monedas de la caja e introduce el total real:</p>
+            
+            <div class="input-field-tactil unique-huge">
+              <label>EFECTIVO TOTAL EN CAJA (€)</label>
+              <input type="number" [(ngModel)]="saldoFinalRealContado" placeholder="0.00" inputmode="decimal" autofocus>
+            </div>
 
-      <table class="zapatero-table">
-        <thead>
-          <tr>
-            <th>Hora</th>
-            <th>Tipo</th>
-            <th>Método</th>
-            <th>Importe</th>
-            <th>Descripción</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (m of movimientos(); track m.id) {
-            <tr>
-              <td>{{ m.fechaHora | date:'HH:mm' }}</td>
-              <td>
-                <span class="badge-mov" [ngClass]="claseMovimiento(m.tipoMovimiento)">
-                  <span class="icon">{{ iconoMovimiento(m.tipoMovimiento) }}</span>
-                  <span class="label">{{ m.tipoMovimiento }}</span>
-                </span>
-              </td>
-              <td>{{ m.metodoPago || '-' }}</td>
-              <td [ngClass]="claseMovimiento(m.tipoMovimiento)">
-                {{ m.importe | currency:'EUR' }}
-              </td>
-              <td>{{ m.descripcion || '-' }}</td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="5" class="text-center">No ha habido movimientos en este turno todavía.</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+            <button class="btn-confirm-tactil-action danger" (click)="ejecutarCierreCaja()">
+              🔒 Ejecutar Arqueo y Cerrar Turno
+            </button>
+          </div>
+        </div>
+      </div>
+    }
 
-  </div>
-} @else {
-  <div class="no-turno-wrapper">
-    <p class="no-turno">📭 No hay ningún turno abierto ni cierres recientes en esta sesión.</p>
-  </div>
+    @if (mostrarModalPdf()) {
+      <div class="modal-backdrop-blur">
+        <div class="modal-sheet-tactil selector-pdf-sheet">
+          <div class="sheet-header no-border text-center">
+            <div class="success-icon">✓</div>
+            <h3>¡Turno Finalizado con Éxito!</h3>
+            <p class="sub">Selecciona el formato para generar el reporte de auditoría obligatorio.</p>
+          </div>
+          
+          <div class="pdf-buttons-vertical">
+            <button class="pdf-big-btn ticket-color" (click)="imprimirInformeFinal('80mm')">
+              <span class="btn-icon">🖨️</span>
+              <div class="btn-text">
+                <strong>Imprimir Ticket (Informe Z)</strong>
+                <span>Formato optimizado para impresora térmica de 80mm</span>
+              </div>
+            </button>
+
+            <button class="pdf-big-btn folio-color" (click)="imprimirInformeFinal('a4')">
+              <span class="btn-icon">📄</span>
+              <div class="btn-text">
+                <strong>Ver en Folio Completo (A4)</strong>
+                <span>Ideal para archivar en PDF, auditorías externas o email</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="sheet-footer">
+            <button class="btn-skip-tactil" (click)="mostrarModalPdf.set(false)">
+              Salir al Panel Principal
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+  }
 }

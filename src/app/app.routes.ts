@@ -17,6 +17,19 @@ export const routes: Routes = [
     loadComponent: () => import('./shared/components/layout/layout').then(m => m.LayoutComponent),
     children: [
      { 
+      path: 'ventas', // Todas las rutas de ventas abrirán el TPV, pero con diferentes estados (nuevo ticket, ticket abierto, etc)
+      children: [
+        {
+          path: '', // Si entra a /ventas, se le abre el TPV para facturar directo
+          loadComponent: () => import('./features/ventas/tpv/tpv').then(m => m.TpvComponent) 
+      },
+      {
+        path: 'tickets', // Si entra a /ventas/tickets, se le abre el historial de tickets
+        loadComponent: () => import('./features/ventas/orden-list/orden-list').then(m => m.OrdenListComponent) 
+      }
+    ]
+  },   
+  {
     path: 'inventario', 
     children: [
     { 
@@ -32,19 +45,6 @@ export const routes: Routes = [
       loadComponent: () => import('./features/inventario/articulo-form/articulo-form').then(m => m.ArticuloFormComponent) 
     }]
    },
-   { 
-      path: 'ventas', // Todas las rutas de ventas abrirán el TPV, pero con diferentes estados (nuevo ticket, ticket abierto, etc)
-      children: [
-        {
-          path: '', // Si entra a /ventas, se le abre el TPV para facturar directo
-          loadComponent: () => import('./features/ventas/tpv/tpv').then(m => m.TpvComponent) 
-      },
-      {
-        path: 'historial', // Si entra a /ventas/historial, se le abre el historial de tickets
-        loadComponent: () => import('./features/ventas/orden-list/orden-list').then(m => m.OrdenListComponent) 
-      }
-    ]
-    },
    { 
       path: 'caja', 
       loadComponent: () => import('./features/caja/caja-resumen/caja-resumen').then(m => m.CajaResumenComponent) 

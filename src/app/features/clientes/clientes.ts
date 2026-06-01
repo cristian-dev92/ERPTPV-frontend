@@ -34,10 +34,14 @@ export class ClientesComponent implements OnInit {
     ciudad: ''
   });
 
-  // ⌨️ SIGNALS PARA EL CONTROL DEL TECLADO GENERAL
+  // SIGNALS PARA EL CONTROL DEL TECLADO GENERAL
   mostrarTecladoGeneral = signal<boolean>(false);
   inputObjetivoTeclado = signal<string>('');
   valorTecladoEnConstruccion = signal<string>('');
+
+  // CONTROL DE MODO MODAL PARA SELECCIÓN RÁPIDA DESDE TPV
+  modoEdicion = signal<boolean>(false);
+  clienteSeleccionadoId = signal<number | null>(null);
 
   ngOnInit() {
     this.cargarClientes();
@@ -181,16 +185,73 @@ export class ClientesComponent implements OnInit {
       return;
     }
 
-    this.clienteService.crearCliente(datos).subscribe({
-      next: (clienteCreado) => {
-        this.uiService.mostrarToast(`👤 Ficha de "${clienteCreado.nombre}" creada con éxito`, 'success');
-        this.clientes.update(list => [clienteCreado, ...list]);
-        this.onClienteSeleccionado.emit(clienteCreado);
-        this.cerrarModal();
+    if (this.modoEdicion()) {
+      // Flujo de Edición / Modificación en Backend
+      const idCliente = this.clienteSeleccionadoId();
+      if (!idCliente) return;
+
+      this.clienteService.actualizarCliente(idCliente, datos).subscribe({
+        next: (clienteActualizado) => {
+          this.uiService.mostrarToast(`👤 Ficha de "${clienteActualizado.nombre}" modificada con éxito`, 'success');
+          
+          // Actualizamos la lista local en caliente sin perder la posición
+          this.clientes.update(list => list.map(c => c.id === idCliente ? clienteActualizado : c));
+          
+          this.cerrarModal();
+        },
+        error: (err) => {
+          this.uiService.mostrarToast('Error al actualizar ficha: ' + (err.error || err.message), 'error');
+        }
+      });
+    } else {
+      // Flujo de Creación Tradicional
+      this.clienteService.crearCliente(datos).subscribe({
+        next: (clienteCreado) => {
+          this.uiService.mostrarToast(`👤 Ficha de "${clienteCreado.nombre}" creada con éxito`, 'success');
+          this.clientes.update(list => [clienteCreado, ...list]);
+          this.onClienteSeleccionado.emit(clienteCreado);
+          this.cerrarModal();
+        },
+        error: (err) => {
+          this.uiService.mostrarToast('Error al registrar cliente: ' + (err.error || err.message), 'error');
+        }
+      });
+    }
+  }
+
+  editarCliente(cliente: ClienteDTO) {
+    this.modoEdicion.set(true);
+    this.clienteSeleccionadoId.set(cliente.id);
+
+    // Mapeamos los campos existentes al signal del formulario de tu teclado
+    this.nuevoCliente.set({
+      nombre: cliente.nombre,
+      telefono: cliente.telefono,
+      email: cliente.email || '',
+      documentoIdentidad: cliente.documentoIdentidad || '',
+      direccion: cliente.direccion || '',
+      codigoPostal: cliente.codigoPostal || '',
+      ciudad: cliente.ciudad || ''
+    });
+
+    this.mostrarModalRegistro.set(true);
+    this.uiService.mostrarToast(`Modificando ficha de ${cliente.nombre}`, 'warning');
+  }
+
+  eliminarCliente(id: number) {
+    this.uiService.mostrarToast('Procesando baja en el archivo...', 'warning');
+
+    this.clienteService.eliminarCliente(id).subscribe({
+      next: () => {
+        this.uiService.mostrarToast('🚫 Ficha de cliente eliminada correctamente', 'success');
+        // Filtramos el array local reactivamente para quitar al cliente borrado
+        this.clientes.update(list => list.filter(c => c.id !== id));
       },
       error: (err) => {
-        this.uiService.mostrarToast('Error al registrar cliente: ' + (err.error || err.message), 'error');
+        console.error(err);
+        this.uiService.mostrarToast('No se puede eliminar un cliente con reparaciones o compras históricas activas.', 'error');
       }
     });
   }
+
 }

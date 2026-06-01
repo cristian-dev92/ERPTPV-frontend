@@ -1,10 +1,8 @@
-/* ==========================================================================
-   DIRECTORIO DE PROVEEDORES - HOJA DE ESTILOS
-   ========================================================================== */
 $primary: #1e293b;
 $secondary: #3b82f6;
 $border: #e2e8f0;
 $bg-light: #f8fafc;
+$danger: #ef4444;
 
 .proveedores-container {
   max-width: 1100px;
@@ -58,7 +56,7 @@ $bg-light: #f8fafc;
 .zapatero-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
+  text-align: center;
   font-size: 0.9rem;
 
   thead {
@@ -71,7 +69,7 @@ $bg-light: #f8fafc;
     border-bottom: 1px solid $border;
     &:last-child { border-bottom: none; }
     &:hover { background-color: $bg-light; }
-    td { padding: 1rem; color: #334155; }
+    td { padding: 1rem; color: #334155; vertical-align: middle; }
   }
 
   .txt-negrita { font-weight: 600; color: $primary; }
@@ -79,12 +77,14 @@ $bg-light: #f8fafc;
   .txt-email { color: $secondary; font-weight: 500; }
   
   .badge-activo {
+    display: inline-block;
     background-color: #ecfdf5;
     color: #059669;
     padding: 0.25rem 0.625rem;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
+    margin: 0 auto;
   }
 
   .tabla-vacia {
@@ -92,6 +92,37 @@ $bg-light: #f8fafc;
     padding: 3rem;
     color: #94a3b8;
     font-style: italic;
+  }
+
+  /* Contenedor y botones de operaciones dentro de la tabla */
+  .acciones-wrapper {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+
+    button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-accion-editar {
+      background-color: #eff6ff;
+      color: $secondary;
+      border-color: #bfdbfe;
+      &:hover { background-color: $secondary; color: white; }
+    }
+
+    .btn-accion-eliminar {
+      background-color: #fef2f2;
+      color: $danger;
+      border-color: #fca5a5;
+      &:hover { background-color: $danger; color: white; }
+    }
   }
 }
 

@@ -450,7 +450,13 @@ $color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
     transition: background-color 0.1s ease;
     text-align: center;
 
-    &.print-pdf {
+    &.print-ticket {
+      background-color: $color-pdf;
+      margin-bottom: 0.5rem;
+      &:hover { background-color: color.adjust($color-pdf, $lightness: -6%); }
+    }
+
+    &.print-factura {
       background-color: $color-pdf;
       margin-bottom: 0.5rem;
       &:hover { background-color: color.adjust($color-pdf, $lightness: -6%); }

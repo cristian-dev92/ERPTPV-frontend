@@ -1,128 +1,23 @@
-<!-- 1. GESTIÓN DE APERTURA / CIERRE DE CAJA -->
 @if (!cajaAbierta()) {
-  <!-- MOSTRAR ESTO ÚNICAMENTE SI LA CAJA ESTÁ CERRADA -->
-  <div class="alerta-caja">
+  <div class="alerta-caja-tpv">
     <div class="alerta-header">
-      ⚠️ <strong>CAJA CERRADA:</strong> No puedes realizar ventas hasta que abras el turno.
+      ⚠️ <strong>CASH REQUISITE:</strong> No puedes registrar operaciones comerciales hasta que apertures el turno actual.
     </div>
     <div class="alerta-acciones">
-      <label for="saldoInicial">Monto Inicial (€):</label>
-      <input type="number" id="saldoInicial" [(ngModel)]="saldoInicialInput" placeholder="Ej: 150.00">
-      <button (click)="ejecutarAperturaCaja()" class="btn-abrir-ya">🔓 Abrir Caja</button>
+      <label for="saldoInicial">Fondo de Caja Inicial:</label>
+      <input type="number" id="saldoInicial" [(ngModel)]="saldoInicialInput" placeholder="0.00" min="0">
+      <button (click)="ejecutarAperturaCaja()" class="btn-abrir-ya">🔓 Abrir Turno Operativo</button>
     </div>
   </div>
 } @else {
-  <!-- MOSTRAR ESTO ÚNICAMENTE SI LA CAJA ESTÁ ABIERTA -->
   <div class="header-caja-abierta">
-    <div class="status">
-      <span class="punto-verde"></span>
-      <strong>TURNO ACTIVO:</strong> Caja abierta y operativa.
+    <div class="status-box">
+      <span class="punto-verde-latente"></span>
+      <strong>SISTEMA OPERATIVO:</strong> Terminal de ventas abierta.
     </div>
     <button (click)="abrirCierreCaja()" class="btn-cerrar-caja">🔒 Finalizar Turno y Cerrar Caja</button>
   </div>
 }
-
-<!-- MODAL DE ARQUEO GUIADO (SE MUESTRA AL CERRAR CAJA) -->
-@if (mostrarModalArqueo()) {
-  <div class="modal-arqueo-overlay">
-    <div class="modal-arqueo-content">
-      
-      <!-- Cabecera -->
-      <div class="modal-header">
-        <h3>Arqueo Guiado de Caja</h3>
-        <button class="btn-cerrar" (click)="mostrarModalArqueo.set(false)">&times;</button>
-      </div>
-
-      <!-- Cuerpo del Arqueo -->
-      <div class="modal-body">
-        
-        <!-- COLUMNA IZQUIERDA: Recuento -->
-        <div class="panel-recuento">
-          <h4>Recuento de Efectivo</h4>
-          
-          <div class="lista-efectivo">
-            @for (item of [
-              { label: 'Billetes de 500€', key: 'b500' },
-              { label: 'Billetes de 200€', key: 'b200' },
-              { label: 'Billetes de 100€', key: 'b100' },
-              { label: 'Billetes de 50€', key: 'b50' },
-              { label: 'Billetes de 20€', key: 'b20' },
-              { label: 'Billetes de 10€', key: 'b10' },
-              { label: 'Billetes de 5€', key: 'b5' },
-              { label: 'Monedas de 2€', key: 'm2' },
-              { label: 'Monedas de 1€', key: 'm1' },
-              { label: 'Monedas de 0.50€', key: 'm050' },
-              { label: 'Monedas de 0.20€', key: 'm020' },
-              { label: 'Monedas de 0.10€', key: 'm010' },
-              { label: 'Monedas de 0.05€', key: 'm005' },
-              { label: 'Monedas de 0.02€', key: 'm002' },
-              { label: 'Monedas de 0.01€', key: 'm001' }
-            ]; track item.key) {
-              <div class="fila-efectivo">
-                <span class="label-dinero">{{ item.label }}</span>
-                
-                <div class="controles-tactiles">
-                  <button type="button" class="btn-menos"
-                          (click)="actualizarCantidadEfectivo($any(item.key), obtenerCantidad(item.key) - 1)">-</button>
-                  
-                  <input type="number" class="input-cantidad"
-                         [value]="obtenerCantidad(item.key)"
-                         (input)="actualizarCantidadEfectivo($any(item.key), +$any($event.target).value)" />
-                  
-                  <button type="button" class="btn-mas"
-                          (click)="actualizarCantidadEfectivo($any(item.key), obtenerCantidad(item.key) + 1)">+</button>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- COLUMNA DERECHA: Métricas y Clases dinámicas del descuadre -->
-        <div class="panel-metricas">
-          <div>
-            <h4>Métricas del Cierre</h4>
-            
-            <div class="info-valores">
-              <div class="fila-valor">
-                <span>Saldo Esperado (Sistema):</span>
-                <span class="monto">{{ saldoTeoricoCaja() | number:'1.2-2' }} €</span>
-              </div>
-              <div class="fila-valor total-real">
-                <span>Total Real Contado:</span>
-                <span class="monto">{{ calcularTotalReal() | number:'1.2-2' }} €</span>
-              </div>
-            </div>
-
-            <!-- Aplicación de clases dinámicas según valor del descuadre -->
-            <div class="caja-descuadre" 
-                 [class.cuadrado]="calcularDescuadre() === 0"
-                 [class.sobrante]="calcularDescuadre() > 0"
-                 [class.faltante]="calcularDescuadre() < 0">
-              <div class="titulo-descuadre">Descuadre de Caja</div>
-              <div class="monto-descuadre">{{ calcularDescuadre() | number:'1.2-2' }} €</div>
-              <p class="txt-estado">
-                @if (calcularDescuadre() === 0) { Caja perfectamente cuadrada. }
-                @if (calcularDescuadre() > 0) { Hay un SOBRANTE de dinero en caja. }
-                @if (calcularDescuadre() < 0) { Hay un FALTANTE (pérdida) en la caja. }
-              </p>
-            </div>
-          </div>
-
-          <!-- Acciones -->
-          <div class="acciones-arqueo">
-            <button type="button" class="btn-guardar" (click)="confirmarArqueo()">
-              💾 GUARDAR Y CERRAR CAJA
-            </button>
-            <button type="button" class="btn-cancelar" (click)="mostrarModalArqueo.set(false)">
-              Cancelar
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
- }
 
  <div class="tpv-container">
   
@@ -471,7 +366,7 @@
                 <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
                 
                 @if (ticket.clienteNombre && ticket.clienteNombre !== 'Cliente General'|| (ticket.cliente && ticket.cliente.nombre !== 'Cliente General')) {
-                  <button type="button" (click)="descargarFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
+                  <button type="button" (click)="previsualizarFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
                 }
                 
                 @if (ticket.estadoPago === 'PAGADO' && $any(ticket).estadoPago !== 'DEVOLUCION' && ticket.estadoTaller !== 'CANCELADO') {
@@ -634,7 +529,7 @@
   </div>
 }
 <!-- CONTENEDOR DE PREVISUALIZACIÓN DEL TICKET -->
-@if (isTicketVisible()) {
+@if (isTicketVisible() ) {
   <div class="modal-ticket-overlay">
     <div class="modal-ticket-content">
       
@@ -658,7 +553,13 @@
         }
 
         <!-- Tu iframe seguro conectado al Signal -->
+        @if (!cargandoPDF() && urlSeguraPdf()) {
         <iframe id="iframeTicketPdf" [src]="urlSeguraPdf()" class="iframe-preview-pdf"></iframe>
+        } @else if (!cargandoPDF() && !urlSeguraPdf()) {
+          <div class="error-carga-pdf">
+            ❌ No se pudo cargar la vista previa del ticket.
+          </div>
+        }
       </div>
 
       <!-- Botonera inferior con acciones táctiles adaptadas a tu estilo -->
@@ -674,4 +575,29 @@
     </div>
   </div>
 }
+
+@if (mostrarModalDevolucion) {
+  <div class="modal-overlay-tpv">
+    <div class="modal-card-tpv animate-fade-in">
+      <div class="modal-header-tpv">
+        <span class="modal-icon-tpv">🔄</span>
+        <h3>Confirmar Devolución Completa</h3>
+      </div>
+      
+      <div class="modal-body-tpv">
+        <p>{{ mensajeModalDevolucion }}</p>
+      </div>
+      
+      <div class="modal-actions-tpv">
+        <button type="button" class="btn-tpv btn-cancelar" (click)="cancelarDevolucion()">
+          ❌ Cancelar
+        </button>
+        <button type="button" class="btn-tpv btn-aceptar" (click)="ejecutarDevolucionConfirmada()">
+          ✓ Confirmar Devolución
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 <app-clientes [modoModalSolo]="true" (onClienteSeleccionado)="seleccionarCliente($event)"></app-clientes>

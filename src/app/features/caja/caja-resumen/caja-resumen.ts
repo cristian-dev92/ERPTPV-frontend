@@ -1,178 +1,139 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CurrencyPipe, DatePipe, CommonModule } from '@angular/common';
-import { CajaService } from '../../../core/services/caja.service';
+import { FormsModule } from '@angular/forms';
+import { CajaService, TurnoCajaResponseDTO } from '../../../core/services/caja.service';
 import { UiService } from '../../../core/services/ui.service';
 
 @Component({
   selector: 'app-caja-resumen',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, CommonModule],
+  imports: [CurrencyPipe, DatePipe, CommonModule, FormsModule],
   templateUrl: './caja-resumen.html',
   styleUrl: './caja-resumen.scss'
 })
-
 export class CajaResumenComponent implements OnInit {
   private cajaService = inject(CajaService);
-  private UiService = inject(UiService);
+  private uiService = inject(UiService);
 
-  // --- SIGNALS PARA EL CONTROL DEL MODAL Y ARQUEO GUIADO ---
-  mostrarModalArqueo = signal<boolean>(false);
+  // Enlazamos directamente con el Signal globalizado del servicio
+  cajaActual = this.cajaService.cajaActual;
+  cargando = signal<boolean>(true);
+
+  // Modales táctiles (Signals)
+  mostrarModalMovimiento = signal<boolean>(false);
+  mostrarModalCierre = signal<boolean>(false);
+  mostrarModalPdf = signal<boolean>(false);
+
+  // Variables de control de datos
+  idCajaCerrada = signal<number | null>(null); // 🚀 Corregido a Signal
+  montoMovimiento: number = 0;
+  descripcionMovimiento: string = '';
+  tipoMovimientoSeleccionado: 'INGRESO_MANUAL' | 'GASTO' = 'INGRESO_MANUAL';
   
-  // Inicializamos el desglose con todas las monedas y billetes a cero
-  desgloseEfectivo = signal<Record<string, number>>({
-    b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0,
-    m2: 0, m1: 0, m050: 0, m020: 0, m010: 0, m005: 0, m002: 0, m001: 0
-  });
+  saldoFinalRealContado: number = 0;
 
-  // Mapeamos el valor real de cada moneda/billete para calcular el total automáticamente
-  private valoresEfectivo: Record<string, number> = {
-    b500: 500, b200: 200, b100: 100, b50: 50, b20: 20, b10: 10, b5: 5,
-    m2: 2, m1: 1, m050: 0.50, m020: 0.20, m010: 0.10, m005: 0.05, m002: 0.02, m001: 0.01
-  };
+  // 🚀 Vinculamos 'turno()' al estado dinámico que exige tu HTML
+  turno = computed(() => this.cajaActual()); 
+  movimientos = signal<any[]>([]); // Inicializado como array reactivo vacío para evitar fallos en el @for
 
-  // El saldo teórico esperado sale directamente de lo que la caja activa dice que tiene en efectivo
-  saldoTeoricoCaja = computed(() => {
-    return this.turno()?.saldoFinalEsperadoEfectivo ?? 0;
-  });
+  // 🚀 Completados los stubs mapeando las propiedades reales del DTO de Caja
+  totalVentasEfectivo = computed(() => this.cajaActual()?.totalVentasEfectivo ?? 0);
+  totalVentasTarjeta = computed(() => this.cajaActual()?.totalVentasTarjeta ?? 0);
+  totalAnticipos = computed(() => this.cajaActual()?.totalAnticipos ?? 0);
+  totalIngresos = computed(() => this.cajaActual()?.totalIngresosManuales ?? 0);
+  totalGastos = computed(() => this.cajaActual()?.totalGastos ?? 0);
+  totalDevoluciones = computed(() => this.cajaActual()?.totalDevoluciones ?? 0);
 
-  // 🔄 COMPUTED REACTIVO: Si hay caja activa, muestra esa. Si no, muestra el último cierre.
-  // Al usar computed conectado al servicio, reacciona al instante sin hacer F5.
-  turno = computed(() => {
-    const activa = this.cajaService.cajaActual();
-    return activa ? activa : this.cajaService.ultimoTurnoCerrado();
-  });
-
-  ngOnInit() {
-    // Al cargar la vista de resúmenes, aseguramos que el servicio compruebe el estado real actual por si acaso
-    this.cajaService.checkEstadoCaja().subscribe();
+  claseMovimiento(tipo: string): string {
+    return tipo === 'INGRESO_MANUAL' ? 'badge-ingreso' : 'badge-gasto';
   }
 
-  // --- MÉTODOS DEL ARQUEO GUIADO TÁCTIL ---
-  
-  // Corrige el método de apertura para usar el Signal correcto del arqueo guiado
-  abrirCierreCaja() {
-    // Reseteamos el desglose a cero para un nuevo recuento limpio
-    this.desgloseEfectivo.set({
-      b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0,
-      m2: 0, m1: 0, m050: 0, m020: 0, m010: 0, m005: 0, m002: 0, m001: 0
-    });
-    this.mostrarModalArqueo.set(true); // ¡Abrimos el modal guiado!
+  iconoMovimiento(tipo: string): string {
+    return tipo === 'INGRESO_MANUAL' ? '📥' : '📤';
   }
 
-  obtenerCantidad(tipo: string): number {
-    return this.desgloseEfectivo()[tipo] || 0;
+  ngOnInit(): void {
+    this.cargarCaja();
   }
 
-  actualizarCantidadEfectivo(tipo: string, cantidad: number) {
-    const valorSeguro = cantidad < 0 ? 0 : cantidad; // Evitamos que metan unidades negativas
-    this.desgloseEfectivo.update(desglose => ({
-      ...desglose,
-      [tipo]: valorSeguro
-    }));
-  }
-
-  calcularTotalReal(): number {
-    const desglose = this.desgloseEfectivo();
-    return Object.keys(desglose).reduce((total, key) => {
-      const cantidad = desglose[key] || 0;
-      const valorUnidad = this.valoresEfectivo[key] || 0;
-      return total + (cantidad * valorUnidad);
-    }, 0);
-  }
-
-  calcularDescuadre(): number {
-    return this.calcularTotalReal() - this.saldoTeoricoCaja();
-  }
-
-  confirmarArqueo() {
-    const arqueoDTO = {
-      saldoTeorico: this.saldoTeoricoCaja(),
-      saldoReal: this.calcularTotalReal(),
-      descuadre: this.calcularDescuadre(),
-      desglose: this.desgloseEfectivo()
-    };
-
-    console.log('Enviando Arqueo Guiado desde Resumen:', arqueoDTO);
-
-    this.cajaService.cerrarCajaGuiado(arqueoDTO).subscribe({
-      next: (response) => {
-        console.log('Arqueo procesado con éxito:', response);
-        this.mostrarModalArqueo.set(false);
-        this.UiService.mostrarToast('🔒 Turno finalizado y caja cerrada con éxito.', 'success');
-      },
-      error: (err) => {
-        console.error('Error al cerrar caja:', err);
-        this.UiService.mostrarToast('Error al registrar el cierre de caja.', 'error');
+  cargarCaja() {
+    this.cargando.set(true);
+    // Usamos checkEstadoCaja para que se actualice sincrónicamente tanto aquí como en el TPV
+    this.cajaService.checkEstadoCaja().subscribe({
+      next: () => this.cargando.set(false),
+      error: (err: any) => { // 🚀 Tipado explícito para evitar TS7006
+        console.error("Error al recuperar la caja", err);
+        this.uiService.mostrarToast('Error al conectar con la caja física.', 'error');
+        this.cargando.set(false);
       }
     });
   }
 
-  // --- CÁLCULOS REACTIVOS BASADOS EN LOS MOVIMIENTOS ---
-  movimientos = computed(() => this.turno()?.movimientos ?? []);
-
-  ventasEfectivo = computed(() =>
-    this.movimientos().filter((m: any) => m.tipoMovimiento === 'VENTA' && m.metodoPago === 'EFECTIVO')
-  );
-  ventasTarjeta = computed(() =>
-    this.movimientos().filter((m: any) => m.tipoMovimiento === 'VENTA' && m.metodoPago === 'TARJETA')
-  );
-  anticipos = computed(() =>
-    this.movimientos().filter((m: any) => m.tipoMovimiento === 'ANTICIPO')
-  );
-  ingresos = computed(() =>
-    this.movimientos().filter((m: any) => m.tipoMovimiento === 'INGRESO_MANUAL' || m.tipoMovimiento === 'INGRESO')
-  );
-  gastos = computed(() =>
-    this.movimientos().filter((m: any) => m.tipoMovimiento === 'RETIRO_MANUAL' || m.tipoMovimiento === 'GASTO')
-  );
-  devoluciones = computed(() =>
-    this.movimientos().filter((m: any) => m.tipoMovimiento === 'DEVOLUCION')
-  );
-
-  totalVentasEfectivo = computed(() =>
-    this.ventasEfectivo().reduce((acc: number, m: any) => acc + m.importe, 0)
-  );
-  totalVentasTarjeta = computed(() =>
-    this.ventasTarjeta().reduce((acc: number, m: any) => acc + m.importe, 0)
-  );
-  totalAnticipos = computed(() =>
-    this.anticipos().reduce((acc: number, m: any) => acc + m.importe, 0)
-  );
-  totalIngresos = computed(() =>
-    this.ingresos().reduce((acc: number, m: any) => acc + m.importe, 0)
-  );
-  totalGastos = computed(() =>
-    this.gastos().reduce((acc: number, m: any) => acc + m.importe, 0)
-  );
-  totalDevoluciones = computed(() =>
-    this.devoluciones().reduce((acc: number, m: any) => acc + m.importe, 0)
-  );
-
-  iconoMovimiento(tipo: string): string {
-    switch (tipo) {
-      case 'VENTA': return '💵';
-      case 'ANTICIPO': return '🟡';
-      case 'INGRESO':
-      case 'INGRESO_MANUAL': return '🟢';
-      case 'RETIRO_MANUAL':
-      case 'GASTO': return '🔴';
-      case 'DEVOLUCION': return '🔁';
-      case 'CIERRE': return '🔒';
-      default: return '📌';
+  guardarMovimientoManual() {
+    if (this.montoMovimiento <= 0 || !this.descripcionMovimiento.trim()) {
+      this.uiService.mostrarToast('Por favor, completa todos los campos obligatorios.', 'warning');
+      return;
     }
+
+    const payload = {
+      tipoMovimiento: this.tipoMovimientoSeleccionado,
+      importe: this.montoMovimiento,
+      descripcion: this.descripcionMovimiento
+    };
+
+    this.cajaService.registrarMovimientoManual(payload).subscribe({
+      next: () => {
+        this.mostrarModalMovimiento.set(false);
+        this.montoMovimiento = 0;
+        this.descripcionMovimiento = '';
+        this.uiService.mostrarToast('Movimiento registrado en el cajón.', 'success');
+        this.cargarCaja();
+      },
+      error: (err: any) => this.uiService.mostrarToast("Error al registrar movimiento: " + err.error, 'error')
+    });
   }
 
-  claseMovimiento(tipo: string): string {
-    switch (tipo) {
-      case 'VENTA': return 'mov-venta';
-      case 'ANTICIPO': return 'mov-anticipo';
-      case 'INGRESO':
-      case 'INGRESO_MANUAL': return 'mov-ingreso';
-      case 'RETIRO_MANUAL':
-      case 'GASTO': return 'mov-gasto';
-      case 'DEVOLUCION': return 'mov-devolucion';
-      case 'CIERRE': return 'mov-cierre';
-      default: return 'mov-otro';
+  ejecutarCierreCaja() {
+    if (this.saldoFinalRealContado === null || this.saldoFinalRealContado < 0) {
+      this.uiService.mostrarToast("Introduce un arqueo de efectivo válido.", 'warning');
+      return;
     }
+
+    this.cajaService.cerrarCaja(this.saldoFinalRealContado).subscribe({
+      next: (cajaCerrada) => {
+        this.idCajaCerrada.set(cajaCerrada.id);
+        this.mostrarModalCierre.set(false);
+        
+        this.uiService.mostrarToast('Turno de caja cerrado correctamente.', 'success');
+        this.mostrarModalPdf.set(true); // Abre el selector del reporte post-cierre
+        
+        this.cargarCaja();
+      },
+      error: (err: any) => this.uiService.mostrarToast("Error al cerrar: " + err.error, 'error')
+    });
   }
+
+  verPdf(id: number, formato: '80mm' | 'a4') {
+    const peticion = formato === '80mm' 
+      ? this.cajaService.descargarPdf80mm(id) 
+      : this.cajaService.descargarPdfA4(id);
+
+    peticion.subscribe({
+      next: (blob: Blob) => { // 🚀 Tipado de parámetro
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      },
+      error: () => this.uiService.mostrarToast("No se pudo escupir el reporte PDF.", 'error')
+    });
+  }
+
+  imprimirInformeFinal(formato: '80mm' | 'a4') {
+    const id = this.idCajaCerrada();
+    if (id) {
+      this.verPdf(id, formato);
+    }
+    this.mostrarModalPdf.set(false);
+    this.idCajaCerrada.set(null);
+  }
+  
 }

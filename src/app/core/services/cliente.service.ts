@@ -45,4 +45,13 @@ export class ClienteService {
   crearCliente(nuevo: NuevoClienteRequest): Observable<ClienteDTO> {
     return this.http.post<ClienteDTO>(this.API_URL, nuevo);
   }
+
+  actualizarCliente(id: number, cliente: NuevoClienteRequest): Observable<ClienteDTO> {
+    return this.http.put<ClienteDTO>(`${this.API_URL}/${id}`, cliente);
+  }
+
+  eliminarCliente(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/${id}`);
+  }
+  
 }

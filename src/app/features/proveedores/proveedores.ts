@@ -18,6 +18,8 @@ export class ProveedoresComponent implements OnInit {
   // === ESTADOS REACTIVOS ===
   proveedores = signal<ProveedorDTO[]>([]);
   mostrarModalRegistro = signal<boolean>(false);
+  modoEdicion = signal<boolean>(false);                
+  proveedorSeleccionadoId = signal<number | null>(null);
 
   // 🔍 ESTADOS DE BÚSQUEDA Y TECLADO
   filtroBusqueda = signal<string>('');
@@ -111,6 +113,8 @@ export class ProveedoresComponent implements OnInit {
   }
 
   abrirModal() {
+    this.modoEdicion.set(false);
+    this.proveedorSeleccionadoId.set(null);
     this.nuevoProveedor.set({
       nombre: '',
       cif: '',
@@ -125,6 +129,19 @@ export class ProveedoresComponent implements OnInit {
     this.mostrarModalRegistro.set(false);
   }
 
+  abrirModalEdicion(p: ProveedorDTO) {
+    this.modoEdicion.set(true);
+    this.proveedorSeleccionadoId.set(p.id);
+    this.nuevoProveedor.set({
+      nombre: p.nombre,
+      cif: p.cif || '',
+      emailPedidos: p.emailPedidos || '',
+      telefono: p.telefono || '',
+      direccion: p.direccion || ''
+    });
+    this.mostrarModalRegistro.set(true);
+  }
+
   guardarProveedor() {
     const datos = this.nuevoProveedor();
     
@@ -133,10 +150,14 @@ export class ProveedoresComponent implements OnInit {
       return;
     }
 
+    if (this.modoEdicion()) {
+      // Flujo de Edición / Modificación en Backend (PUT)
+      const idProv = this.proveedorSeleccionadoId();
+      if (!idProv) return;
+
     this.proveedorService.crearProveedor(datos).subscribe({
       next: (proveedorCreado) => {
         this.uiService.mostrarToast(`📦 Proveedor "${proveedorCreado.nombre}" registrado con éxito`, 'success');
-        
         // Actualizamos la lista local añadiendo el nuevo al principio
         this.proveedores.update(list => [proveedorCreado, ...list]);
         this.cerrarModal();
@@ -145,5 +166,34 @@ export class ProveedoresComponent implements OnInit {
         this.uiService.mostrarToast('Error al crear proveedor: ' + (err.error || err.message), 'error');
       }
     });
+    } else {
+      // Flujo de Creación Tradicional (POST)
+      this.proveedorService.crearProveedor(datos).subscribe({
+        next: (proveedorCreado) => {
+          this.uiService.mostrarToast(`📦 Proveedor "${proveedorCreado.nombre}" registrado con éxito`, 'success');
+          this.proveedores.update(list => [proveedorCreado, ...list]);
+          this.cerrarModal();
+        },
+        error: (err) => {
+          this.uiService.mostrarToast('Error al crear proveedor: ' + (err.error || err.message), 'error');
+        }
+      });
+    }
+   }
+
+  eliminarProveedor(id: number) {
+    this.uiService.mostrarToast('Procesando baja en el archivo...', 'warning');
+
+    this.proveedorService.eliminarProveedor(id).subscribe({
+      next: () => {
+        this.uiService.mostrarToast(`📦 Proveedor eliminado con éxito`, 'success');
+        this.proveedores.update(list => list.filter(p => p.id !== id));
+      },
+      error: (err) => {
+        console.error(err);
+        this.uiService.mostrarToast('Error al eliminar proveedor: ' + (err.error || err.message), 'error');
+      }
+    });
+   }
+
   }
-}

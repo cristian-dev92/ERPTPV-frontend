@@ -2,6 +2,8 @@ $primary: #1e293b;
 $secondary: #3b82f6;
 $border: #e2e8f0;
 $bg-light: #f8fafc;
+$danger: #ef4444;
+$warning: #f59e0b;
 
 .clientes-container {
   max-width: 1100px;
@@ -71,20 +73,33 @@ $bg-light: #f8fafc;
 .zapatero-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
   font-size: 0.9rem;
 
   thead {
     background-color: $bg-light;
     border-bottom: 1px solid $border;
-    th { padding: 1rem; font-weight: 600; color: #475569; }
+    th { 
+      padding: 1rem; 
+      font-weight: 600; 
+      color: #475569; 
+      text-align: center; 
+    }
+    th.txt-centro { 
+      text-align: center;
+     }
   }
 
   tbody tr {
     border-bottom: 1px solid $border;
     &:last-child { border-bottom: none; }
     &:hover { background-color: $bg-light; }
-    td { padding: 1rem; color: #334155; }
+    td { 
+      padding: 1rem; 
+      color: #334155; 
+      vertical-align: middle; 
+      text-align: center;
+    }
+    &.fila-seleccionable { cursor: pointer; }
   }
 
   .txt-negrita { font-weight: 600; color: $primary; }
@@ -92,13 +107,72 @@ $bg-light: #f8fafc;
   .txt-email { color: $secondary; font-weight: 500; }
   .txt-mutado { color: #64748b; }
   
+  /* Contenedores de acciones en celda */
+  .acciones-celda {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    min-height: 32px;
+  }
+
+  /* Estilo infiltrado migrado con éxito */
+  .btn-seleccionar-cliente-tvc {
+    padding: 6px 12px;
+    background: $secondary;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    &:hover { background: #2563eb; }
+  }
+
+  .botones-gestion {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;      
+    width: 100%;
+
+    button {
+      border: 1px solid $border;
+      background: white;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.15s ease;
+    }
+    
+    .btn-accion-editar {
+      background-color: #eff6ff;
+      color: $secondary;
+      border-color: #bfdbfe;
+      &:hover { background-color: $secondary; color: white; }
+    }
+
+    .btn-accion-eliminar {
+      background-color: #fef2f2;
+      color: $danger;
+      border-color: #fca5a5;
+      &:hover { background-color: $danger; color: white; }
+    }
+   }
+
   .badge-activo {
+    display: inline-block;
     background-color: #ecfdf5;
     color: #059669;
     padding: 0.25rem 0.625rem;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
+    white-space: nowrap;
+    margin: 0 auto;
+    
     &.badge-inactivo {
       background-color: #fef2f2;
       color: #ef4444;

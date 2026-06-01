@@ -1,3 +1,11 @@
+@use 'sass:color';
+
+$dark-pad: #0f172a;
+$color-green: #10b981;
+$color-red: #ef4444;
+$color-blue: #2563eb;
+$border-color: #cbd5e1;
+
 /* Contenedor principal: Ocupa todo el alto disponible */
 .tpv-container {
   display: grid;
@@ -1473,328 +1481,96 @@ app-clientes {
   }
 }
 
-/* Header de caja abierta */
+/* BARRA ALERTA CAJA CERRADA */
+.alerta-caja-tpv {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid #ffeeba;
+  margin: 10px;
+  text-align: center;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+  .alerta-acciones {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    input {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid $border-color;
+      width: 120px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .btn-abrir-ya {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      &:hover { background: color.adjust(#28a745, $lightness: -5%); }
+    }
+  }
+}
+
+/* HEADER CAJA ABIERTA */
 .header-caja-abierta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
+  background: #f8fafc;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
   margin: 10px;
-  color: #166534;
 
-  .status {
+  .status-box {
     display: flex;
     align-items: center;
     gap: 8px;
-    .punto-verde {
+    font-size: 0.9rem;
+    color: #334155;
+
+    .punto-verde-latente {
       width: 10px;
       height: 10px;
-      background-color: #22c55e;
+      background-color: $color-green;
       border-radius: 50%;
-      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulsoVerde 2s infinite;
     }
   }
 
   .btn-cerrar-caja {
-    background-color: #ef4444;
+    background: $color-red;
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 8px 16px;
     border-radius: 6px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
-    &:hover { background-color: #dc2626; }
+    transition: background 0.15s ease;
+    &:hover { background: color.adjust($color-red, $lightness: -5%); }
   }
 }
 
-/* MODAL ARQUEO GUIADO */
-.modal-arqueo-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: 20px;
-}
-
-.modal-arqueo-content {
-  background: #ffffff;
-  width: 100%;
-  max-width: 900px;
-  height: auto;
-  max-height: 90vh;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  border: 1px solid #e2e8f0;
-
-  /* Cabecera del Modal */
-  .modal-header {
-    background: #1e293b;
-    color: #ffffff;
-    padding: 1.25rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    h3 {
-      margin: 0;
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: -0.025em;
-    }
-
-    .btn-cerrar {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      font-size: 1.75rem;
-      line-height: 1;
-      cursor: pointer;
-      transition: color 0.2s;
-      &:hover { color: #ffffff; }
-    }
-  }
-
-  /* Cuerpo del Arqueo Distribución en 2 Columnas */
-  .modal-body {
-    padding: 1.5rem 2rem;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 1.5rem;
-    background: #f8fafc;
-  }
-
-  /* COLUMNA IZQUIERDA: Listado de Billetes y Monedas */
-  .panel-recuento {
-    display: flex;
-    flex-direction: column;
-
-    h4 {
-      margin: 0 0 1rem 0;
-      color: #334155;
-      font-size: 1.1rem;
-      font-weight: 600;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 0.5rem;
-    }
-
-    .lista-efectivo {
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      max-height: 52vh;
-      overflow-y: auto;
-      padding-right: 0.5rem;
-
-      /* Estándar moderno (Para Firefox) */
-      scrollbar-width: thin;               /* Hace la barra finita */
-      scrollbar-color: #cbd5e1 #f1f5f9;    /* [Color de la barra] [Color del fondo] */
-
-      /* Estilos para el scroll interno de monedas */
-      &::-webkit-scrollbar { width: 6px; }
-      &::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-      &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    }
-
-    /* Filas individuales de Moneda / Billete */
-    .fila-efectivo {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #ffffff;
-      padding: 0.6rem 1rem;
-      border-radius: 10px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      border: 1px solid #e2e8f0;
-
-      .label-dinero {
-        font-weight: 600;
-        color: #475569;
-        font-size: 0.95rem;
-      }
-
-      .controles-tactiles {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        /* Botones de + y - */
-        button {
-          width: 38px;
-          height: 38px;
-          font-size: 1.4rem;
-          font-weight: 700;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: transform 0.1s, filter 0.2s;
-
-          &:active { transform: scale(0.92); }
-          
-          &.btn-menos { background: #ef4444; color: white; &:hover { filter: brightness(0.9); } }
-          &.btn-mas { background: #10b981; color: white; &:hover { filter: brightness(0.9); } }
-        }
-
-        /* Input central numérico */
-        .input-cantidad {
-          width: 65px;
-          text-align: center;
-          height: 38px;
-          font-size: 1.1rem;
-          font-weight: 700;
-          border: 1px solid #cbd5e1;
-          border-radius: 8px;
-          color: #1e293b;
-          background: #f8fafc;
-          outline: none;
-          -moz-appearance: textfield; /* Quita flechas nativas */
-          &::-webkit-outer-spin-button,
-          &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-          &:focus { border-color: #3b82f6; background: #fff; }
-        }
-      }
-    }
-  }
-
-  /* COLUMNA DERECHA: Métricas del descuadre y totales */
-  .panel-metricas {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: #ffffff;
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e2e8f0;
-
-    h4 {
-      margin: 0 0 1.25rem 0;
-      color: #334155;
-      font-size: 1.1rem;
-      font-weight: 600;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 0.5rem;
-    }
-
-    .info-valores {
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-      
-      .fila-valor {
-        display: flex;
-        justify-content: space-between;
-        font-size: 1.05rem;
-        color: #64748b;
-        
-        .monto {
-          font-weight: 700;
-          color: #1e293b;
-        }
-        
-        &.total-real {
-          font-size: 1.15rem;
-          border-top: 1px dashed #e2e8f0;
-          padding-top: 0.8rem;
-          margin-top: 0.2rem;
-          .monto { color: #2563eb; }
-        }
-      }
-    }
-
-    /* Caja dinámica de Descuadre Central */
-    .caja-descuadre {
-      padding: 1.25rem;
-      border-radius: 12px;
-      text-align: center;
-      margin: 1.5rem 0;
-      transition: background 0.3s;
-
-      .titulo-descuadre {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 700;
-        color: #64748b;
-        margin-bottom: 0.25rem;
-      }
-
-      .monto-descuadre {
-        font-size: 2.25rem;
-        font-weight: 800;
-        line-height: 1;
-      }
-
-      .txt-estado {
-        margin: 0.5rem 0 0 0;
-        font-size: 0.85rem;
-        font-weight: 500;
-      }
-
-      /* Modificadores de estado según descuadre */
-      &.cuadrado {
-        background: #f0fdf4;
-        .monto-descuadre, .txt-estado { color: #16a34a; }
-      }
-      &.sobrante {
-        background: #eff6ff;
-        .monto-descuadre, .txt-estado { color: #2563eb; }
-      }
-      &.faltante {
-        background: #fef2f2;
-        .monto-descuadre, .txt-estado { color: #dc2626; }
-      }
-    }
-
-    /* Botonera inferior derecha */
-    .acciones-arqueo {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-
-      button {
-        width: 100%;
-        padding: 14px;
-        font-size: 1.05rem;
-        font-weight: 600;
-        border-radius: 10px;
-        cursor: pointer;
-        border: none;
-        transition: background 0.2s, transform 0.1s;
-        &:active { transform: scale(0.98); }
-      }
-
-      .btn-guardar {
-        background: #1e293b;
-        color: #ffffff;
-        &:hover { background: #0f172a; }
-      }
-
-      .btn-cancelar {
-        background: #f1f5f9;
-        color: #475569;
-        font-size: 0.95rem;
-        &:hover { background: #e2e8f0; color: #1e293b; }
-      }
-    }
-  }
+@keyframes pulsoVerde {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
 @media (max-width: 1024px) {
@@ -1888,87 +1664,6 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
   }
 }
 
-/* --- CAPA OSCURA DE FONDO (BACKDROP) --- */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(15, 23, 42, 0.6); /* Fondo semi-transparente slate oscuro */
-  backdrop-filter: blur(4px); /* Difumina ligeramente la pantalla de atrás */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999; /* Siempre por encima del TPV */
-  animation: fadeIn 0.2s ease-out;
-}
-
-/* --- CUERPO DEL MODAL(VENTA PROCESADA CON ÉXITO) --- */
-.modal-ticket-container {
-  background: #ffffff;
-  width: 90%;
-  max-width: 480px;
-  border-radius: 16px;
-  padding: 30px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  text-align: center;
-  animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  .modal-header {
-    .icono-check {
-      width: 60px;
-      height: 60px;
-      background-color: #dcfce7;
-      color: #15803d;
-      font-size: 2rem;
-      font-weight: bold;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px auto;
-    }
-
-    h2 {
-      margin: 0 0 8px 0;
-      color: #0f172a;
-      font-size: 1.5rem;
-    }
-
-    .subtitulo {
-      color: #64748b;
-      font-size: 0.95rem;
-      margin: 0 0 20px 0;
-    }
-  }
-
-  .modal-detalles {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 26px;
-
-    .badge-id {
-      background: #f1f5f9;
-      color: #334155;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    .badge-tipo {
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      
-      &.taller { background: #fff7ed; color: #ea580c; }
-      &.venta { background: #e0f2fe; color: #0369a1; }
-    }
-  }
-
   // =========================================================================
   // 🚪 ACCIONES FINALES TÁCTILES: CANCELAR ABONO / NUEVA VENTA / IMPRIMIR
   // =========================================================================
@@ -2007,7 +1702,6 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
       &:hover { background-color: #e2e8f0; color: #1e293b; }
     }
   }
-}
 
 /* --- ANIMACIONES --- */
 @keyframes fadeIn {
@@ -2477,5 +2171,121 @@ box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
   to { 
     transform: scale(1); 
     opacity: 1; 
+  }
+}
+
+// Capa oscura translúcida de fondo completo
+.modal-overlay-tpv {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.75); // Oscurece con elegancia la interfaz
+  backdrop-filter: blur(4px); // Aplica el desenfoque de fondo moderno
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; // Asegura que se superponga a cualquier tabla o menú lateral
+}
+
+// Ventana de diálogo boton devolucion de la barra del tpv (estilo táctil optimizado)
+.modal-card-tpv {
+  background-color: #1e1e2e; // Fondo oscuro limpio
+  color: #ffffff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 520px;
+  padding: 24px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  .modal-header-tpv {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 14px;
+
+    .modal-icon-tpv {
+      font-size: 26px;
+    }
+
+    h3 {
+      font-size: 20px;
+      margin: 0;
+      font-weight: 600;
+      color: #ffb86c; // Color anaranjado suave de advertencia/proceso fiscal
+    }
+  }
+
+  .modal-body-tpv {
+    margin-bottom: 32px;
+    
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #e0e0e6;
+      margin: 0;
+    }
+  }
+
+  // Botonera optimizada para pantallas táctiles (Cero fricción)
+  .modal-actions-tpv {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+
+    .btn-tpv {
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      
+      &:active {
+        transform: scale(0.96); // Efecto 'click' táctil al pulsar el mostrador
+      }
+    }
+
+    .btn-cancelar {
+      background-color: #c71d1d;
+      color: #cdd6f4;
+      
+      &:hover {
+        background-color: #45475a;
+      }
+    }
+
+    .btn-aceptar {
+      background-color: #24b124; 
+      color: #11111b;
+      
+      &:hover {
+        background-color: #f17395;
+      }
+    }
+  }
+}
+
+// Animación de entrada fluida
+.animate-fade-in {
+  animation: modalEntrada 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalEntrada {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }

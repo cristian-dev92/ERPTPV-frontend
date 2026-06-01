@@ -71,21 +71,26 @@ export class OrdenListComponent implements OnInit {
       // Botones pequeños de Tickets Cerrados: Filtran por la variable 'tipo'
       if (subFiltro === 'VENTA_DIRECTA') {
         listaFiltrada = listaFiltrada.filter(orden =>
-          (orden.tipoOrden || orden.tipo) === 'VENTA_DIRECTA' && 
+          (orden.tipoOrden || orden.tipo) === 'VENTA_DIRECTA' &&
           orden.estadoPago !== 'DEVOLUCION' && 
-          orden.estadoPago !== 'DEVUELTO'
+          orden.estadoPago !== 'DEVUELTO' &&
+          (orden.total >= 0 && (orden.importeTotal ?? 0) >= 0)
          );
         } else if (subFiltro === 'REPARACION') {
         listaFiltrada = listaFiltrada.filter(orden => 
-          (orden.tipoOrden || orden.tipo) === 'REPARACION' && 
+          (orden.tipoOrden || orden.tipo) === 'REPARACION' &&
           orden.estadoPago !== 'DEVOLUCION' && 
           orden.estadoPago !== 'DEVUELTO'
         );
       } else if (subFiltro === 'DEVOLUCION') {
         listaFiltrada = listaFiltrada.filter(orden => 
           (orden.tipoOrden || orden.tipo) === 'DEVOLUCION' || 
+          orden.tipoOrden === 'ABONO' ||
+          orden.tipo === 'ABONO' ||
           orden.estadoPago === 'DEVOLUCION' || 
-          orden.estadoPago === 'DEVUELTO'
+          orden.estadoPago === 'DEVUELTO' ||
+          orden.total < 0 || 
+          (orden.importeTotal < 0)
         );
       }
     }
@@ -124,48 +129,15 @@ export class OrdenListComponent implements OnInit {
   mostrarModalDevolucion = signal<boolean>(false);
   metodoDevolucion = signal<MetodoPago>('EFECTIVO');
 
-  constructor() {
-    effect(() => {
-      this.filtroTipo();
-      this.cargarDatosDelServidor();
-    });
-  }
-
   ngOnInit() {
     this.cargarDatosDelServidor();
   }
 
   cargarDatosDelServidor() {
     this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
-      next: (data) => {
-        this.ordenes.set(data);
-      },
+      next: (data) => this.ordenes.set(data),
       error: (err) => this.uiService.mostrarToast('Error al cargar la gestión de tickets: ' + (err.error?.message || err.message), 'error')
     });
-  }
-
-  descargarPdfTicket(ordenId: number) {
-    this.uiService.mostrarToast('Generando PDF del ticket...');
-    this.ordenService.getTicketPdf(ordenId).subscribe({
-      next: (blob: Blob) => {
-        const urlDescarga = window.URL.createObjectURL(blob);
-        window.open(urlDescarga, '_blank');
-        window.URL.revokeObjectURL(urlDescarga);
-      },
-      error: () => this.uiService.mostrarToast('Error al generar el archivo PDF en el servidor.', 'error')
-    });
-  }
-
-  limpiarBuscador() { this.terminoBusqueda.set(''); }
-
-  getBadgeClass(orden: any): string {
-    if (!orden) return 'badge-info';
-    if (orden.estadoPago === 'CANCELADO' || orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') return 'badge-danger';
-    if (orden.estadoTaller === 'EN_TALLER') return 'badge-info';
-    if (orden.estadoTaller === 'LISTO') return 'badge-warning';
-    if (orden.estadoTaller === 'ENTREGADO') return 'badge-secondary';
-    if (orden.estadoPago === 'PAGADO') return 'badge-success';
-    return 'badge-info';
   }
 
   verDetalle(orden: any) {
@@ -178,7 +150,15 @@ export class OrdenListComponent implements OnInit {
     }
   }
 
-  cerrarModal() { this.ordenSeleccionada.set(null); }
+  cerrarModal() { 
+    this.ordenSeleccionada.set(null);
+    this.cerrarTeclado();
+   }
+
+  limpiarBuscador() { 
+    this.terminoBusqueda.set('');
+    this.cerrarTeclado();
+   }
 
   empezarTrabajo(ordenId: number) {
     this.ordenService.editarReparacion(ordenId, this.editandoNotas, this.editandoFecha).subscribe({
@@ -221,6 +201,7 @@ export class OrdenListComponent implements OnInit {
     });
   }
 
+  // --- LIQUIDACIÓN Y PASARELA DE COBRO (KEYPAD) ---
   abrirPanelCobro() {
     this.importeEntregado.set('');
     this.metodoPago.set('EFECTIVO');
@@ -292,6 +273,7 @@ export class OrdenListComponent implements OnInit {
     });
   }
 
+  // --- GESTIÓN DE DEVOLUCIONES ---
   abrirPanelDevolucion() {
     this.metodoDevolucion.set('EFECTIVO');
     this.mostrarModalDevolucion.set(true);
@@ -303,7 +285,13 @@ export class OrdenListComponent implements OnInit {
     const orden = this.ordenSeleccionada();
     if (!orden) return;
 
-   const detallesOriginales = orden.detalles || [];
+    // Control preventivo por si el cliente pulsa repetidamente en la pantalla
+    if (orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') {
+      this.uiService.mostrarToast('Este ticket ya ha sido devuelto.', 'warning');
+      return;
+    }
+
+    const detallesOriginales = orden.detalles || [];
 
     const lineasDev = detallesOriginales.map((l: any) => {
       return{
@@ -326,12 +314,54 @@ export class OrdenListComponent implements OnInit {
     this.ordenService.procesarDevolucion(peticion).subscribe({
       next: () => {
         this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada.`, 'success');
+        //Forzamos el cambio en local para que el @if del HTML reaccione al instante
+        this.ordenes.update(lista => 
+          lista.map(o => o.id === orden.id ? { ...o, estadoPago: 'DEVOLUCION', estadoDevuelto: true } : o)
+        );
         this.cerrarPanelDevolucion();
         this.cerrarModal();
         this.cargarDatosDelServidor();
       },
       error: (err) => this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error || err.message), 'error')
     });
+  }
+
+  // --- DOCUMENTOS ---
+   descargarPdfTicket(ordenId: number) {
+    this.uiService.mostrarToast('Generando PDF del ticket...');
+    this.ordenService.getTicketPdf(ordenId).subscribe({
+      next: (blob: Blob) => {
+        const urlDescarga = window.URL.createObjectURL(blob);
+        window.open(urlDescarga, '_blank');
+        window.URL.revokeObjectURL(urlDescarga);
+      },
+      error: () => this.uiService.mostrarToast('Error al generar el archivo PDF en el servidor.', 'error')
+    });
+  }
+
+  descargarFacturaA4(ordenId: number) {
+  this.uiService.mostrarToast('Generando Factura A4...');
+  this.ordenService.getFacturaPdf(ordenId).subscribe({
+    next: (blob: Blob) => this.abrirBlobEnNuevaPestana(blob),
+    error: () => this.uiService.mostrarToast('Error al generar la factura A4 (Fallo en servidor).', 'error')
+  });
+  }
+
+  // Método auxiliar para evitar duplicar código de apertura de PDFs
+  private abrirBlobEnNuevaPestana(blob: Blob) {
+    const urlDescarga = window.URL.createObjectURL(blob);
+    window.open(urlDescarga, '_blank');
+    window.URL.revokeObjectURL(urlDescarga);
+  } 
+
+   getBadgeClass(orden: any): string {
+    if (!orden) return 'badge-info';
+    if (orden.estadoPago === 'CANCELADO' || orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') return 'badge-danger';
+    if (orden.estadoTaller === 'EN_TALLER') return 'badge-info';
+    if (orden.estadoTaller === 'LISTO') return 'badge-warning';
+    if (orden.estadoTaller === 'ENTREGADO') return 'badge-secondary';
+    if (orden.estadoPago === 'PAGADO') return 'badge-success';
+    return 'badge-info';
   }
 
   // --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---

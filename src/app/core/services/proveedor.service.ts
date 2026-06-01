@@ -14,6 +14,7 @@ export interface ProveedorDTO {
   id: number;
   nombre: string;
   cif: string;
+  direccion: string;
   emailPedidos: string;
   telefono: string;
   empresaId: number;
@@ -30,5 +31,13 @@ export class ProveedorService {
 
   crearProveedor(nuevo: NuevoProveedorRequest): Observable<ProveedorDTO> {
     return this.http.post<ProveedorDTO>(this.API_URL, nuevo);
+  }
+
+  actualizarProveedor(id: number, proveedor: NuevoProveedorRequest): Observable<ProveedorDTO> {
+    return this.http.put<ProveedorDTO>(`${this.API_URL}/${id}`, proveedor);
+  }
+
+  eliminarProveedor(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
 }

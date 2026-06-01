@@ -29,6 +29,7 @@
           <th>Teléfono</th>
           <th>Email de Pedidos</th>
           <th>Estado</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -40,6 +41,16 @@
             <td class="txt-email">{{ p.emailPedidos || '-' }}</td>
             <td>
               <span class="badge-activo">🟢 Activo</span>
+            </td>
+            <td>
+            <div class="acciones-wrapper">
+                <button (click)="abrirModalEdicion(p)" class="btn-accion-editar" title="Editar Ficha" type="button">
+                  ✏️ Editar
+                </button>
+                <button (click)="eliminarProveedor(p.id)" class="btn-accion-eliminar" title="Eliminar Proveedor" type="button">
+                  🗑️ Borrar
+                </button>
+              </div>
             </td>
           </tr>
         } @empty {
