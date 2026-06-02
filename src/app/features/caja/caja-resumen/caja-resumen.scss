@@ -7,6 +7,7 @@ $text-main: #1e293b;
 $color-green: #10b981;
 $color-red: #ef4444;
 $color-blue: #2563eb;
+$color-purple: #8b5cf6;
 $border-color: #cbd5e1;
 
 .caja-loading {
@@ -119,6 +120,7 @@ $border-color: #cbd5e1;
     &.btn-grey { background: #e2e8f0; color: $dark-pad; }
     &.btn-blue { background: $color-blue; color: white; }
     &.btn-red { background: $color-red; color: white; }
+    &.btn-purple { background: $color-purple; color: white; }
     .icon { font-size: 1.2rem; }
   }
 }
@@ -245,4 +247,107 @@ $border-color: #cbd5e1;
   .icon-lock { font-size: 3rem; margin-bottom: 0.5rem; }
   h2 { margin: 0; color: $dark-pad; }
   p { color: #64748b; font-size: 0.9rem; margin: 0.5rem 0 0 0; }
+}
+
+// Contenedor del modal ampliado para dar espacio al resumen lateral o superior
+.modal-cierre-ancho {
+  max-width: 550px; // Un poco más ancho que el estándar para que la tabla de datos respire
+  width: 90%;
+}
+
+// Sección del resumen financiero
+.resumen-cierre-seccion {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #e9ecef;
+
+  .titulo-seccion-modal {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+    color: #495057;
+    text-align: center;
+    font-weight: 600;
+  }
+}
+
+// Grid de filas de auditoría
+.resumen-cierre-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+// Estructura de cada fila de datos
+.resumen-fila-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px dashed #dee2e6;
+  font-size: 0.95rem;
+  color: #495057;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  // Modificadores de color semánticos
+  &.texto-positivo {
+    color: #2b8a3e;
+  }
+  &.texto-negativo {
+    color: #c92a2a;
+  }
+  &.texto-neutral {
+    color: #1c7ed6;
+  }
+
+  .concepto-lbl {
+    font-weight: 500;
+  }
+
+  .monto-val {
+    font-family: monospace;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+// Fila destacada para el Efectivo Esperado
+.fila-esperado-destacada {
+  background-color: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 6px;
+  color: #1b5e20;
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  .font-bold-total {
+    font-size: 1.2rem;
+    font-weight: 800;
+    font-family: monospace;
+  }
+}
+
+// Línea divisoria elegante
+.divisor-cierre-modal {
+  height: 1px;
+  background-color: #dee2e6;
+  margin: 20px 0;
+}
+
+// Contenedor inferior del formulario
+.arqueo-seccion-formulario {
+  .instruction {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin-bottom: 15px;
+  }
 }

@@ -4,8 +4,6 @@
  * o un SERVICIO (como una reparación).
  */
 export interface Articulo {
-  notas: any;
-  
   /** * ID único del artículo. 
    * Es opcional (?) porque cuando creamos un zapato nuevo en el frontend, 
    * aún no tiene ID hasta que el backend lo guarda y nos lo devuelve.
@@ -41,4 +39,7 @@ export interface Articulo {
   // --- DATOS DE CONTROL INTERNO ---
   activo?: boolean;
   empresaId?: number;
+
+  // --- CAMPOS ADICIONALES PARA REPARACIONES ---
+  notas: any;
 }

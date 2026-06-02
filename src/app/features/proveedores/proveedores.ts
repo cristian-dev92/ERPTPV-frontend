@@ -21,11 +21,16 @@ export class ProveedoresComponent implements OnInit {
   modoEdicion = signal<boolean>(false);                
   proveedorSeleccionadoId = signal<number | null>(null);
 
-  // 🔍 ESTADOS DE BÚSQUEDA Y TECLADO
+  // ESTADOS DE BÚSQUEDA Y TECLADO
   filtroBusqueda = signal<string>('');
   mostrarTecladoGeneral = signal<boolean>(false);
   inputObjetivoTeclado = signal<string>('');
   valorTecladoEnConstruccion = signal<string>('');
+
+  // Modal de confirmación para eliminación
+  mostrarModalBorrar = signal<boolean>(false);
+  proveedorABorrarId = signal<number | null>(null);
+  proveedorABorrarNombre = signal<string>('');
 
   // Molde vacío para el formulario
   nuevoProveedor = signal<NuevoProveedorRequest>({
@@ -155,11 +160,11 @@ export class ProveedoresComponent implements OnInit {
       const idProv = this.proveedorSeleccionadoId();
       if (!idProv) return;
 
-    this.proveedorService.crearProveedor(datos).subscribe({
-      next: (proveedorCreado) => {
-        this.uiService.mostrarToast(`📦 Proveedor "${proveedorCreado.nombre}" registrado con éxito`, 'success');
+    this.proveedorService.actualizarProveedor(idProv, datos).subscribe({
+      next: (proveedorModificado) => {
+        this.uiService.mostrarToast(`📦 Proveedor "${proveedorModificado.nombre}" actualizado con éxito`, 'success');
         // Actualizamos la lista local añadiendo el nuevo al principio
-        this.proveedores.update(list => [proveedorCreado, ...list]);
+        this.proveedores.update(list => list.map(p => p.id === idProv ? proveedorModificado : p));
         this.cerrarModal();
       },
       error: (err) => {
@@ -195,5 +200,39 @@ export class ProveedoresComponent implements OnInit {
       }
     });
    }
+
+   // Cambiamos el método original por este para que primero "pregunte"
+  solicitarConfirmacionBorrar(p: ProveedorDTO) {
+    this.proveedorABorrarId.set(p.id);
+    this.proveedorABorrarNombre.set(p.nombre);
+    this.mostrarModalBorrar.set(true);
+  }
+
+  cerrarModalBorrar() {
+    this.mostrarModalBorrar.set(false);
+    this.proveedorABorrarId.set(null);
+    this.proveedorABorrarNombre.set('');
+  }
+
+  // Este método se ejecutará solo cuando pulse "Sí, Eliminar" en el modal
+  confirmarEliminar() {
+    const id = this.proveedorABorrarId();
+    if (!id) return;
+
+    this.uiService.mostrarToast('Procesando baja en el archivo...', 'warning');
+
+    this.proveedorService.eliminarProveedor(id).subscribe({
+      next: () => {
+        this.uiService.mostrarToast(`📦 Proveedor eliminado con éxito`, 'success');
+        this.proveedores.update(list => list.filter(p => p.id !== id));
+        this.cerrarModalBorrar();
+      },
+      error: (err) => {
+        console.error(err);
+        this.uiService.mostrarToast('Error al eliminar proveedor: ' + (err.error || err.message), 'error');
+        this.cerrarModalBorrar();
+      }
+    });
+  }
 
   }

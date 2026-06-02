@@ -178,9 +178,11 @@ export class TpvComponent implements OnInit {
 
   // Método que se ejecuta al cargar el componente, ideal para cargar los artículos y comprobar el estado de la caja
   ngOnInit() {
-    // 1. Cargamos artículos
+    // Cargamos el historial de tickets del día para mostrar en el panel inferior del TPV
+    this.ordenService.getOrdenesPorEstado('TODAS').subscribe(data => this.historialTickets.set(data));
+    // Cargamos artículos
     this.articuloService.getArticulos().subscribe(data => this.articulos.set(data));
-    // 2. Comprobamos si la caja ya estaba abierta
+    // Comprobamos si la caja ya estaba abierta
     this.cajaService.checkEstadoCaja().subscribe({
       error: (err: any) => console.error("Error al verificar estado de caja inicial en TPV", err)
     });
@@ -358,7 +360,7 @@ export class TpvComponent implements OnInit {
       lineas: this.carrito().map(item => ({
           articuloId: item.articuloId,
           cantidad: item.cantidad,
-          precioManual: item.precio,
+          precioModificado: item.precio,
           notasReparacion: item.notasReparacion || null
         }))
     };
@@ -401,7 +403,7 @@ export class TpvComponent implements OnInit {
           clienteId: this.clienteSeleccionado()?.id || null,
           total: this.totalTicket(),
           // Como la AEAT está pausada en el back, lo marcamos como PENDIENTE de envío por ahora
-          estadoAeat: 'PENDIENTE',
+          estadoAeat: res.estadoAeat || 'PENDIENTE',
           estadoPago: 'PAGADO',
           tipo: this.tipoOrdenSeleccionada() === 'VENTA_DIRECTA' ? 'VENTA_DIRECTA' : 'REPARACION',
           estadoTaller: this.tipoOrdenSeleccionada() === 'REPARACION' ? 'EN_TALLER' : 'CANCELADO'
@@ -546,7 +548,6 @@ export class TpvComponent implements OnInit {
       const lector = new FileReader();
       lector.onload = () => {
         const mensajeErrorJava = JSON.parse(lector.result as string);
-        console.error("💥 ERROR REAL DEL BACKEND:", mensajeErrorJava);
         this.uiService.mostrarToast('Error en servidor: ' + (mensajeErrorJava.message || 'Fallo al renderizar A4'), 'error');
       };
       lector.readAsText(err.error);
@@ -704,7 +705,7 @@ export class TpvComponent implements OnInit {
   reimprimirTicket(ticket: TicketHistorial) {
     this.uiService.mostrarToast(`🖨️ Reenviando a impresora ticket #${ticket.numeroTicket}...`, 'success');
     
-    // 🚀 Llamamos a tu servicio pasándole la ID del ticket
+    // Llamamos a tu servicio pasándole la ID del ticket
     this.ordenService.imprimirTicket(ticket.id).subscribe({
       next: () => {
         this.uiService.mostrarToast(`🖨️ Ticket #${ticket.numeroTicket} reimpresso con éxito.`, 'success');
@@ -715,7 +716,27 @@ export class TpvComponent implements OnInit {
       }
     });
   }
-  
+
+  // Lógica para lanzar la reimpresión de la factura A4 oficial del ticket seleccionado
+  reimprimirFacturaA4(ticket: TicketHistorial) {
+    //VALIDACIÓN OBLIGATORIA: Evitamos facturas A4 a clientes anónimos
+    const nombreCliente = ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General';
+    if (nombreCliente === 'Cliente General') {
+      this.uiService.mostrarToast('No se puede generar una factura formal A4 para una venta anónima. Debe registrar un cliente.', 'warning');
+      return;
+  }
+    this.uiService.mostrarToast(`🖨️ Reenviando a impresora factura A4 del ticket #${ticket.numeroTicket}...`, 'success');
+    this.ordenService.imprimirFacturaA4(ticket.id).subscribe({
+      next: () => {
+        this.uiService.mostrarToast(`🖨️ Factura A4 del ticket #${ticket.numeroTicket} reimpresa con éxito.`, 'success');
+      },
+      error: (err: any) => {
+        console.error('Error al reimprimir factura A4:', err);
+        this.uiService.mostrarToast('No se pudo recuperar el documento para imprimir.', 'error');
+      }
+    });
+  }
+
   // Método para actualizar el descuento de una línea específica desde el input del HTML, que se aplica solo a esa línea
   actualizarDescuentoLinea(index: number, evento: any) {
     const input = evento.target as HTMLInputElement;

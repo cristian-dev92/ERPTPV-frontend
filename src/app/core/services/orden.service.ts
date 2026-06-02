@@ -139,11 +139,7 @@ export class OrdenService {
           iframe.style.display = 'none'; // Completamente invisible para el usuario
           document.body.appendChild(iframe);
         }
-
-        // 3. Cargamos el PDF dentro del iframe
-        iframe.src = blobUrl;
-
-        // 4. En cuanto el archivo termine de cargar por detrás, disparamos el menú de impresión física
+        // 3. En cuanto el archivo termine de cargar por detrás, disparamos el menú de impresión física
         iframe.onload = () => {
           if (iframe.contentWindow) {
             iframe.contentWindow.focus();
@@ -155,8 +151,45 @@ export class OrdenService {
             }, 60000);
           }
         };
+         // 4. Cargamos el PDF dentro del iframe
+            iframe.src = blobUrl;
       })
     );
+  }
+
+  // 14. Descarga el PDF térmico de factura A4 en segundo plano y lo manda a la impresora
+  imprimirFacturaA4(id: number): Observable<Blob> {
+    return this.getFacturaPdf(id).pipe(
+      tap((blob: Blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        let iframe = document.getElementById('iframeImpresionSilenciosa') as HTMLIFrameElement;
+        if (!iframe) {
+          iframe = document.createElement('iframe');
+          iframe.id = 'iframeImpresionSilenciosa';
+          iframe.style.display = 'none';
+          document.body.appendChild(iframe);
+        }
+        iframe.onload = () => {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            setTimeout(() => {
+              window.URL.revokeObjectURL(blobUrl);
+            }, 60000);
+          }
+        };
+        // CARGAMOS EL FUENTE (Dispara el onload de forma segura)
+         iframe.src = blobUrl;
+      })
+    );
+  }
+
+  // 15. Función extra para el panel de administración: Cambiar el precio total de una orden (Solo si no se ha cobrado nada o solo tiene un anticipo registrado)
+  cambiarPrecioOrden(id: number, nuevoPrecio: number): Observable<any> {
+  // Pasamos el nuevoPrecio como Query Param (?nuevoPrecio=XX.XX) tal como pide el back
+    return this.http.put(`/api/ordenes/${id}/precio`, null, {
+      params: { nuevoPrecio: nuevoPrecio.toString() }
+    });
   }
   
 }

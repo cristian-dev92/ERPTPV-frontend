@@ -5,7 +5,7 @@
     </div>
     <div class="alerta-acciones">
       <label for="saldoInicial">Fondo de Caja Inicial:</label>
-      <input type="number" id="saldoInicial" [(ngModel)]="saldoInicialInput" placeholder="0.00" min="0">
+      <input type="number" id="saldoInicial" [(ngModel)]="saldoInicialInput" min="0">
       <button (click)="ejecutarAperturaCaja()" class="btn-abrir-ya">🔓 Abrir Turno Operativo</button>
     </div>
   </div>
@@ -180,7 +180,6 @@
           @if (tipoOrdenSeleccionada() === 'REPARACION') {
             <input type="text" 
                    [(ngModel)]="item.notasReparacion" 
-                   placeholder="Notas (ej: Tapas rojas)" 
                    class="input-notas-linea">
           }
 
@@ -282,7 +281,6 @@
            min="0" max="100"
            (input)="actualizarDescuentoGlobal($event)"
            (click)="abrirTecladoGeneral('DESCUENTO')"
-           placeholder="0"
            class="input-descuento-global">
       </div>
       
@@ -366,7 +364,7 @@
                 <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
                 
                 @if (ticket.clienteNombre && ticket.clienteNombre !== 'Cliente General'|| (ticket.cliente && ticket.cliente.nombre !== 'Cliente General')) {
-                  <button type="button" (click)="previsualizarFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
+                  <button type="button" (click)="reimprimirFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
                 }
                 
                 @if (ticket.estadoPago === 'PAGADO' && $any(ticket).estadoPago !== 'DEVOLUCION' && ticket.estadoTaller !== 'CANCELADO') {

@@ -226,6 +226,112 @@ $warning: #f59e0b;
   }
 }
 
+// Overlay oscuro general de fondo
+.modal-overlay-borrar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.65); // Fondo oscurecido
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000; // Por encima de todo
+  backdrop-filter: blur(4px); // Efecto desenfoque moderno
+}
+
+// Caja contenedora de la alerta
+.modal-box-borrar {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: modalSaltito 0.2s ease-out;
+}
+
+.modal-header-borrar {
+  .icono-advertencia {
+    font-size: 3rem;
+    margin-bottom: 10px;
+  }
+  
+  h3 {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+  }
+
+  p {
+    color: #555;
+    font-size: 1rem;
+    margin-bottom: 8px;
+    
+    strong {
+      color: #2c3e50;
+    }
+  }
+
+  .txt-peligro-aviso {
+    color: #e74c3c;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-top: 15px;
+  }
+}
+
+// Botonera inferior
+.modal-footer-borrar {
+  display: flex;
+  gap: 15px;
+  margin-top: 25px;
+  justify-content: center;
+
+  button {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease-in-out;
+    min-width: 140px;
+  }
+
+  .btn-cancelar-borrar {
+    background-color: #ecf0f1;
+    color: #7f8c8d;
+    &:hover {
+      background-color: #bdc3c7;
+      color: #2c3e50;
+    }
+  }
+
+  .btn-confirmar-borrar {
+    background-color: #e74c3c;
+    color: white;
+    &:hover {
+      background-color: #c0392b;
+      transform: scale(1.02);
+    }
+  }
+}
+
+// Pequeña animación de entrada para que no aparezca de golpe
+@keyframes modalSaltito {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 // =========================================================================
 // ⌨️ TECLADO TÁCTIL GENERAL
 // =========================================================================

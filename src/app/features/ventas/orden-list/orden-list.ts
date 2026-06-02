@@ -115,6 +115,7 @@ export class OrdenListComponent implements OnInit {
   ordenSeleccionada = signal<any | null>(null);
   editandoNotas: string = '';
   editandoFecha: string = '';
+  nuevoPrecioPanic: string = '';
   mostrarModalCobro = signal<boolean>(false);
   metodoPago = signal<MetodoPago>('EFECTIVO');
   importeEntregado = signal<string>(''); 
@@ -142,6 +143,7 @@ export class OrdenListComponent implements OnInit {
 
   verDetalle(orden: any) {
     this.ordenSeleccionada.set(orden);
+    this.nuevoPrecioPanic = '';
     this.editandoNotas = orden.notas || orden.notasReparacion || '';
     if (orden.fechaPrometidaRecogida) { 
       this.editandoFecha = new Date(orden.fechaPrometidaRecogida).toISOString().split('T')[0];
@@ -200,6 +202,30 @@ export class OrdenListComponent implements OnInit {
       error: () => this.uiService.mostrarToast('Error al actualizar el ticket', 'error')
     });
   }
+
+  // --- BOTÓN DEL PÁNICO: CAMBIAR PRECIO EN ORDENES EN TALLER ---
+  cambiarPrecioReparacion(ordenId: number) {
+  const precio = parseFloat(this.nuevoPrecioPanic);
+  
+  if (isNaN(precio) || precio <= 0) {
+    this.uiService.mostrarToast('Por favor, introduce un precio válido mayor que 0.', 'warning');
+    return;
+  }
+
+  this.uiService.mostrarToast(`⚡ Aplicando cambio de precio a ${precio}€...`, 'warning');
+
+  this.ordenService.cambiarPrecioOrden(ordenId, precio).subscribe({
+    next: (ticketCuadrado) => {
+      this.uiService.mostrarToast('💰 ¡Precio modificado y ticket recalculado con éxito!', 'success');
+      this.cargarDatosDelServidor(); // Refrescamos el grid de la pantalla
+      this.cerrarModal();            // Cerramos para que vean los datos frescos
+    },
+    error: (err) => {
+      console.error('Error en botón del pánico:', err);
+      this.uiService.mostrarToast('No se pudo cambiar el precio: ' + (err.error?.message || 'Fallo en servidor'), 'error');
+    }
+  });
+}
 
   // --- LIQUIDACIÓN Y PASARELA DE COBRO (KEYPAD) ---
   abrirPanelCobro() {
@@ -343,7 +369,7 @@ export class OrdenListComponent implements OnInit {
   this.uiService.mostrarToast('Generando Factura A4...');
   this.ordenService.getFacturaPdf(ordenId).subscribe({
     next: (blob: Blob) => this.abrirBlobEnNuevaPestana(blob),
-    error: () => this.uiService.mostrarToast('Error al generar la factura A4 (Fallo en servidor).', 'error')
+    error: () => this.uiService.mostrarToast('Error al generar la factura A4. ¡REVISA SI LLEVA CLIENTE! (Fallo en servidor).', 'error')
   });
   }
 
@@ -394,6 +420,8 @@ escribirTeclado(caracter: string) {
     this.terminoBusqueda.set(this.terminoBusqueda() + caracter);
   } else if (campo === 'notas') {
     this.editandoNotas += caracter;
+  } else if (campo === 'precio') {  
+    this.nuevoPrecioPanic += caracter;
   }
 }
 
@@ -406,6 +434,8 @@ borrarUltimoCaracter() {
     this.terminoBusqueda.set(actual.slice(0, -1));
   } else if (campo === 'notas') {
     this.editandoNotas = this.editandoNotas.slice(0, -1);
+  } else if (campo === 'precio') {
+    this.nuevoPrecioPanic = this.nuevoPrecioPanic.slice(0, -1);  
   }
 }
 
@@ -416,6 +446,8 @@ insertarEspacio() {
     this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
   } else if (campo === 'notas') {
     this.editandoNotas += ' ';
+  } else if (campo === 'precio') {
+    this.nuevoPrecioPanic += ' ';
   }
 }
 

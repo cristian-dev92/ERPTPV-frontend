@@ -124,13 +124,32 @@
                 <label>Notas del taller:</label>
                 <textarea [(ngModel)]="editandoNotas" 
                           (click)="activarTeclado('notas')" 
-                          placeholder="Ej: Suela cosida, usar tinte marrón..."></textarea>
+                          ></textarea>
               </div>
               <div class="form-group">
                 <label>Nueva Fecha de Entrega:</label>
                 <input type="date" [(ngModel)]="editandoFecha">
               </div>
+
               <button class="btn-save-edit" (click)="guardarCambiosReparacion()">💾 Guardar Cambios</button>
+
+              @if (orden.estadoTaller === 'EN_TALLER' || orden.estadoTaller === 'LISTO') {
+              <div class="form-group group-panic-button">
+                <label class="panic-label">🚨 Botón Modificar Precio:</label>
+                <div class="panic-input-wrapper">
+                    <input 
+                      type="text" 
+                      inputmode="decimal"
+                      [(ngModel)]="nuevoPrecioPanic" 
+                      (click)="activarTeclado('precio')"
+                      class="panic-input"
+                    />
+                  <button type="button" class="btn-panic-submit" (click)="cambiarPrecioReparacion(orden.id)">
+                        💥 Cambiar
+                  </button>
+                </div>
+              </div>
+            }
             </div>
           }
           </div>

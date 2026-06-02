@@ -47,7 +47,7 @@
                 <button (click)="abrirModalEdicion(p)" class="btn-accion-editar" title="Editar Ficha" type="button">
                   ✏️ Editar
                 </button>
-                <button (click)="eliminarProveedor(p.id)" class="btn-accion-eliminar" title="Eliminar Proveedor" type="button">
+                <button (click)="solicitarConfirmacionBorrar(p)" class="btn-accion-eliminar" title="Eliminar Proveedor" type="button">
                   🗑️ Borrar
                 </button>
               </div>
@@ -69,8 +69,8 @@
     <div class="modal-overlay">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>Alta de Nuevo Proveedor</h3>
-          <p>Complete los datos fiscales y de contacto del distribuidor.</p>
+          <h3>{{ modoEdicion() ? '✏️ Editar Ficha de Proveedor' : '📦 Alta de Nuevo Proveedor' }}</h3>
+          <p>{{ modoEdicion() ? 'Modifique los datos fiscales o de contacto del distribuidor.' : 'Complete los datos fiscales y de contacto del distribuidor.' }}</p>
         </div>
 
         <div class="modal-body">
@@ -81,7 +81,7 @@
               <input type="text" id="p-nombre" name="nombre" 
                      [(ngModel)]="nuevoProveedor().nombre" 
                      (click)="abrirTecladoGeneralForm('NOMBRE', undefined, nuevoProveedor().nombre)"
-                     placeholder="Ej: Vibram S.A." required>
+                     >
             </div>
 
             <div class="form-row">
@@ -90,7 +90,7 @@
                 <input type="text" id="p-cif" name="cif" 
                        [(ngModel)]="nuevoProveedor().cif" 
                        (click)="abrirTecladoGeneralForm('CIF', undefined, nuevoProveedor().cif)"
-                       placeholder="A12345678">
+                       >
               </div>
 
               <div class="form-group">
@@ -98,7 +98,7 @@
                 <input type="text" id="p-telefono" name="telefono" 
                        [(ngModel)]="nuevoProveedor().telefono" 
                        (click)="abrirTecladoGeneralForm('TELEFONO', undefined, nuevoProveedor().telefono)"
-                       placeholder="912 345 678">
+                       >
               </div>
             </div>
 
@@ -107,7 +107,7 @@
               <input type="email" id="p-email" name="email" 
                      [(ngModel)]="nuevoProveedor().emailPedidos" 
                      (click)="abrirTecladoGeneralForm('EMAIL', undefined, nuevoProveedor().emailPedidos)"
-                     placeholder="pedidos@proveedor.com">
+                     >
             </div>
 
             <div class="form-group">
@@ -115,7 +115,7 @@
               <input type="text" id="p-direccion" name="direccion" 
                      [(ngModel)]="nuevoProveedor().direccion" 
                      (click)="abrirTecladoGeneralForm('DIRECCION', undefined, nuevoProveedor().direccion)"
-                     placeholder="Polígono Ind. Alces, Nave 4">
+                     >
             </div>
 
             <div class="modal-footer">
@@ -129,6 +129,24 @@
     </div>
   }
 </div>
+
+@if (mostrarModalBorrar()) {
+  <div class="modal-overlay-borrar" (click)="cerrarModalBorrar()">
+    <div class="modal-box-borrar" (click)="$event.stopPropagation()">
+      <div class="modal-header-borrar">
+        <div class="icono-advertencia">⚠️</div>
+        <h3>¿Confirmar Eliminación?</h3>
+        <p>¿Seguro que quiere borrar al distribuidor <strong>{{ proveedorABorrarNombre() }}</strong>?</p>
+        <p class="txt-peligro-aviso">Esta acción no se puede deshacer y afectará al histórico de pedidos.</p>
+      </div>
+
+      <div class="modal-footer-borrar">
+        <button type="button" class="btn-cancelar-borrar" (click)="cerrarModalBorrar()">Cancelar</button>
+        <button type="button" class="btn-confirmar-borrar" (click)="confirmarEliminar()">❌ Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+}
 
 @if (mostrarTecladoGeneral()) {
   <div class="modal-teclado-general-container">

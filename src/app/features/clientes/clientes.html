@@ -1,7 +1,8 @@
-<div class="clientes-container">
-  
+
   @if (!modoModalSolo()) {
-    <header class="clientes-header">
+    <div class="clientes-container">
+
+     <header class="clientes-header">
       <div>
         <h1>👤 Directorio de Clientes</h1>
         <p>Gestione el historial de contacto y datos de facturación de vuestro taller.</p>
@@ -10,7 +11,7 @@
         ➕ Registrar Cliente
       </button>
     </header>
-  }
+
 
   <div class="search-bar-container">
     <input type="text" 
@@ -55,22 +56,16 @@
                   {{ c.activo !== false ? '🟢 Activo' : '🔴 Inactivo' }}
                 </span>
               </td>
-
-                <td (click)="$event.stopPropagation()">
-                @if (modoModalSolo()) {
-                  <button type="button" class="btn-seleccionar-cliente-tvc" (click)="seleccionarCliente(c)">
-                    Seleccionar
-                  </button>
-                } @else {
+               
+                 <td (click)="$event.stopPropagation()">
                   <div class="botones-gestion">
                     <button type="button" class="btn-accion-editar" (click)="editarCliente(c)" title="Editar Ficha">
                       ✏️ EDITAR
                     </button>
-                    <button type="button" class="btn-accion-eliminar" (click)="eliminarCliente(c.id)" title="Eliminar Cliente">
+                    <button type="button" class="btn-accion-eliminar" (click)="solicitarConfirmacionBorrar(c)" title="Eliminar Cliente">
                       🗑️ BORRAR
                     </button>
                   </div>
-                  }
               </td>
             </tr>
           } @empty {
@@ -79,12 +74,13 @@
                 📭 Ningún cliente coincide con la consulta o la base de datos está vacía.
               </td>
             </tr>
-          }
-        }
-      </tbody>
-    </table>
-  </div>
-</div>
+           }
+         }
+       </tbody>
+     </table>
+   </div>
+ </div>
+}
 
 @if (mostrarModalRegistro()) {
   <div class="modal-overlay" (click)="cerrarModal()">
@@ -103,7 +99,7 @@
                  [value]="nuevoCliente().nombre" 
                  (input)="nuevoCliente.update(c => ({...c, nombre: $any($event.target).value}))"
                  (click)="abrirTecladoGeneralForm('NOMBRE', undefined, nuevoCliente().nombre)" 
-                 placeholder="Ej. Juan Pérez">
+                 >
         </div>
 
         <div class="form-group">
@@ -112,7 +108,7 @@
                  [value]="nuevoCliente().telefono" 
                  (input)="nuevoCliente.update(c => ({...c, telefono: $any($event.target).value}))"
                  (click)="abrirTecladoGeneralForm('TELEFONO', undefined, nuevoCliente().telefono)" 
-                 placeholder="Ej. 600123456">
+                 >
         </div>
 
         <div class="form-group">
@@ -121,7 +117,7 @@
                  [value]="nuevoCliente().email" 
                  (input)="nuevoCliente.update(c => ({...c, email: $any($event.target).value}))"
                  (click)="abrirTecladoGeneralForm('EMAIL', undefined, nuevoCliente().email)" 
-                 placeholder="juan@ejemplo.com">
+                 >
         </div>
 
         <div class="form-group">
@@ -130,7 +126,7 @@
                  [value]="nuevoCliente().direccion" 
                  (input)="nuevoCliente.update(c => ({...c, direccion: $any($event.target).value}))"
                  (click)="abrirTecladoGeneralForm('DIRECCION', undefined, nuevoCliente().direccion)" 
-                 placeholder="Calle Zapatería Nº 5">
+                 >
         </div>
 
         <div class="form-row">
@@ -140,7 +136,7 @@
                    [value]="nuevoCliente().documentoIdentidad" 
                    (input)="nuevoCliente.update(c => ({...c, documentoIdentidad: $any($event.target).value}))"
                    (click)="abrirTecladoGeneralForm('DNI', undefined, nuevoCliente().documentoIdentidad)" 
-                   placeholder="12345678X">
+                   >
           </div>
           <div class="form-group">
             <label>📍 Código Postal</label>
@@ -148,7 +144,7 @@
                    [value]="nuevoCliente().codigoPostal" 
                    (input)="nuevoCliente.update(c => ({...c, codigoPostal: $any($event.target).value}))"
                    (click)="abrirTecladoGeneralForm('CP', undefined, nuevoCliente().codigoPostal)" 
-                   placeholder="46001">
+                   >
           </div>
         </div>
 
@@ -158,7 +154,7 @@
                  [value]="nuevoCliente().ciudad" 
                  (input)="nuevoCliente.update(c => ({...c, ciudad: $any($event.target).value}))"
                  (click)="abrirTecladoGeneralForm('CIUDAD', undefined, nuevoCliente().ciudad)" 
-                 placeholder="Valencia">
+                 >
         </div>
 
         <div class="modal-footer">
@@ -169,6 +165,24 @@
         </div>
 
       </form>
+    </div>
+  </div>
+}
+
+@if (mostrarModalBorrar()) {
+  <div class="modal-overlay-borrar" (click)="cerrarModalBorrar()">
+    <div class="modal-box-borrar" (click)="$event.stopPropagation()">
+      <div class="modal-header-borrar">
+        <div class="icono-advertencia">⚠️</div>
+        <h3>¿Confirmar Eliminación?</h3>
+        <p>¿Seguro que quiere borrar al cliente <strong>{{ clienteABorrarNombre() }}</strong>?</p>
+        <p class="txt-peligro-aviso">Esta acción no se puede deshacer y afectará al histórico de pedidos.</p>
+      </div>
+
+      <div class="modal-footer-borrar">
+        <button type="button" class="btn-cancelar-borrar" (click)="cerrarModalBorrar()">Cancelar</button>
+        <button type="button" class="btn-confirmar-borrar" (click)="confirmarEliminar()">❌ Sí, Eliminar</button>
+      </div>
     </div>
   </div>
 }

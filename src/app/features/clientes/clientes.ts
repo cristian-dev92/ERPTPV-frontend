@@ -43,6 +43,13 @@ export class ClientesComponent implements OnInit {
   modoEdicion = signal<boolean>(false);
   clienteSeleccionadoId = signal<number | null>(null);
 
+  // SIGNALS PARA CONTROL DE MODAL DE CONFIRMACIÓN DE BORRADO
+  mostrarModalBorrar = signal<boolean>(false);
+  clienteABorrarId = signal<number | null>(null);
+  clienteABorrarNombre = signal<string>('');
+
+
+
   ngOnInit() {
     this.cargarClientes();
   }
@@ -253,5 +260,39 @@ export class ClientesComponent implements OnInit {
       }
     });
   }
+
+   // Cambiamos el método original por este para que primero "pregunte"
+    solicitarConfirmacionBorrar(p: ClienteDTO) {
+      this.clienteABorrarId.set(p.id);
+      this.clienteABorrarNombre.set(p.nombre);
+      this.mostrarModalBorrar.set(true);
+    }
+  
+    cerrarModalBorrar() {
+      this.mostrarModalBorrar.set(false);
+      this.clienteABorrarId.set(null);
+      this.clienteABorrarNombre.set('');
+    }
+  
+    // Este método se ejecutará solo cuando pulse "Sí, Eliminar" en el modal
+    confirmarEliminar() {
+      const id = this.clienteABorrarId();
+      if (!id) return;
+  
+      this.uiService.mostrarToast('Procesando baja en el archivo...', 'warning');
+  
+      this.clienteService.eliminarCliente(id).subscribe({
+        next: () => {
+          this.uiService.mostrarToast(`👤 Cliente eliminado con éxito`, 'success');
+          this.clientes.update(list => list.filter(c => c.id !== id));
+          this.cerrarModalBorrar();
+        },
+        error: (err) => {
+          console.error(err);
+          this.uiService.mostrarToast('Error al eliminar cliente: ' + (err.error || err.message), 'error');
+          this.cerrarModalBorrar();
+        }
+      });
+    }
 
 }
