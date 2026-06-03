@@ -1,11 +1,16 @@
 @if (!cajaAbierta()) {
   <div class="alerta-caja-tpv">
     <div class="alerta-header">
-      ⚠️ <strong>CASH REQUISITE:</strong> No puedes registrar operaciones comerciales hasta que apertures el turno actual.
+      ⚠️ <strong>CASH REQUISITE:</strong> No puedes registrar operaciones comerciales hasta que abras el turno actual.
     </div>
     <div class="alerta-acciones">
       <label for="saldoInicial">Fondo de Caja Inicial:</label>
-      <input type="number" id="saldoInicial" [(ngModel)]="saldoInicialInput" min="0">
+      <input 
+        type="number" 
+        id="saldoInicial" 
+        [(ngModel)]="saldoInicialInput" 
+        (click)="abrirTecladoGeneral('APERTURA_CAJA')"
+        min="0">
       <button (click)="ejecutarAperturaCaja()" class="btn-abrir-ya">🔓 Abrir Turno Operativo</button>
     </div>
   </div>
@@ -172,7 +177,7 @@
             [value]="item.descuentoPorcentaje || 0" 
             min="0" max="100"
             (input)="actualizarDescuentoLinea($index, $event)"
-            (click)="abrirTecladoGeneral('DESCUENTO_MANUAL')"
+            (click)="abrirTecladoGeneral('DESCUENTO_MANUAL', $index)"
             class="input-descuento-manual">
         </div>
 
@@ -434,98 +439,116 @@
 }
 
 @if (mostrarTecladoGeneral()) {
-  <div class="modal-teclado-general-container">
-    
-    <div class="teclado-general-header">
-      <span class="titulo-contexto">
-        Teclado Táctil: 
-        @if(inputObjetivoTeclado() === 'ARTICULO'){ Buscar Artículo }
-        @if(inputObjetivoTeclado() === 'CLIENTE'){ Buscar Cliente }
-        @if(inputObjetivoTeclado() === 'DESCUENTO'){ Descuento Global }
-        @if(inputObjetivoTeclado() === 'DESCUENTO_MANUAL'){ Descuento Manual }
-        @if(inputObjetivoTeclado() === 'PREGUNTA_ANTICIPO'){ Gestión de Reparación }
-        @if(inputObjetivoTeclado() === 'CANTIDAD_ANTICIPO'){ Introducir Señal / Anticipo }
-      </span>
-      <button class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
-    </div>
 
-    @if (inputObjetivoTeclado() === 'PREGUNTA_ANTICIPO') {
-      <div class="contenido-pregunta-tactil">
-        <p class="texto-pregunta">¿El cliente va a dejar un anticipo o señal para la reparación?</p>
-        <div class="wrapper-botones-decision">
-          <button type="button" class="btn-decision btn-no" (click)="responderNoAnticipo()">❌ NO DEJA</button>
-          <button type="button" class="btn-decision btn-si" (click)="responderSiAnticipo()">💰 SÍ, DEJA ANTICIPO</button>
-        </div>
-      </div>
-    } 
-    
-    @else if (inputObjetivoTeclado() === 'CANTIDAD_ANTICIPO') {
-      <div class="teclado-general-pantalla">
-        <span class="texto-construccion">{{ valorTecladoEnConstruccion() || '0.00' }} €</span>
-        <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
-      </div>
-      
-      <p class="info-max-permitido">Total del ticket actual: <strong>{{ totalTicket() }}€</strong></p>
-
-      <div class="teclado-general-wrapper-keys">
-        <div class="grid-numerico-descuento">
-          @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
-            <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
-          }
-          <button class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ Borrar</button>
+  @if (inputObjetivoTeclado() === 'PREGUNTA_ANTICIPO') {
+    <div class="modal-pregunta-overlay">
+      <div class="modal-pregunta-content">
+        <div class="teclado-general-header">
+          <span class="titulo-contexto">Gestión de Reparación</span>
+          <button class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
         </div>
         
-        <button class="btn-aceptar-teclado-general btn-cobrar-anticipo-accion" (click)="aplicarCantidadAnticipo()">
-          💵 REGISTRAR COBRO DE SEÑAL
-        </button>
+        <div class="contenido-pregunta-tactil">
+          <p class="texto-pregunta">¿El cliente va a dejar un anticipo o señal para la reparación?</p>
+          <div class="wrapper-botones-decision">
+            <button type="button" class="btn-decision btn-no" (click)="responderNoAnticipo()">❌ NO DEJA</button>
+            <button type="button" class="btn-decision btn-si" (click)="responderSiAnticipo()">💰 SÍ, DEJA ANTICIPO</button>
+          </div>
+        </div>
       </div>
-    }
-
-    @else {
-      <div class="teclado-general-pantalla">
-        <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
-        <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
-      </div>
-
-    <div class="teclado-general-wrapper-keys">
-      
-      @if (inputObjetivoTeclado() === 'DESCUENTO' || inputObjetivoTeclado() === 'DESCUENTO_MANUAL') {
-        <div class="grid-numerico-descuento">
-          @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
-            <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
-          }
-          <button class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫</button>
-        </div>
-      } @else {
-        <div class="fila-qwerty">
-          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P','1','2','3']; track letra) {
-            <button class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['A','S','D','F','G','H','J','K','L','4','5','6']; track letra) {
-            <button class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['Z','X','C','V','B','N','M',',','-','7','8','9']; track letra) {
-            <button class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          <button class="btn-tecla-alpha btn-cero" (click)="pulsarTeclaGeneral('0')">0</button>
-          <button class="btn-tecla-alpha btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
-          <button class="btn-tecla-alpha btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
-        </div>
-      }
-      
-      <button class="btn-aceptar-teclado-general" (click)="cerrarTecladoGeneral()">
-        ✔ ACEPTAR Y APLICAR
-      </button>
     </div>
   }
-  </div>
+
+  @else {
+    <div class="modal-teclado-general-container">
+      
+      <div class="teclado-general-header">
+        <span class="titulo-contexto">
+          Teclado Táctil: 
+          @if(inputObjetivoTeclado() === 'ARTICULO'){ Buscar Artículo }
+          @if(inputObjetivoTeclado() === 'CLIENTE'){ Buscar Cliente }
+          @if(inputObjetivoTeclado() === 'DESCUENTO'){ Descuento Global }
+          @if(inputObjetivoTeclado() === 'DESCUENTO_MANUAL'){ Descuento Manual }
+          @if(inputObjetivoTeclado() === 'CANTIDAD_ANTICIPO'){ Introducir Señal / Anticipo }
+        </span>
+        <button class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
+      </div>
+
+      @if (inputObjetivoTeclado() === 'CANTIDAD_ANTICIPO') {
+        <div class="teclado-general-pantalla">
+          <span class="texto-construccion">{{ valorTecladoEnConstruccion() || '0.00' }} €</span>
+          <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+        </div>
+        
+        <p class="info-max-permitido">Total del ticket actual: <strong>{{ totalTicket() }}€</strong></p>
+
+        <div class="teclado-general-wrapper-keys">
+          <div class="grid-numerico-descuento">
+            @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
+              <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
+            }
+            <button class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ Borrar</button>
+          </div>
+          
+          <button class="btn-aceptar-teclado-general btn-cobrar-anticipo-accion" (click)="aplicarCantidadAnticipo()">
+            💵 REGISTRAR COBRO DE SEÑAL
+          </button>
+        </div>
+      }
+
+      @else {
+        <div class="teclado-general-pantalla">
+          <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
+          <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+        </div>
+
+        <div class="teclado-general-wrapper-keys">
+          @if (inputObjetivoTeclado() === 'DESCUENTO' || inputObjetivoTeclado() === 'DESCUENTO_MANUAL') {
+            <div class="grid-numerico-descuento">
+              @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
+                <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
+              }
+              <button class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫</button>
+            </div>
+          } @else {
+            <div class="teclado-fila">
+              @for (num of lineaNumeros; track num) {
+                <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(num)">{{ num }}</button>
+              }
+            </div>
+            <div class="teclado-fila">
+              @for (letra of lineaLetras1; track letra) {
+                <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(letra)">{{ letra }}</button>
+              }
+            </div>
+            <div class="teclado-fila">
+              @for (letra of lineaLetras2; track letra) {
+                <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(letra)">{{ letra }}</button>
+              }
+            </div>
+            <div class="teclado-fila">
+              @for (letra of lineaLetras3; track letra) {
+                <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(letra)">{{ letra }}</button>
+              }
+              <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracterGeneral()">⌫</button>
+            </div>
+          }
+
+          <div class="teclado-fila fila-especial">
+            @if (!inputObjetivoTeclado()?.includes('DESCUENTO')) {
+              <button type="button" class="btn-tecla-espacio" (click)="insertarEspacioGeneral()">ESPACIO</button>
+            }
+            <button class="btn-aceptar-teclado-general" (click)="aplicarAccionTeclado()">
+              ✔ ACEPTAR Y APLICAR
+            </button>
+          </div>
+        </div>
+      }
+
+    </div>
+  }
 }
+
 <!-- CONTENEDOR DE PREVISUALIZACIÓN DEL TICKET -->
 @if (isTicketVisible() ) {
   <div class="modal-ticket-overlay">

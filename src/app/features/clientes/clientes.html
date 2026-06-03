@@ -16,9 +16,9 @@
   <div class="search-bar-container">
     <input type="text" 
            [value]="filtroBusqueda()"
-           (input)="filtroBusqueda.set($any($event.target).value); buscarClientes()"
+           (input)="filtroBusqueda.set($any($event.target).value);"
            (click)="abrirTecladoGeneralForm('BUSQUEDA', undefined, filtroBusqueda())"
-           placeholder="🔍 Busque por nombre completo o número de teléfono comercial..." 
+           placeholder="🔍 Busque por nombre, teléfono, email, dni, direccion, cp, ciudad " 
            class="search-input">
   </div>
 
@@ -43,7 +43,7 @@
             </td>
           </tr>
         } @else {
-          @for (c of clientes(); track c.id) {
+          @for (c of clientesFiltrados(); track c.id) {
             <tr [class.fila-seleccionable]="modoModalSolo()" (click)="modoModalSolo() ? seleccionarCliente(c) : null">
               <td class="txt-negrita">{{ c.nombre }}</td>
               <td class="txt-telefono">{{ c.telefono }}</td>
@@ -223,22 +223,26 @@
       
       @else {
         <div class="fila-qwerty">
-          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P','1','2','3']; track letra) {
+          @for (letra of ['0','1','2','3','4','5','6','7','8','9']; track letra) {
             <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
           }
         </div>
         <div class="fila-qwerty">
-          @for (letra of ['A','S','D','F','G','H','J','K','L','4','5','6']; track letra) {
+          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P']; track letra) {
             <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
           }
         </div>
         <div class="fila-qwerty">
-          @for (letra of ['Z','X','C','V','B','N','M','@','.','7','8','9']; track letra) {
+          @for (letra of ['A','S','D','F','G','H','J','K','L', 'Ñ']; track letra) {
             <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
           }
         </div>
         <div class="fila-qwerty">
-          <button type="button" class="btn-tecla-alpha btn-cero" (click)="pulsarTeclaGeneral('0')">0</button>
+          @for (letra of ['Z','X','C','V','B','N','M','@','.', '-', '_']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
           <button type="button" class="btn-tecla-alpha btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
           <button type="button" class="btn-tecla-alpha btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
         </div>

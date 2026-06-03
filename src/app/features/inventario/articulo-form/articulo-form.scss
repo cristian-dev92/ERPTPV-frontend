@@ -164,15 +164,17 @@
    POPUP MODAL DEL TECLADO VIRTUAL TÁCTIL
    ========================================== */
 .modal-teclado-overlay {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+  position: fixed; 
+  top: 50%;
+  right: 20px; 
+  width: 900px; 
+  height: auto;
+  transform: translateY(-50%);
   z-index: 10005;
   background: #1e293b;
   padding: 16px;
   border-radius: 12px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  width: 320px;
   border: 1px solid #334155;
   display: flex;
   flex-direction: column;
@@ -328,15 +330,16 @@
 // =========================================================================
 .modal-teclado-general-container {
   position: fixed; 
-  bottom: 10px; 
+  top: 50%;
   right: 20px; 
-  transform: translateX(-50%);
+  width: 900px; 
+  height: auto;
+  transform: translateY(-50%);
   z-index: 999999 !important;
   background: #1e293b;          /* Gris oscuro slate premium (a juego con tu cabecera de arqueo) */
   padding: 25px; 
   border-radius: 20px; 
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2); 
-  width: 900px;                 /* AGRANDADO: Ancho extendido para dar más separación a las filas alfabéticas */
   border: 1px solid #334155;
   box-sizing: border-box;
   font-family: inherit;
@@ -486,15 +489,7 @@
         font-size: 1.8rem;     /* Letras más grandes por tecla */
         padding: 0;
       }
-
-      /* Modificadores específicos de la fila inferior */
-      .btn-cero {
-        flex: unset;
-        width: 85px;          /* Ancho extendido para facilitar el toque */
-        height: 75px;           /* Altura consistente con las letras */
-        font-size: 1.8rem;     /* Número más grande */
-      }
-
+      
       .btn-espacio {
         flex: unset;
         width: 460px;          /* Ancho extendido para facilitar el toque */

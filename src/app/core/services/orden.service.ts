@@ -37,7 +37,7 @@ export interface DevolucionRequest {
 @Injectable({ providedIn: 'root' })
 export class OrdenService {
   private http = inject(HttpClient);
-  private readonly API_URL = 'http://localhost:8080/api/ordenes';
+  private readonly API_URL = '/api/ordenes';
 
   // 1. Crear el ticket (Carrito) - Ahora tipado con NuevaOrdenDTO
   crearOrden(peticion: NuevaOrdenDTO): Observable<any> {

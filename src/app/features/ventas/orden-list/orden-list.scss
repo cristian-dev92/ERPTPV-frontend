@@ -817,7 +817,8 @@ button:disabled {
       border: none;
       padding: 8px 20px;
       border-radius: 6px;
-      font-weight: bold;
+      font-weight: 600;
+      font-size: 1.5rem;
       cursor: pointer;
     }
   }
@@ -888,7 +889,118 @@ button:disabled {
       transform: scale(0.95);
     }
   }
-}
+  
+  // 📝 NUEVO: Visor de texto dentro del teclado virtual
+  .teclado-general-pantalla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1a202c;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    margin-bottom: 6px;
+
+    .texto-construccion {
+      font-size: 1.2rem;
+      font-weight: 600;
+      font-family: monospace;
+      color: #e2e8f0;
+    }
+
+    .btn-vaciar-pantalla {
+      font-size: 0.85rem;
+      color: #f56565;
+      cursor: pointer;
+      font-weight: bold;
+      user-select: none;
+      
+      &:active {
+        opacity: 0.7;
+      }
+    }
+  }
+
+  // 🔢 NUEVO: Grid especializado y limpio para cuando solo se meten números/descuentos
+  .teclado-fila-numerica-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); // 4 columnas muy cómodas para dedos grandes
+    gap: 6px;
+    width: 100%;
+    
+    .btn-tecla-key, .btn-tecla-borrar {
+      height: 52px;
+      background: #4a5568;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+
+      &:active {
+        background: #718096;
+      }
+    }
+
+    .btn-tecla-borrar {
+      background: #e53e3e;
+      &:active { background: #c53030; }
+    }
+  }
+
+  // 🤝 NUEVO: Diseño de la sección de preguntas (Anticipo Sí/No)
+  .contenido-pregunta-tactil {
+    text-align: center;
+    padding: 1rem 0;
+
+    .texto-pregunta {
+      font-size: 1.2rem;
+      margin-bottom: 1.25rem;
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+
+    .wrapper-botones-decision {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      max-width: 500px;
+      margin: 0 auto;
+
+      .btn-decision {
+        flex: 1;
+        height: 60px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.15rem;
+        font-weight: bold;
+        cursor: pointer;
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        transition: transform 0.05s ease;
+
+        &:active {
+          transform: scale(0.97);
+        }
+
+        &.btn-no {
+          background-color: #e53e3e;
+          &:active { background-color: #c53030; }
+        }
+
+        &.btn-si {
+          background-color: #38a169;
+          &:active { background-color: #2f855a; }
+        }
+      }
+    }
+  }
+ }
 
 @keyframes slideUp {
   from { transform: translateY(100%); }

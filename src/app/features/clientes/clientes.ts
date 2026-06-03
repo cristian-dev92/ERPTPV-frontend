@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, input, output } from '@angular/core';
+import { Component, OnInit, inject, signal, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService, ClienteDTO, NuevoClienteRequest } from '../../core/services/cliente.service';
@@ -34,6 +34,22 @@ export class ClientesComponent implements OnInit {
     ciudad: ''
   });
 
+  // 🎯 FILTRADO AUTOMÁTICO EN TIEMPO REAL (Client-side con Signals)
+  clientesFiltrados = computed(() => {
+    const filtro = this.filtroBusqueda().toLowerCase().trim();
+    if (!filtro) return this.clientes();
+    
+    return this.clientes().filter(c => 
+      c.nombre.toLowerCase().includes(filtro) ||
+      (c.documentoIdentidad && c.documentoIdentidad.toLowerCase().includes(filtro)) ||
+      (c.telefono && c.telefono.includes(filtro)) ||
+      (c.email && c.email.toLowerCase().includes(filtro)) ||
+      (c.direccion && c.direccion.toLowerCase().includes(filtro)) ||
+      (c.codigoPostal && c.codigoPostal.includes(filtro)) ||
+      (c.ciudad && c.ciudad.toLowerCase().includes(filtro))
+    );
+  });
+
   // SIGNALS PARA EL CONTROL DEL TECLADO GENERAL
   mostrarTecladoGeneral = signal<boolean>(false);
   inputObjetivoTeclado = signal<string>('');
@@ -67,15 +83,28 @@ export class ClientesComponent implements OnInit {
 
   pulsarTeclaGeneral(caracter: string) {
     this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + caracter);
+    
+    if (this.inputObjetivoTeclado() === 'BUSQUEDA') {
+      this.filtroBusqueda.set(this.valorTecladoEnConstruccion());
+    }
   }
 
   borrarUltimoCaracterGeneral() {
     const actual = this.valorTecladoEnConstruccion();
-    this.valorTecladoEnConstruccion.set(actual.slice(0, -1));
+    const nuevoValor = actual.slice(0, -1);
+    this.valorTecladoEnConstruccion.set(nuevoValor);
+
+    if (this.inputObjetivoTeclado() === 'BUSQUEDA') {
+      this.filtroBusqueda.set(nuevoValor);
+    }
   }
 
   limpiarTecladoGeneral() {
     this.valorTecladoEnConstruccion.set('');
+    
+    if (this.inputObjetivoTeclado() === 'BUSQUEDA') {
+      this.filtroBusqueda.set('');
+    }
   }
 
   cerrarTecladoGeneral() {
@@ -89,6 +118,12 @@ export class ClientesComponent implements OnInit {
     const campo = this.inputObjetivoTeclado();
     const valor = this.valorTecladoEnConstruccion();
 
+    if (campo === 'BUSQUEDA'){ 
+      this.filtroBusqueda.set(valor);
+      this.cerrarTecladoGeneral();
+      return;
+    }
+
     this.nuevoCliente.update(cliente => {
       const actualizacion = { ...cliente };
       if (campo === 'NOMBRE') actualizacion.nombre = valor;
@@ -98,10 +133,6 @@ export class ClientesComponent implements OnInit {
       if (campo === 'DIRECCION') actualizacion.direccion = valor;
       if (campo === 'CP') actualizacion.codigoPostal = valor;
       if (campo === 'CIUDAD') actualizacion.ciudad = valor;
-      if (campo === 'BUSQUEDA'){ 
-        this.filtroBusqueda.set(valor);
-        this.buscarClientes();
-      }
       return actualizacion;
     });
 

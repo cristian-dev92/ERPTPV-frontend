@@ -44,6 +44,22 @@ export class CajaResumenComponent implements OnInit {
   totalGastos = computed(() => this.cajaActual()?.totalGastos ?? 0);
   totalDevoluciones = computed(() => this.cajaActual()?.totalDevoluciones ?? 0);
 
+  // --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---
+  mostrarTeclado = signal<boolean>(false);
+  inputActivo = signal<string>('');
+  terminoBusqueda = signal<string>('');
+  ordenes = signal<any[]>([]);
+
+  // Distribución de teclas para el teclado táctil del TPV
+  lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+  lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
+  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '_', '.'];
+  lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+
+  // Variables temporales para mostrar el texto en el teclado táctil mientras se escribe
+  textoMontoTmp = '';
+  textoSaldoTmp = '';
+
   claseMovimiento(tipo: string): string {
     return tipo === 'INGRESO_MANUAL' ? 'badge-ingreso' : 'badge-gasto';
   }
@@ -135,5 +151,92 @@ export class CajaResumenComponent implements OnInit {
     this.mostrarModalPdf.set(false);
     this.idCajaCerrada.set(null);
   }
+
+// Abre el teclado y registra sobre qué campo estamos trabajando
+activarTeclado(campo: string) {
+  this.inputActivo.set(campo);
+  this.mostrarTeclado.set(true);
+
+  // Al activar, cargamos lo que ya haya en los inputs para poder seguir editando
+  if (campo === 'monto') {
+    this.textoMontoTmp = this.montoMovimiento ? this.montoMovimiento.toString() : '';
+  } else if (campo === 'saldoFinalRealContado') {
+    this.textoSaldoTmp = this.saldoFinalRealContado ? this.saldoFinalRealContado.toString() : '';
+  }
+}
+
+// Cierra el panel del teclado
+cerrarTeclado() {
+  this.mostrarTeclado.set(false);
+  this.inputActivo.set('');
+}
+
+escribirTeclado(caracter: string) {
+  const campo = this.inputActivo();
+  if (!campo) return;
+
+  // 1. Control para la barra de búsqueda clásica (si la sigues usando aquí)
+  if (campo === 'busqueda') {
+    this.terminoBusqueda.set(this.terminoBusqueda() + caracter);
+    return;
+  }
+
+  // 2. Control para el Concepto / Motivo (Texto normal)
+  if (campo === 'descripcion') {
+    this.descripcionMovimiento = (this.descripcionMovimiento || '') + caracter;
+    return;
+  }
+
+  // 3. Control para campos numéricos de la caja (Importe y Cierre Real)
+ if (campo === 'monto') {
+    // Evitamos que pongan dos puntos seguidos (ej: "12..5")
+    if (caracter === '.' && this.textoMontoTmp.includes('.')) return;
+    
+    this.textoMontoTmp += caracter;
+    // Asignamos al modelo el valor numérico real de fondo, convirtiendo sobre la marcha
+    this.montoMovimiento = parseFloat(this.textoMontoTmp) || 0;
+  } 
   
+  else if (campo === 'saldoFinalRealContado') {
+    if (caracter === '.' && this.textoSaldoTmp.includes('.')) return;
+    
+    this.textoSaldoTmp += caracter;
+    this.saldoFinalRealContado = parseFloat(this.textoSaldoTmp) || 0;
+  }
+}
+
+// Borrar el último carácter (Tecla Retroceso ⌫)
+borrarUltimoCaracter() {
+  const campo = this.inputActivo();
+  if (!campo) return;
+
+  if (campo === 'busqueda') {
+    this.terminoBusqueda.set(this.terminoBusqueda().slice(0, -1));
+    return;
+  }
+
+  if (campo === 'descripcion') {
+    this.descripcionMovimiento = this.descripcionMovimiento ? this.descripcionMovimiento.slice(0, -1) : '';
+    return;
+  }
+
+  else if (campo === 'monto') {
+    this.textoMontoTmp = this.textoMontoTmp.slice(0, -1);
+    this.montoMovimiento = parseFloat(this.textoMontoTmp) || 0;
+  } else if (campo === 'saldoFinalRealContado') {
+    this.textoSaldoTmp = this.textoSaldoTmp.slice(0, -1);
+    this.saldoFinalRealContado = parseFloat(this.textoSaldoTmp) || 0;
+  }
+}
+
+// Añadir espacio (Tecla Espaciadora)
+insertarEspacio() {
+  const campo = this.inputActivo();
+  if (campo === 'busqueda') {
+    this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
+  } else if (campo === 'descripcion') {
+    this.descripcionMovimiento = (this.descripcionMovimiento || '') + ' ';
+  }
+ }
+ 
 }

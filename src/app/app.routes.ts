@@ -61,6 +61,10 @@ export const routes: Routes = [
     path: 'clientes',
     loadComponent: () => import('./features/clientes/clientes').then(m => m.ClientesComponent)
   },
+  {
+    path: 'configuracion',
+    loadComponent: () => import('./features/configuracion/configuracion').then(m => m.ConfiguracionComponent)
+  },
    // Ruta comodín (por si escriben algo que no existe)
   { path: '**', redirectTo: 'tpv' }
   ]

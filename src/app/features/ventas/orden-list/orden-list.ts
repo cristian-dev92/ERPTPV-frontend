@@ -390,7 +390,7 @@ export class OrdenListComponent implements OnInit {
     return 'badge-info';
   }
 
-  // --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---
+// --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---
 mostrarTeclado = signal<boolean>(false);
 inputActivo = signal<string>(''); // 'busqueda', 'notas', 'fecha'
 

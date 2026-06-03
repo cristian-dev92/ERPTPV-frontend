@@ -125,13 +125,15 @@ $border-color: #cbd5e1;
   }
 }
 
-// Hojas Modales Táctiles Premium (Blur e interfaces inmersivas)
+// Hojas Modales Táctiles
 .modal-backdrop-blur {
   position: fixed;
   top: 0; left: 0; width: 100vw; height: 100vh;
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(5px);
-  display: flex; justify-content: center; align-items: center;
+  display: flex; 
+  justify-content: center; 
+  align-items: flex-start;
   z-index: 9999;
   padding: 1rem;
 }
@@ -143,7 +145,9 @@ $border-color: #cbd5e1;
   border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
   overflow: hidden;
-  display: flex; flex-direction: column;
+  display: flex; 
+  flex-direction: column;
+  margin-top: 4rem;
 
   .sheet-header {
     display: flex; justify-content: space-between; align-items: center;
@@ -242,8 +246,12 @@ $border-color: #cbd5e1;
 }
 
 .apertura-tactil-card {
-  text-align: center; padding: 3rem 1.5rem; background: #fafafa;
-  border: 2px dashed $border-color; border-radius: 12px;
+  text-align: center; 
+  padding: 3rem 1.5rem; 
+  background: #fafafa;
+  border: 2px dashed 
+  $border-color; 
+  border-radius: 12px;
   .icon-lock { font-size: 3rem; margin-bottom: 0.5rem; }
   h2 { margin: 0; color: $dark-pad; }
   p { color: #64748b; font-size: 0.9rem; margin: 0.5rem 0 0 0; }
@@ -350,4 +358,173 @@ $border-color: #cbd5e1;
     color: #6c757d;
     margin-bottom: 15px;
   }
+}
+
+// Teclado Virtual Táctil
+.tpv-teclado-virtual {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #2d3748;
+  color: white;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+  z-index: 9999; // Por encima de los modales
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideUp 0.2s ease-out;
+
+  .teclado-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 10px;
+    border-bottom: 1px solid #4a5568;
+    font-size: 0.9rem;
+
+    .btn-cerrar-teclado {
+      background: #e71010;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  }
+
+  .teclado-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .teclado-fila {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    width: 100%;
+
+    button {
+      flex: 1;
+      height: 48px;
+      background: #4a5568;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+
+      &:active {
+        background: #718096;
+        transform: scale(0.96);
+      }
+    }
+
+    .btn-tecla-borrar {
+      background: #e53e3e;
+      flex: 1.5;
+      max-width: 150px;
+      &:active { background: #c53030; }
+    }
+  }
+
+  .fila-especial {
+    gap: 10px;
+
+    .btn-tecla-espacio {
+      flex: 6;
+      background: #3182ce;
+      &:active { background: #2b6cb0; }
+    }
+
+    .btn-tecla-aceptar {
+    flex: 3;
+    background: #48bb78; // Verde intenso
+    color: white;
+    font-size: 1.2rem;
+    height: 52px; // Un pelín más alto
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    &:active { 
+      background: #38a169;
+      transform: scale(0.95);
+    }
+  }
+  
+  // 📝 NUEVO: Visor de texto dentro del teclado virtual
+  .teclado-general-pantalla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1a202c;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    margin-bottom: 6px;
+
+    .texto-construccion {
+      font-size: 1.2rem;
+      font-weight: 600;
+      font-family: monospace;
+      color: #e2e8f0;
+    }
+
+    .btn-vaciar-pantalla {
+      font-size: 0.85rem;
+      color: #f56565;
+      cursor: pointer;
+      font-weight: bold;
+      user-select: none;
+      
+      &:active {
+        opacity: 0.7;
+      }
+    }
+  }
+
+  // 🔢 NUEVO: Grid especializado y limpio para cuando solo se meten números/descuentos
+  .teclado-fila-numerica-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); // 4 columnas muy cómodas para dedos grandes
+    gap: 6px;
+    width: 100%;
+    
+    .btn-tecla-key, .btn-tecla-borrar {
+      height: 52px;
+      background: #4a5568;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+
+      &:active {
+        background: #718096;
+      }
+    }
+
+    .btn-tecla-borrar {
+      background: #e53e3e;
+      &:active { background: #c53030; }
+    }
+  }
+ }
 }

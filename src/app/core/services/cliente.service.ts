@@ -28,7 +28,7 @@ export interface ClienteDTO {
 @Injectable({ providedIn: 'root' })
 export class ClienteService {
   private http = inject(HttpClient);
-  private readonly API_URL = 'http://localhost:8080/api/clientes';
+  private readonly API_URL = '/api/clientes';
 
   obtenerMisClientes(): Observable<ClienteDTO[]> {
     return this.http.get<ClienteDTO[]>(this.API_URL);

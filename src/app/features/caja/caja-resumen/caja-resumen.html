@@ -110,12 +110,18 @@
 
             <div class="input-field-tactil">
               <label>Importe (€)</label>
-              <input type="number" [(ngModel)]="montoMovimiento" inputmode="decimal">
+              <input type="text" 
+               [value]="inputActivo() === 'monto' ? textoMontoTmp : (montoMovimiento || '')"
+               (click)="activarTeclado('monto')"
+               (input)="montoMovimiento = +$any($event.target).value; textoMontoTmp = $any($event.target).value" 
+               inputmode="decimal">
             </div>
 
             <div class="input-field-tactil">
               <label>Concepto / Motivo</label>
-              <input type="text" [(ngModel)]="descripcionMovimiento">
+              <input type="text" 
+              (click)="activarTeclado('descripcion')"
+              [(ngModel)]="descripcionMovimiento">
             </div>
 
             <button class="btn-confirm-tactil-action success" (click)="guardarMovimientoManual()">
@@ -199,7 +205,11 @@
             
             <div class="input-field-tactil unique-huge">
               <label>EFECTIVO TOTAL EN CAJA (€)</label>
-              <input type="number" [(ngModel)]="saldoFinalRealContado" inputmode="decimal" autofocus>
+              <input type="text" 
+               [value]="inputActivo() === 'saldoFinalRealContado' ? textoSaldoTmp : (saldoFinalRealContado || '')"
+               (click)="activarTeclado('saldoFinalRealContado')"
+               (input)="textoSaldoTmp = $any($event.target).value; saldoFinalRealContado = +$any($event.target).value"
+               inputmode="decimal" autofocus>
             </div>
 
             <button class="btn-confirm-tactil-action danger" (click)="ejecutarCierreCaja()">
@@ -249,4 +259,45 @@
     }
 
   }
+}
+
+@if (mostrarTeclado()) {
+  <div class="tpv-teclado-virtual">
+    <div class="teclado-header">
+      <span>Escribiendo en: <strong>{{ inputActivo().toUpperCase() }}</strong></span>
+      <button class="btn-cerrar-teclado" (click)="cerrarTeclado()">❌ Cerrar</button>
+    </div>
+    
+    <div class="teclado-body">
+     <div class="teclado-fila">
+        @for (num of lineaNumeros; track num) {
+          <button type="button" (click)="escribirTeclado(num)">{{ num }}</button>
+        }
+      </div>
+
+      <div class="teclado-fila">
+        @for (letra of lineaLetras1; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+        }
+      </div>
+      <div class="teclado-fila">
+        @for (letra of lineaLetras2; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+        }
+      </div>
+      <div class="teclado-fila">
+        @for (letra of lineaLetras3; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+        }
+      </div>
+      <div class="teclado-fila">
+        <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫</button>
+      </div>
+
+      <div class="teclado-fila fila-especial">
+        <button type="button" class="btn-tecla-espacio" (click)="insertarEspacio()">ESPACIO</button>
+        <button type="button" class="btn-tecla-aceptar" (click)="cerrarTeclado()">ACEPTAR ✔️</button>
+      </div>
+    </div>
+  </div>
 }

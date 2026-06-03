@@ -12,7 +12,7 @@ export class AuthService {
   private router = inject(Router);
   
   // URL base para autenticación (Ajustar según Swagger si es distinta)
-  private readonly API_URL = 'http://localhost:8080/api/auth';
+  private readonly API_URL = '/api/auth';
 
   /**
    * Signal que guarda si el usuario está logueado. 

@@ -23,7 +23,7 @@ export interface ProveedorDTO {
 @Injectable({ providedIn: 'root' })
 export class ProveedorService {
   private http = inject(HttpClient);
-  private readonly API_URL = 'http://localhost:8080/api/proveedores';
+  private readonly API_URL = '/api/proveedores';
 
   obtenerMisProveedores(): Observable<ProveedorDTO[]> {
     return this.http.get<ProveedorDTO[]>(this.API_URL);

@@ -118,8 +118,14 @@ export class TpvComponent implements OnInit {
 
   // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
   mostrarTecladoGeneral = signal<boolean>(false);
-  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | null>(null);
+  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' |  null>(null);
   valorTecladoEnConstruccion = signal<string>('');
+
+  // Distribución de teclas idéntica a tu diseño favorito del TPV
+  lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+  lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+  lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
+  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '_', '.'];
 
   // Variable para recordar la orden que se acaba de crear mientras se responde al flujo táctil
   idOrdenPendienteAnticipo = signal<number | null>(null);
@@ -788,26 +794,19 @@ export class TpvComponent implements OnInit {
   this.isTicketVisible.update(v => !v);
 }
 
-// Abre el teclado para la línea seleccionada
 abrirKeypadPrecio(index: number) {
   this.indiceItemEditandoPrecio.set(index);
-  // Inicializamos el teclado con el precio actual del ítem convertido a string
   this.precioEnConstruccion.set(this.carrito()[index].precio.toFixed(2));
 }
 
-// Se ejecuta cada vez que el zapatero pulsa un número o el punto en tu Keypad en pantalla
 pulsarTeclaPrecio(tecla: string) {
   const actual = this.precioEnConstruccion();
-  
-  if (tecla === '.' && actual.includes('.')) return; // Evitar doble punto decimal
-  
-  // Limitar a 2 decimales para que no escriban burradas
+  if (tecla === '.' && actual.includes('.')) return; 
   if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
 
   this.precioEnConstruccion.set(actual + tecla);
 }
 
-// Botón de borrar un dígito (Retroceso) en el Keypad
 borrarUltimoDigitoPrecio() {
   const actual = this.precioEnConstruccion();
   if (actual.length > 0) {
@@ -815,7 +814,6 @@ borrarUltimoDigitoPrecio() {
   }
 }
 
-// Botón "ACEPTAR" o "GUARDAR" del Keypad
 guardarPrecioModificado() {
   const index = this.indiceItemEditandoPrecio();
   if (index === null) return;
@@ -827,12 +825,11 @@ guardarPrecioModificado() {
     return;
   }
 
-  // Modificamos el precio en el Signal del carrito
   this.carrito.update(items => {
     const copia = [...items];
     copia[index] = {
       ...copia[index],
-      precio: nuevoPrecio // Sobrescribimos el precio final calculado
+      precio: nuevoPrecio
     };
     return copia;
   });
@@ -841,130 +838,142 @@ guardarPrecioModificado() {
   this.cerrarKeypadPrecio();
 }
 
-// Cierra el modal/contenedor del teclado
 cerrarKeypadPrecio() {
   this.indiceItemEditandoPrecio.set(null);
   this.precioEnConstruccion.set('');
 }
 
-// Añade este método para gestionar el comportamiento del botón
+// === GESTIÓN DE FECHAS ===
+
 toggleSinFechaRecogida(): void {
-  // Invertimos el estado del toggle
   this.sinFechaRecogida.update(value => !value);
   
-  // Si se activa "Sin fecha", limpiamos la fecha recogida guardada
   if (this.sinFechaRecogida()) {
     this.fechaRecogida.set(''); 
   } else {
-    // Si se desactiva, puedes asignar por defecto el día de hoy o dejarlo vacío para obligar a marcar una
     const hoy = new Date().toISOString().split('T')[0];
     this.fechaRecogida.set(hoy);
   }
 }
 
-/* Abre el teclado en pantalla para un input específico */
-  abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_MANUAL' | 'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO', index: number | null = null) {
-    this.inputObjetivoTeclado.set(objetivo);
+// === GESTIÓN DEL TECLADO GENERAL (MOSTRADOR, DESCUENTOS Y ANTICIPOS) ===
 
-    if (objetivo === 'PREGUNTA_ANTICIPO') {
-      this.valorTecladoEnConstruccion.set('');
-    } else if (objetivo === 'CANTIDAD_ANTICIPO') {
-      // Inicializamos el prompt numérico vacío para escribir directo
-      this.valorTecladoEnConstruccion.set('');
-      // Guardamos el índice si estamos editando el descuento de una línea específica
-    } else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
-      this.indiceLineaDescuentoActual.set(index);
-      // Obtenemos el descuento actual de ese ítem en el carrito
-      const item = this.carrito()[index];
-      const descuentoActual = item ? (item.descuentoPorcentaje || 0) : 0;
-      this.valorTecladoEnConstruccion.set(descuentoActual > 0 ? descuentoActual.toString() : '');
-    } else {
-      this.indiceLineaDescuentoActual.set(null);
+abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_MANUAL' | 'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA', index: number | null = null) {
+  this.inputObjetivoTeclado.set(objetivo);
+
+  if (objetivo === 'PREGUNTA_ANTICIPO' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA') {
+    this.valorTecladoEnConstruccion.set('');
+  } else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
+    this.indiceLineaDescuentoActual.set(index);
+    const item = this.carrito()[index];
+    const descuentoActual = item ? (item.descuentoPorcentaje || 0) : 0;
+    this.valorTecladoEnConstruccion.set(descuentoActual > 0 ? descuentoActual.toString() : '');
+  } else {
+    this.indiceLineaDescuentoActual.set(null);
     
-    // Inicializamos el teclado con el valor que ya tenga ese campo
     if (objetivo === 'ARTICULO') this.valorTecladoEnConstruccion.set(this.busquedaArticulo());
     if (objetivo === 'CLIENTE') this.valorTecladoEnConstruccion.set(this.busquedaCliente());
     if (objetivo === 'DESCUENTO') this.valorTecladoEnConstruccion.set(this.descuentoGlobal().toString());
-    }
+  }
+  
+  this.mostrarTecladoGeneral.set(true);
+}
+
+pulsarTeclaGeneral(tecla: string) {
+  const actual = this.valorTecladoEnConstruccion();
+  const objetivo = this.inputObjetivoTeclado();
+
+  // Filtro estricto para campos de dinero o porcentajes
+  if (objetivo === 'DESCUENTO' || objetivo === 'DESCUENTO_MANUAL' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA') {
+    if (tecla === '.' && actual.includes('.')) return;
+    if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
+    if (tecla !== '.' && isNaN(Number(tecla))) return;
+  }
+
+  this.valorTecladoEnConstruccion.set(actual + tecla);
+  this.aplicarValorEnTiempoReal();
+}
+
+borrarUltimoCaracterGeneral() {
+  const actual = this.valorTecladoEnConstruccion();
+  if (actual.length > 0) {
+    this.valorTecladoEnConstruccion.set(actual.slice(0, -1));
+    this.aplicarValorEnTiempoReal();
+  }
+}
+
+limpiarTecladoGeneral() {
+  this.valorTecladoEnConstruccion.set('');
+  this.aplicarValorEnTiempoReal();
+}
+
+insertarEspacioGeneral() {
+  this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + ' ');
+}
+
+cerrarTecladoGeneral() {
+  this.mostrarTecladoGeneral.set(false);
+  this.inputObjetivoTeclado.set(null);
+  this.valorTecladoEnConstruccion.set('');
+  this.indiceLineaDescuentoActual.set(null);
+}
+
+private aplicarValorEnTiempoReal() {
+  const valor = this.valorTecladoEnConstruccion();
+  const objetivo = this.inputObjetivoTeclado();
+
+  if (objetivo === 'ARTICULO') {
+    this.busquedaArticulo.set(valor);
+  } else if (objetivo === 'CLIENTE') {
+    this.buscarClientes(valor); 
+  } else if (objetivo === 'DESCUENTO') {
+    let num = parseFloat(valor) || 0;
+    if (num > 100) num = 100; 
+    this.descuentoGlobal.set(num);
+  } else if (objetivo === 'DESCUENTO_MANUAL') {
+    let num = parseFloat(valor) || 0;
+    if (num > 100) num = 100; 
     
-    this.mostrarTecladoGeneral.set(true);
-  }
-
-  /* Gestiona las pulsaciones de las teclas del panel táctil */
-  pulsarTeclaGeneral(tecla: string) {
-    const actual = this.valorTecladoEnConstruccion();
-    const objetivo = this.inputObjetivoTeclado();
-
-    // Si es el descuento, controlamos que solo entren números y un punto
-    if (objetivo === 'DESCUENTO' || objetivo === 'DESCUENTO_MANUAL' || objetivo === 'CANTIDAD_ANTICIPO') {
-      if (tecla === '.' && actual.includes('.')) return;
-      if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
-      // Evitar letras en el descuento si se colaran
-      if (tecla !== '.' && isNaN(Number(tecla))) return;
-    }
-
-    this.valorTecladoEnConstruccion.set(actual + tecla);
-    this.aplicarValorEnTiempoReal();
-  }
-
-  /* Borra el último carácter introducido*/
-  borrarUltimoCaracterGeneral() {
-    const actual = this.valorTecladoEnConstruccion();
-    if (actual.length > 0) {
-      this.valorTecladoEnConstruccion.set(actual.slice(0, -1));
-      this.aplicarValorEnTiempoReal();
-    }
-  }
-
-  /* Limpia por completo el input activo */
-  limpiarTecladoGeneral() {
-    this.valorTecladoEnConstruccion.set('');
-    this.aplicarValorEnTiempoReal();
-  }
-
-  /* Sincroniza lo que se escribe en el teclado con las Signals reales del TPV */
-  private aplicarValorEnTiempoReal() {
-    const valor = this.valorTecladoEnConstruccion();
-    const objetivo = this.inputObjetivoTeclado();
-
-    if (objetivo === 'ARTICULO') {
-      this.busquedaArticulo.set(valor);
-    } else if (objetivo === 'CLIENTE') {
-      this.buscarClientes(valor); // Lanza la búsqueda de clientes directamente
-    } else if (objetivo === 'DESCUENTO') {
-      let num = parseFloat(valor) || 0;
-      if (num > 100) num = 100; // Capamos el descuento máximo al 100%
-      this.descuentoGlobal.set(num);
-    } else if (objetivo === 'DESCUENTO_MANUAL') {
-      let num = parseFloat(valor) || 0;
-      if (num > 100) num = 100; // Capamos el descuento máximo al 100%
-      
-      const index = this.indiceLineaDescuentoActual();
-      if (index !== null) {
-        // 1. Hacemos una copia de la lista actual del carrito para no mutar directamente el estado
-        const listaCarrito = [...this.carrito()];
-        // 2. Si la línea existe, modificamos su propiedad directamente
-        if (listaCarrito[index]) {
-          listaCarrito[index] = {
-            ...listaCarrito[index],
-            descuentoPorcentaje: num
-          };
-          
-          // 3. Notificamos a Angular el cambio del Signal
-          this.carrito.set(listaCarrito);
+    const index = this.indiceLineaDescuentoActual();
+    if (index !== null) {
+      const listaCarrito = [...this.carrito()];
+      if (listaCarrito[index]) {
+        listaCarrito[index] = {
+          ...listaCarrito[index],
+          descuentoPorcentaje: num
+        };
+        this.carrito.set(listaCarrito);
       }
-     }
     }
   }
+  // CANTIDAD_ANTICIPO no se ejecuta aquí para evitar llamadas a la API o validaciones a medio escribir.
+}
 
-  cerrarTecladoGeneral() {
-    this.mostrarTecladoGeneral.set(false);
-    this.inputObjetivoTeclado.set(null);
-    this.valorTecladoEnConstruccion.set('');
-    this.indiceLineaDescuentoActual.set(null);
+aplicarAccionTeclado() {
+  const objetivo = this.inputObjetivoTeclado();
+  const resultado = this.valorTecladoEnConstruccion();
+
+  if (objetivo === 'ARTICULO') this.busquedaArticulo.set(resultado);
+  if (objetivo === 'CLIENTE') this.buscarClientes(resultado);
+  if (objetivo === 'DESCUENTO') {
+    let num = parseFloat(resultado) || 0;
+    if (num > 100) num = 100;
+    this.descuentoGlobal.set(num);
+  }
+  if (objetivo === 'CANTIDAD_ANTICIPO') {
+    this.aplicarCantidadAnticipo();
+  }
+  if (objetivo === 'APERTURA_CAJA') {
+    this.saldoInicialInput = parseFloat(resultado) || 0;
+    this.ejecutarAperturaCaja();
   }
 
-  toggleModoDevolucion() {
+  this.cerrarTecladoGeneral();
+}
+
+// === MODOS DE VENTA / DEVOLUCIÓN ===
+
+toggleModoDevolucion() {
   this.modoDevolucion.update(activo => !activo);
   this.uiService.mostrarToast(
     this.modoDevolucion() 
@@ -972,59 +981,58 @@ toggleSinFechaRecogida(): void {
       : '🛒 TPV en Modo Venta Ordinaria', 
     this.modoDevolucion() ? 'warning' : 'success'
   );
- }
+}
 
-  desactivarModoDevolucion(): void {
-    this.modoDevolucion.set(false);
-    this.idTicketOrigenDevolucion.set(null); // Limpiamos también el ticket origen
-  }
+desactivarModoDevolucion(): void {
+  this.modoDevolucion.set(false);
+  this.idTicketOrigenDevolucion.set(null);
+}
 
-/* El cliente SÍ quiere dejar anticipo */
-  responderSiAnticipo() {
-    this.abrirTecladoGeneral('CANTIDAD_ANTICIPO');
-  }
+// === FLUJO DE ANTICIPOS (MODAL CENTRADO INTERACTIVO) ===
 
-  /* Aplica la cantidad numérica introducida por el teclado táctil */
-  aplicarCantidadAnticipo() {
-    const valor = this.valorTecladoEnConstruccion();
-    const numImporte = parseFloat(valor) || 0;
-    const id = this.idOrdenPendienteAnticipo();
+responderSiAnticipo() {
+  // Pasamos directamente a pedir la cantidad numérica
+  this.abrirTecladoGeneral('CANTIDAD_ANTICIPO');
+}
 
-    if (id !== null && numImporte > 0 && numImporte <= this.totalTicket()) {
-      const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
-      this.cobrarAnticipoTicket(id, numImporte, metodoPagoSeguro);
-      this.cerrarTecladoGeneral();
-      this.idOrdenPendienteAnticipo.set(null);
-    } else {
-      this.uiService.mostrarToast(`Importe no válido. El máximo permitido es ${this.totalTicket()}€.`, 'warning');
-    }
-  }
-
-  /* ❌ Método para vincular directamente al botón "NO DEJA ANTICIPO" de tu interfaz */
-  responderNoAnticipo() {
-    const id = this.idOrdenPendienteAnticipo();
-    
-    if (id !== null) {
-      const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
-      
-      // Forzamos el cobro con un importe de 0€ para que genere el resguardo de taller directo
-      this.cobrarAnticipoTicket(id, 0, metodoPagoSeguro);
-      this.cerrarTecladoGeneral();
-      this.idOrdenPendienteAnticipo.set(null);
-    } else {
-      this.uiService.mostrarToast('No hay ninguna orden pendiente para procesar.', 'error');
-    }
-  }
-
-  // --- MÉTODOS DEL FORMULARIO DE REGISTRO PARA CLIENTES ---
+responderNoAnticipo() {
+  const id = this.idOrdenPendienteAnticipo();
   
-  abrirModal() {
-   if (this.clientesComponent) {
-     this.clientesComponent.abrirModal(); // <-- Llama directamente al abrirModal() de tu Clientes.ts
-   }else {
+  if (id !== null) {
+    const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
+    // Cobro de 0€ para imprimir el resguardo físico directo de taller sin pagos previos
+    this.cobrarAnticipoTicket(id, 0, metodoPagoSeguro);
+    this.cerrarTecladoGeneral();
+    this.idOrdenPendienteAnticipo.set(null);
+  } else {
+    this.uiService.mostrarToast('No hay ninguna orden pendiente para procesar.', 'error');
+  }
+}
+
+aplicarCantidadAnticipo() {
+  const valor = this.valorTecladoEnConstruccion();
+  const numImporte = parseFloat(valor) || 0;
+  const id = this.idOrdenPendienteAnticipo();
+
+  if (id !== null && numImporte > 0 && numImporte <= this.totalTicket()) {
+    const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
+    this.cobrarAnticipoTicket(id, numImporte, metodoPagoSeguro);
+    this.cerrarTecladoGeneral();
+    this.idOrdenPendienteAnticipo.set(null);
+  } else {
+    this.uiService.mostrarToast(`Importe no válido. El máximo permitido es ${this.totalTicket()}€.`, 'warning');
+  }
+}
+
+// === COMPONENTES EXTERNOS ===
+
+abrirModal() {
+  if (this.clientesComponent) {
+    this.clientesComponent.abrirModal();
+  } else {
     console.error('No se ha encontrado la referencia de <app-clientes> en la vista.');
   }
- }
+}
 
  limpiarFormularioMostrador() {
   this.carrito.set([]); // Vaciamos el carrito

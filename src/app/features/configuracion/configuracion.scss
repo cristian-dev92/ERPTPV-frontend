@@ -1,0 +1,297 @@
+$primary-dark: #2c3e50;
+$border-color: #e2e8f0;
+$bg-light: #f8f9fa;
+$success: #27ae60;
+$danger: #e74c3c;
+$accent-blue: #3498db;
+
+.config-panel-container {
+  padding: 1.5rem;
+  background-color: #ffffff;
+  min-height: 100vh;
+
+  .config-header {
+    margin-bottom: 2rem;
+    h2 { color: $primary-dark; margin: 0; font-size: 1.6rem; font-weight: 700; }
+    p { color: #7f8c8d; margin: 0.3rem 0 0 0; font-size: 0.95rem; }
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .config-card {
+    background: #ffffff;
+    border: 1px solid $border-color;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+    .card-section-title {
+      margin-bottom: 1.5rem;
+      h3 { margin: 0; color: $primary-dark; font-size: 1.25rem; font-weight: 700; }
+      span { color: #94a3b8; font-size: 0.85rem; }
+    }
+  }
+
+  .sub-section-form {
+    h4 { margin: 0 0 0.75rem 0; font-size: 1rem; color: #334155; font-weight: 600; }
+    .info-text-sec { font-size: 0.85rem; color: #64748b; margin: 0 0 1rem 0; line-height: 1.4; }
+  }
+
+  .divider-config {
+    height: 1px;
+    background-color: $border-color;
+    margin: 1.5rem 0;
+  }
+
+  // Estructuras de Formularios e Inputs
+  .form-group-inline {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    .input-block { flex: 1; }
+  }
+
+  .form-grid-inputs {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    
+    &.spec-user { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  }
+
+  .input-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    label { font-size: 0.8rem; font-weight: 600; color: #475569; text-transform: uppercase; }
+    input {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.9rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      outline: none;
+      color: #334155;
+      &:focus { border-color: $accent-blue; }
+    }
+  }
+
+  // Botones Operativos
+  .btn-config {
+    padding: 0.65rem 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &.save { background-color: $accent-blue; color: white; &:hover { background-color: #2980b9; } }
+    &.password { background-color: $primary-dark; color: white; width: 100%; &:hover { background-color: #1a252f; } }
+    &.cancel { background-color: #e2e8f0; color: #475569; &:hover { background-color: #cbd5e1; } }
+  }
+
+  // Firma Digital Subida
+  .upload-firma-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    .custom-file-upload {
+      border: 2px dashed #cbd5e1;
+      padding: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-block;
+      background-color: $bg-light;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #475569;
+      input[type="file"] { display: none; }
+      &:hover { background-color: #f1f5f9; border-color: #94a3b8; }
+    }
+
+    .badge-firma-ok { background-color: #e8f5e9; color: $success; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+  }
+
+  // Módulo de Lista de Usuarios de Terceros
+  .tabla-usuarios-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid $border-color;
+    border-radius: 6px;
+    padding: 0.25rem;
+
+    .usuario-row-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+      &:hover { background-color: $bg-light; }
+      &.selected { background-color: #e0f2fe; border: 1px solid #7dd3fc; }
+
+      .user-info-text {
+        display: flex;
+        flex-direction: column;
+        .u-name { font-size: 0.9rem; font-weight: 600; color: #334155; }
+        .u-mail { font-size: 0.8rem; color: #64748b; }
+      }
+
+      .badge-rol {
+        background-color: #f1f5f9;
+        color: #475569;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        &.propietario { background-color: #fef3c7; color: #d97706; }
+      }
+    }
+  }
+
+  .panel-edicion-usuario {
+    margin-top: 1.5rem;
+    background-color: #fafafa;
+    border: 1px solid #e2e8f0;
+    padding: 1rem;
+    border-radius: 8px;
+
+    .panel-user-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      h4 { margin: 0; font-size: 0.95rem; color: #334155; .highlight { color: $accent-blue; } }
+      .btn-close-panel { background: none; border: none; font-size: 1rem; cursor: pointer; color: #94a3b8; &:hover { color: $danger; } }
+    }
+
+    .action-buttons-user {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+  }
+
+  .no-user-selected-placeholder {
+    margin-top: 1.5rem;
+    padding: 2rem;
+    text-align: center;
+    border: 2px dashed #f1f5f9;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+  }
+}
+
+// Engancha esto abajo del todo en configuracion.scss
+.tpv-teclado-virtual {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #1e293b;
+  box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-sizing: border-box;
+
+  .teclado-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #f1f5f9;
+    font-size: 0.9rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid #334155;
+
+    strong { color: #38bdf8; }
+
+    .btn-cerrar-teclado {
+      background: #e71010;
+      border: none;
+      color: white;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  }
+
+  .teclado-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .teclado-fila {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    width: 100%;
+
+    button {
+      flex: 1;
+      min-width: 40px;
+      height: 46px;
+      background-color: #334155;
+      color: #ffffff;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s;
+
+      &:active, &:hover {
+        background-color: #475569;
+      }
+    }
+
+    .btn-tecla-borrar {
+      background: #e53e3e;
+      max-width: 150px;
+      &:active, &:hover { background-color: #b91c1c; }
+    }
+
+    &.fila-especial {
+      margin-top: 0.2rem;
+      
+      .btn-tecla-espacio {
+        flex: 3;
+        background-color: #475569;
+      }
+      .btn-tecla-aceptar {
+        flex: 1.5;
+        background-color: #16a34a;
+        border-color: #15803d;
+        &:active, &:hover { background-color: #15803d; }
+      }
+    }
+  }
+}
+
+// Pequeño extra para separar el layout inferior cuando el teclado está desplegado
+.config-panel-container {
+  padding-bottom: 300px; 
+}

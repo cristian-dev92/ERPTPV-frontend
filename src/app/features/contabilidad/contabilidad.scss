@@ -1,98 +1,178 @@
+$primary-dark: #2c3e50;
+$bg-light: #f8f9fa;
+$border-color: #e2e8f0;
+$success: #27ae60;
+$danger: #e74c3c;
+$warning: #f39c12;
+
 .contabilidad-container {
-  padding: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+  padding: 1.5rem;
+  background-color: #ffffff;
+  min-height: 100vh;
 
-.conta-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.filtros-card {
-  background: #f8f9fa;
-  border: 1px solid #e3e6f0;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 25px;
-}
-
-.filtros-grid {
-  display: flex;
-  gap: 20px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.botones-acciones {
-  display: flex;
-  gap: 10px;
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  margin-bottom: 30px;
-}
-
-.kpi-card {
-  background: #ffffff;
-  border-left: 4px solid #4e73df;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  padding: 20px;
-  border-radius: 6px;
-  
-  &.principal { border-left-color: #1cc88a; background: #f0fff4; }
-  &.negativo { border-left-color: #e74a3b; }
-}
-
-.zapatero-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-  background: white;
-  
-  th, td {
-    padding: 12px;
-    border-bottom: 1px solid #eaecf4;
-    text-align: left;
-  }
-  th { background-color: #f8f9fa; font-weight: 600; }
-}
-
-.print-only-header { display: none; }
-
-// ==========================================
-// 🔥 MAGIA PARA EL REPORTE EN PDF (IMPRESIÓN)
-// ==========================================
-@media print {
-  .no-print {
-    display: none !important; // Oculta botones, menús y filtros en el PDF
-  }
-  
-  body, .contabilidad-container {
-    background: white !important;
-    padding: 0 !important;
-    margin: 0 !important;
+  .section-header {
+    margin-bottom: 2rem;
+    h2 { color: $primary-dark; margin: 0; font-size: 1.6rem; font-weight: 700; }
+    p { color: #7f8c8d; margin: 0.3rem 0 0 0; font-size: 0.95rem; }
   }
 
-  .print-only-header {
-    display: block !important; // Muestra la cabecera limpia del PDF
+  // Grid de Métricas (Tarjetas de totales)
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+
+    .kpi-card {
+      background: $bg-light;
+      border: 1px solid $border-color;
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+
+      .kpi-info {
+        .label { font-size: 0.85rem; color: #7f8c8d; text-transform: uppercase; font-weight: 600; }
+        h3 { margin: 0.4rem 0 0 0; font-size: 1.4rem; font-weight: 700; }
+      }
+      .kpi-icon { font-size: 1.8rem; opacity: 0.8; }
+
+      &.ingresos h3 { color: $success; }
+      &.gastos h3 { color: $danger; }
+      &.balance.positivo h3 { color: $success; }
+      &.balance.negativo h3 { color: $danger; }
+    }
+  }
+
+  // Barra de herramientas para filtros y exportaciones
+  .filter-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: #ffffff;
+    border: 1px solid $border-color;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+
+    .filter-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .select-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+
+      label { font-size: 0.8rem; font-weight: 600; color: $primary-dark; text-transform: uppercase; }
+      select {
+        padding: 0.5rem 2rem 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background-color: #fff;
+        color: #334155;
+        cursor: pointer;
+        outline: none;
+        &:focus { border-color: $primary-dark; }
+      }
+
+      &.export-select select {
+        background-color: $primary-dark;
+        color: white;
+        font-weight: 600;
+        border: none;
+      }
+    }
+  }
+
+  // Estilo de Tabla de Datos
+  .table-card {
+    background: white;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    overflow-x: auto;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+
+      th {
+        background-color: #f1f5f9;
+        color: #475569;
+        padding: 0.85rem 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        border-bottom: 2px solid $border-color;
+      }
+
+      td {
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid $border-color;
+        vertical-align: middle;
+      }
+
+      tr:hover td { background-color: #f8fafc; }
+    }
+  }
+
+  // Clases utilitarias y badges de colores
+  .text-right { text-align: right; }
+  .bold { font-weight: 600; }
+  .text-muted { color: #94a3b8; font-size: 0.85rem; }
+  .texto-ingreso { color: $success; }
+  .texto-gasto { color: $danger; }
+
+  .badge-id { background: #e2e8f0; color: #475569; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500; }
+  .badge-metodo { background: #f1f5f9; border: 1px solid #cbd5e1; color: #64748b; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.8rem; }
+  
+  .badge-tipo {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    
+    &.venta, &.anticipo, &.ingreso_manual { background-color: #e8f5e9; color: $success; }
+    &.gasto { background-color: #fde8e8; color: $danger; }
+    &.devolucion { background-color: #fff3cd; color: $warning; }
+  }
+
+  .concepto-cell {
+    display: flex;
+    flex-direction: column;
+    .descripcion { color: #334155; }
+    .ticket-ref { color: #64748b; margin-top: 0.15rem; font-weight: 500; }
+  }
+
+  // Estados vacíos y cargando
+  .table-loading, .table-empty {
+    padding: 3rem;
     text-align: center;
-    margin-bottom: 30px;
+    color: #64748b;
+    p { margin: 0.5rem 0 0 0; font-size: 0.95rem; }
   }
+  .table-empty span { font-size: 2.5rem; }
+}
 
-  .kpi-card {
-    border: 1px solid #ccc !important;
-    box-shadow: none !important;
-    background: transparent !important;
-  }
-
-  .zapatero-table th {
-    background-color: #eee !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+.text-iva {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+.badge-reparaciones {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
 }

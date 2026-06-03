@@ -1,101 +1,124 @@
 <div class="contabilidad-container">
   
-  <header class="conta-header no-print">
-    <div>
-      <h1>💼 Módulo de Contabilidad y Cierre Fiscal</h1>
-      <p>Consulta la facturación, calcula desgloses de IVA y genera PDFs limpios para tu gestoría.</p>
-    </div>
-    <button class="btn-print" (click)="imprimirInforme()">🖨️ Generar PDF / Imprimir</button>
-  </header>
-
-  <section class="filtros-card no-print">
-    <h3>🔍 Filtros de Rango de Fechas</h3>
-    <div class="filtros-grid">
-      <div class="form-group">
-        <label>Desde:</label>
-        <input type="date" [ngModel]="fechaInicio()" (ngModelChange)="fechaInicio.set($event)">
-      </div>
-      <div class="form-group">
-        <label>Hasta:</label>
-        <input type="date" [ngModel]="fechaFin()" (ngModelChange)="fechaFin.set($event)">
-      </div>
-      <div class="botones-acciones">
-        <button class="btn-secondary" (click)="establecerMesActual(); cargarInforme()">📅 Este Mes</button>
-        <button class="btn-secondary" (click)="establecerTrimestreActual(); cargarInforme()">📊 Este Trimestre</button>
-        <button class="btn-primary" (click)="cargarInforme()">⚡ Aplicar Filtro</button>
-      </div>
-    </div>
-  </section>
-
-  <div class="print-only-header">
-    <h2>INFORME CONTABLE DE FACTURACIÓN</h2>
-    <p><strong>Período:</strong> {{ fechaInicio() | date:'dd/MM/yyyy' }} hasta {{ fechaFin() | date:'dd/MM/yyyy' }}</p>
-    <hr>
+  <div class="section-header">
+    <h2>Control de Contabilidad y Libro Mayor</h2>
+    <p>Historial unificado de operaciones, facturas de TPV, gastos y devoluciones del periodo.</p>
   </div>
 
-  @if (datosContables()) {
-    <div class="kpi-grid">
-      <div class="kpi-card principal">
-        <small>TOTAL FACTURADO (Bruto)</small>
-        <h2>{{ datosContables()?.totalFacturado | currency:'EUR' }}</h2>
+  <div class="kpi-grid">
+    <div class="kpi-card ingresos">
+      <div class="kpi-info">
+        <span class="label">Total Ingresos</span>
+        <h3>+ {{ totalIngresos() | currency:'EUR':'symbol':'1.2-2':'es-ES' }}</h3>
       </div>
-      <div class="kpi-card">
-        <small>Cobrado en Efectivo</small>
-        <h3 class="text-success">{{ datosContables()?.totalEfectivo | currency:'EUR' }}</h3>
+      <div class="kpi-icon">📈</div>
+    </div>
+
+    <div class="kpi-card gastos">
+      <div class="kpi-info">
+        <span class="label">Total Gastos / Salidas</span>
+        <h3>- {{ totalGastos() | currency:'EUR':'symbol':'1.2-2':'es-ES' }}</h3>
       </div>
-      <div class="kpi-card">
-        <small>Cobrado en Tarjeta</small>
-        <h3 class="text-info">{{ datosContables()?.totalTarjeta | currency:'EUR' }}</h3>
+      <div class="kpi-icon">📉</div>
+    </div>
+
+    <div class="kpi-card balance" [ngClass]="{'positivo': balanceTotal() >= 0, 'negativo': balanceTotal() < 0}">
+      <div class="kpi-info">
+        <span class="label">Balance Neto</span>
+        <h3>{{ balanceTotal() | currency:'EUR':'symbol':'1.2-2':'es-ES' }}</h3>
       </div>
-      <div class="kpi-card">
-        <small>IVA Estimado (21%)</small>
-        <h3 class="text-warning">{{ datosContables()?.ivaEstimado | currency:'EUR' }}</h3>
+      <div class="kpi-icon">⚖️</div>
+    </div>
+  </div>
+
+  <div class="filter-toolbar">
+    
+    <div class="filter-group">
+      <div class="select-wrapper">
+        <label>Período Contable</label>
+        <select [ngModel]="trimestreSeleccionado()" (ngModelChange)="trimestreSeleccionado.set($event); cargarDatosContables()">
+          <option value="T1">1º Trimestre (Ene - Mar)</option>
+          <option value="T2">2º Trimestre (Abr - Jun)</option>
+          <option value="T3">3º Trimestre (Jul - Sep)</option>
+          <option value="T4">4º Trimestre (Dic - Dic)</option>
+        </select>
       </div>
-      <div class="kpi-card negativo">
-        <small>Total Gastos/Retiros</small>
-        <h3>-{{ datosContables()?.totalGastos | currency:'EUR' }}</h3>
+
+      <div class="select-wrapper">
+        <label>Tipo de Registro</label>
+        <select [ngModel]="tipoFiltroSeleccionado()" (ngModelChange)="tipoFiltroSeleccionado.set($event); cargarDatosContables()">
+          <option value="TODOS">Todos los movimientos</option>
+          <option value="VENTAS">Facturas y Ventas</option>
+          <option value="GASTOS">Gastos Directos</option>
+          <option value="DEVOLUCIONES">Devoluciones de Caja</option>
+        </select>
       </div>
     </div>
 
-    <section class="volumen-section">
-      <h3>📈 Resumen de Operaciones en el Período</h3>
-      <div class="volumen-grid">
-        <div class="vol-item">🛍️ <strong>Ventas Directas Realizadas:</strong> {{ datosContables()?.cantidadVentas }}</div>
-        <div class="vol-item">🛠️ <strong>Órdenes de Taller Procesadas:</strong> {{ datosContables()?.cantidadReparaciones }}</div>
+    <div class="action-group">
+      <div class="select-wrapper export-select">
+        <label>Acciones de Cierre</label>
+        <select (change)="procesarExportacion($any($event.target).value); $any($event.target).value = ''">
+          <option value="" disabled selected hidden>⬇️ Descargar informe...</option>
+          <option value="EXCEL">Exportar a EXCEL (.xlsx)</option>
+          <option value="CSV">Exportar a CSV (Gestorías)</option>
+          <option value="PDF">Descargar Libro Mayor (PDF)</option>
+        </select>
       </div>
-    </section>
+    </div>
 
-    <section class="tabla-section">
-      <h3>📜 Historial Consolidado de Transacciones</h3>
-      <table class="zapatero-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Concepto / Tipo</th>
-            <th>Método</th>
-            <th>Importe</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (m of datosContables()?.movimientos; track m.id) {
-            <tr>
-              <td>{{ m.fechaHora | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td>
-                <span class="tipo-mov text-uppercase">{{ m.tipoMovimiento }}</span>
-                @if (m.descripcion) { <small class="text-muted"> - {{ m.descripcion }}</small> }
-              </td>
-              <td>{{ m.metodoPago || '-' }}</td>
-              <td [ngClass]="{'text-danger': m.tipoMovimiento === 'RETIRO_MANUAL' || m.tipoMovimiento === 'GASTO', 'text-success': m.tipoMovimiento === 'VENTA'}">
-                {{ m.tipoMovimiento === 'RETIRO_MANUAL' || m.tipoMovimiento === 'GASTO' ? '-' : '' }}{{ m.importe | currency:'EUR' }}
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="4" class="text-center">No hay datos contables registrados en el rango seleccionado.</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </section>
-  }
+  </div>
+
+  <div class="table-card">
+    <div *ngIf="cargando()" class="table-loading">
+      <div class="spinner"></div>
+      <p>Sincronizando apuntes contables...</p>
+    </div>
+
+    <div *ngIf="!cargando() && movimientos().length === 0" class="table-empty">
+      <span>📁</span>
+      <p>No se registran movimientos ni transacciones en el periodo seleccionado.</p>
+    </div>
+
+    <table *ngIf="!cargando() && movimientos().length > 0" class="custom-table">
+      <thead>
+        <tr>
+          <th>Fecha / Hora</th>
+          <th>ID Operación</th>
+          <th>Tipo</th>
+          <th>Método</th>
+          <th>Concepto / Referencia</th>
+          <th class="text-right">Importe</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let mov of movimientos()">
+          <td class="text-muted">{{ mov.fechaHora | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td><span class="badge-id">#{{ mov.id }}</span></td>
+          <td>
+            <span class="badge-tipo" [ngClass]="mov.tipoMovimiento.toLowerCase()">
+              {{ mov.tipoMovimiento }}
+            </span>
+          </td>
+          <td><span class="badge-metodo">{{ mov.metodoPago }}</span></td>
+          <td>
+            <div class="concepto-cell">
+              <span class="descripcion">{{ mov.descripcion }}</span>
+              <small *ngIf="mov.numeroTicketAsociado" class="ticket-ref">
+                Ref: {{ mov.numeroTicketAsociado }}
+              </small>
+            </div>
+          </td>
+          <td class="text-right bold" [ngClass]="{
+            'texto-ingreso': ['VENTA','ANTICIPO','INGRESO_MANUAL'].includes(mov.tipoMovimiento), 
+            'texto-gasto': ['GASTO','DEVOLUCION'].includes(mov.tipoMovimiento)
+          }">
+            {{ ['GASTO','DEVOLUCION'].includes(mov.tipoMovimiento) ? '-' : '+' }}
+            {{ mov.importe | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
 </div>

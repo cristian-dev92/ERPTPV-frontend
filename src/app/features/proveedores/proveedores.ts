@@ -49,7 +49,9 @@ export class ProveedoresComponent implements OnInit {
     return this.proveedores().filter(p => 
       p.nombre.toLowerCase().includes(filtro) ||
       (p.cif && p.cif.toLowerCase().includes(filtro)) ||
-      (p.telefono && p.telefono.includes(filtro))
+      (p.telefono && p.telefono.includes(filtro)) ||
+      (p.emailPedidos && p.emailPedidos.toLowerCase().includes(filtro)) ||
+      (p.direccion && p.direccion.toLowerCase().includes(filtro))
     );
   });
 
