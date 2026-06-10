@@ -1,0 +1,90 @@
+$sidebar-width: 260px;
+$sidebar-collapsed-width: 70px;
+$header-height: 60px;
+$bg-dark: #0f172a;
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+
+  // Sidebar
+  .sidebar {
+    width: $sidebar-width;
+    background-color: $bg-dark;
+    color: #94a3b8;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+    fixed: left;
+
+    .sidebar-brand {
+      height: $header-height;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      border-bottom: 1px solid #1e293b;
+      .logo-text { color: white; font-weight: 700; font-size: 1.1rem; }
+    }
+
+    .sidebar-menu {
+      padding: 1rem 0;
+      ul { list-style: none; padding: 0; margin: 0; }
+      .menu-link {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: #94a3b8;
+        text-decoration: none;
+        gap: 12px;
+        transition: all 0.2s;
+        border-left: 4px solid transparent;
+
+        &:hover, &.active {
+          color: white;
+          background: #1e293b;
+        }
+        &.active { border-left-color: #3b82f6; }
+      }
+    }
+  }
+
+  // Contenido de la derecha
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; // Evita desbordamiento de tablas
+
+    .top-header {
+      height: $header-height;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+
+      .btn-toggle {
+        background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #475569;
+      }
+      .header-user {
+        display: flex; align-items: center; gap: 8px;
+        .user-badge { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+        .user-name { font-weight: 600; color: #334155; font-size: 0.9rem; }
+      }
+    }
+
+    .page-body {
+      padding: 0; // Dejamos que el contenedor de cada componente maneje su padding
+      flex: 1;
+      overflow-y: auto;
+    }
+  }
+
+  // Estado colapsado
+  &.sidebar-closed {
+    .sidebar { width: $sidebar-collapsed-width; }
+  }
+}

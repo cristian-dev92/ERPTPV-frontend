@@ -1,0 +1,129 @@
+<div class="superadmin-container">
+  <header class="sa-header">
+    <div>
+      <h1>Panel de Control de SuperAdmin</h1>
+      <p>Gestión global de inquilinos SaaS, monitorización fiscal y control de accesos.</p>
+    </div>
+    <button class="btn-alta" (click)="mostrarModalAlta.set(true)">
+      <span class="icon">➕</span> Alta Rápida de Empresa
+    </button>
+  </header>
+
+  <hr class="divisor" />
+
+  <div *ngIf="loading()" class="loading-state">
+    <div class="spinner"></div>
+    <p>Sincronizando estado de empresas con Hacienda...</p>
+  </div>
+
+  <div *ngIf="!loading()" class="table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre Comercial</th>
+          <th>NIF / CIF</th>
+          <th>Estado VeriFactu</th>
+          <th>Estado Empresa</th>
+          <th>Acciones de Rescate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of empresas()">
+          <td><strong>#{{ emp.id }}</strong></td>
+          <td>{{ emp.nombre }}</td>
+          <td><code>{{ emp.nif }}</code></td>
+          
+          <td>
+            <span class="badge-semaforo" [ngClass]="emp.verifactuOk ? 'ok' : 'broken'">
+              {{ emp.verifactuOk ? '🟢 INTEGRACIÓN OK' : '🔴 FALLO INTEGRACIÓN' }}
+            </span>
+          </td>
+
+          <td>
+            <button class="btn-panic" [ngClass]="emp.activa ? 'active' : 'suspended'" (click)="alternarEstado(emp.id)">
+              {{ emp.activa ? '🔓 ACTIVA (Bloquear)' : '🔒 SUSPENDIDA (Activar)' }}
+            </button>
+          </td>
+
+          <td>
+            <div class="action-bundle">
+              <button class="btn-action-tool type-email" (click)="cambiarEmail(emp.id, '')" title="Modificar Email de Acceso">
+                📧 Cambiar Email
+              </button>
+              <button class="btn-action-tool type-key" (click)="resetearClave(emp.id)" title="Generar Clave Temporal">
+                🔑 Reset Clave
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal-backdrop-blur-sa" *ngIf="mostrarModalReset()">
+    <div class="modal-sheet-sa text-center">
+      <div class="modal-header-sa text-danger">⚠️ Nueva Clave Maestro Generada</div>
+      <div class="modal-body-sa">
+        <p>Copia y entrégale la siguiente clave temporal de acceso al dueño de la empresa:</p>
+        <div class="key-viewer">{{ passwordTemporalGenerada() }}</div>
+        <p class="text-small">El usuario debería cambiarla inmediatamente desde su pestaña de Perfil.</p>
+      </div>
+      <button class="btn-close-sa success" (click)="mostrarModalReset.set(false)">He copiado la clave</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop-blur-sa" *ngIf="mostrarModalAlta()">
+    <div class="modal-sheet-sa large">
+      <div class="modal-header-sa">🏢 Crear Nuevo Inquilino SaaS</div>
+      <form (ngSubmit)="ejecutarAlta()" #altaForm="ngForm" class="sa-form">
+        <div class="form-grid">
+          <div>
+            <h3>Datos de la Empresa</h3>
+            <div class="field">
+              <label>Nombre Comercial</label>
+              <input type="text" [(ngModel)]="nuevaEmpresa.nombreComercial" name="nombre" required />
+            </div>
+            <div class="field">
+              <label>NIF / CIF</label>
+              <input type="text" [(ngModel)]="nuevaEmpresa.cif" name="cif" required />
+            </div>
+            <div class="field">
+              <label>Dirección</label>
+              <input type="text" [(ngModel)]="nuevaEmpresa.direccion" name="direccion" required />
+            </div>
+            <div class="field">
+              <label>Ciudad</label>
+              <input type="text" [(ngModel)]="nuevaEmpresa.ciudad" name="ciudad" required />
+            </div>
+          </div>
+
+          <div>
+            <h3>Credenciales del Dueño (Admin)</h3>
+            <div class="field">
+              <label>Nombre Completo</label>
+              <input type="text" [(ngModel)]="nuevaEmpresa.nombreAdmin" name="nombreAd" required />
+            </div>
+            <div class="field">
+              <label>Email Corporativo</label>
+              <input type="email" [(ngModel)]="nuevaEmpresa.emailAdmin" name="emailAd" required />
+            </div>
+            <div class="field">
+              <label>Contraseña Inicial</label>
+              <input type="password" [(ngModel)]="nuevaEmpresa.passwordAdmin" name="passAd" required />
+            </div>
+            <div class="field">
+              <label>Teléfono de Contacto</label>
+              <input type="text" [(ngModel)]="nuevaEmpresa.telefono" name="telefono" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-close-sa cancel" (click)="mostrarModalAlta.set(false)">Cancelar</button>
+          <button type="submit" class="btn-close-sa success" [disabled]="!altaForm.valid">Guardar e Inyectar Inquilino</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

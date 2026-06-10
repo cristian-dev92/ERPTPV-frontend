@@ -23,6 +23,9 @@ export class AuthService {
   // Nueva Signal para el nombre (leemos del localStorage si ya existía)
   usuarioNombre = signal<string | null>(localStorage.getItem('nombre_zapatero'));
 
+  //Definir roles
+  getRolActual: any
+
   /**
    * Intenta iniciar sesión con las credenciales proporcionadas.
    */
@@ -59,4 +62,5 @@ export class AuthService {
   private hasToken(): boolean {
     return !!localStorage.getItem('token_zapatero');
   }
+
 }
