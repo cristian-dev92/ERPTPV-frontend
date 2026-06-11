@@ -9,6 +9,7 @@ $accent-blue: #3498db;
   padding: 1.5rem;
   background-color: #ffffff;
   min-height: 100vh;
+  padding-bottom: 320px;
 
   .config-header {
     margin-bottom: 2rem;
@@ -34,6 +35,17 @@ $accent-blue: #3498db;
       margin-bottom: 1.5rem;
       h3 { margin: 0; color: $primary-dark; font-size: 1.25rem; font-weight: 700; }
       span { color: #94a3b8; font-size: 0.85rem; }
+
+      &.card-title-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+
+    .btn-alta-toggle {
+      background-color: #27ae60;
+      &:hover { background-color: #219653; }
     }
   }
 
@@ -48,36 +60,40 @@ $accent-blue: #3498db;
     margin: 1.5rem 0;
   }
 
-  // Estructuras de Formularios e Inputs
-  .form-group-inline {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-end;
-    .input-block { flex: 1; }
-  }
-
   .form-grid-inputs {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1rem;
     margin-bottom: 1.25rem;
-    
-    &.spec-user { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+    &.form-alta-inputs {
+      grid-template-columns: 1fr;
+      margin-top: 1rem;
+    }
   }
 
   .input-block {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
+    
     label { font-size: 0.8rem; font-weight: 600; color: #475569; text-transform: uppercase; }
-    input {
+    
+    input, select {
       padding: 0.6rem 0.75rem;
       font-size: 0.9rem;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
       outline: none;
       color: #334155;
+      background-color: #ffffff;
+      font-family: inherit;
       &:focus { border-color: $accent-blue; }
+    }
+
+    select {
+      cursor: pointer;
+      height: 38px;
     }
   }
 
@@ -96,12 +112,12 @@ $accent-blue: #3498db;
     &.cancel { background-color: #e2e8f0; color: #475569; &:hover { background-color: #cbd5e1; } }
   }
 
-  // Firma Digital Subida
+  // Identidad Corporativa y Multimedia
   .upload-firma-area {
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+    flex-direction: column;
 
     .custom-file-upload {
       border: 2px dashed #cbd5e1;
@@ -113,14 +129,38 @@ $accent-blue: #3498db;
       font-size: 0.85rem;
       font-weight: 600;
       color: #475569;
+      transition: all 0.2s;
+      
       input[type="file"] { display: none; }
       &:hover { background-color: #f1f5f9; border-color: #94a3b8; }
+
+      &.btn-upload-logo {
+        border-color: #3498db;
+        span { color: #2980b9; }
+      }
     }
 
-    .badge-firma-ok { background-color: #e8f5e9; color: $success; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+    .badge-firma-ok { 
+      background-color: #e8f5e9; 
+      color: $success; 
+      padding: 0.4rem 0.75rem; 
+      border-radius: 4px; 
+      font-size: 0.8rem; 
+      font-weight: 600; 
+      display: inline-flex;
+      align-items: center;
+
+      &.badge-logo-ok {
+        background-color: #e3f2fd;
+        color: #1e88e5;
+      }
+    }
   }
 
-  // Módulo de Lista de Usuarios de Terceros
+  .usuarios-list-wrapper {
+    h4 { margin: 0 0 0.75rem 0; font-size: 1rem; color: #334155; font-weight: 600; }
+  }
+
   .tabla-usuarios-mini {
     display: flex;
     flex-direction: column;
@@ -130,6 +170,7 @@ $accent-blue: #3498db;
     border: 1px solid $border-color;
     border-radius: 6px;
     padding: 0.25rem;
+    background-color: $bg-light;
 
     .usuario-row-item {
       display: flex;
@@ -138,9 +179,12 @@ $accent-blue: #3498db;
       padding: 0.65rem 0.85rem;
       border-radius: 4px;
       cursor: pointer;
-      transition: background 0.15s;
-      &:hover { background-color: $bg-light; }
-      &.selected { background-color: #e0f2fe; border: 1px solid #7dd3fc; }
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      background-color: #ffffff;
+      
+      &:hover { background-color: #f1f5f9; }
+      &.selected { background-color: #e0f2fe; border-color: #7dd3fc; }
 
       .user-info-text {
         display: flex;
@@ -156,32 +200,80 @@ $accent-blue: #3498db;
         font-weight: 700;
         padding: 0.2rem 0.4rem;
         border-radius: 4px;
+        text-transform: uppercase;
         &.propietario { background-color: #fef3c7; color: #d97706; }
       }
     }
   }
 
+  // Paneles Dinámicos
   .panel-edicion-usuario {
     margin-top: 1.5rem;
     background-color: #fafafa;
     border: 1px solid #e2e8f0;
-    padding: 1rem;
+    padding: 1.25rem;
     border-radius: 8px;
+    h4 { margin: 0; font-size: 1rem; color: #334155; font-weight: 600; }
+
+    &.panel-inspeccion {
+      border-left: 4px solid #3498db;
+    }
+
+    &.panel-alta-wrapper {
+      margin-top: 0;
+      background-color: #ffffff;
+    }
 
     .panel-user-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1rem;
-      h4 { margin: 0; font-size: 0.95rem; color: #334155; .highlight { color: $accent-blue; } }
+      h4 { font-size: 0.95rem; .highlight { color: $accent-blue; font-weight: 700; } }
       .btn-close-panel { background: none; border: none; font-size: 1rem; cursor: pointer; color: #94a3b8; &:hover { color: $danger; } }
     }
 
-    .action-buttons-user {
+    .user-details-box {
+      margin-bottom: 1.25rem;
+      font-size: 0.9rem;
+      color: #475569;
+      p { margin: 0.3rem 0; }
+    }
+
+    .alerta-password-temporal {
+      background-color: #fef3c7;
+      border: 1px solid #f59e0b;
+      padding: 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 1.25rem;
+      text-align: center;
+
+      .alerta-titulo { margin: 0; font-size: 0.85rem; color: #b45309; font-weight: 600; }
+      .alerta-clave { font-family: monospace; font-size: 1.3rem; font-weight: 700; color: #78350f; letter-spacing: 2px; }
+      .alerta-sub { margin: 0.3rem 0 0 0; font-size: 0.75rem; color: #b45309; }
+    }
+
+    .panel-acciones-flex {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-start;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+
+      .btn-reset-pass { background-color: #f39c12; flex: 1; min-width: 160px; color: white; &:hover { background-color: #d35400; } }
+      .btn-baja-user { background-color: #e74c3c; color: white; flex: 1; min-width: 130px; &:hover { background-color: #c0392b; } }
+    }
+
+    .form-alta-acciones {
       display: flex;
       justify-content: flex-end;
       gap: 0.75rem;
-      margin-top: 1rem;
+      margin-top: 1.5rem;
+      
+      .btn-guardar-alta {
+        background-color: #27ae60;
+        &:hover { background-color: #219653; }
+      }
     }
   }
 
@@ -193,10 +285,11 @@ $accent-blue: #3498db;
     border-radius: 8px;
     color: #94a3b8;
     font-size: 0.85rem;
+    line-height: 1.4;
   }
 }
 
-// Engancha esto abajo del todo en configuracion.scss
+// Módulo del Teclado Virtual Táctil TPV
 .tpv-teclado-virtual {
   position: fixed;
   bottom: 0;
@@ -220,17 +313,19 @@ $accent-blue: #3498db;
     padding-bottom: 0.4rem;
     border-bottom: 1px solid #334155;
 
-    strong { color: #38bdf8; }
+    strong { color: #38bdf8; text-transform: uppercase; }
 
     .btn-cerrar-teclado {
-      background: #e71010;
+      background: #e74c3c;
       border: none;
       color: white;
       padding: 0.3rem 0.75rem;
       border-radius: 4px;
-      font-size: 1.5rem;
+      font-size: 1.1rem;
       font-weight: 700;
       cursor: pointer;
+      transition: background 0.15s;
+      &:hover { background-color: #c0392b; }
     }
   }
 
@@ -289,9 +384,4 @@ $accent-blue: #3498db;
       }
     }
   }
-}
-
-// Pequeño extra para separar el layout inferior cuando el teclado está desplegado
-.config-panel-container {
-  padding-bottom: 300px; 
 }

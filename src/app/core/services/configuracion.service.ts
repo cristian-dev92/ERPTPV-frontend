@@ -40,19 +40,22 @@ export class ConfiguracionService {
   // =========================================================================
 
   actualizarDatosEmpresa(datos: any): Observable<any> {
-    return this.http.put(`${this.baseUrl}/api/admin/empresa`, datos);
+    return this.http.put(`${this.baseUrl}/admin/empresa`, datos);
   }
 
   listarEmpleados(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/api/admin/empleados`);
+    return this.http.get<any[]>(`${this.baseUrl}/admin/empleados`);
   }
 
   crearEmpleado(empleado: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/admin/empleados`, empleado);
+    return this.http.post(`${this.baseUrl}/admin/empleados`, empleado);
   }
 
   resetearPasswordEmpleado(empleadoId: number): Observable<any> {
-    return this.http.patch(`${this.baseUrl}/api/admin/empleados/${empleadoId}/reset-password`, {});
+    // LLama a @PatchMapping("/empleados/{id}/reset-password") -> /api/admin/empleados/{id}/reset-password
+    return this.http.patch<{ mensaje: string, passwordTemporal: string }>(
+      `${this.baseUrl}/admin/empleados/${empleadoId}/reset-password`, {}
+    );
   }
 
   // =========================================================================
@@ -60,16 +63,16 @@ export class ConfiguracionService {
   // =========================================================================
 
   cambiarMiPassword(payload: any): Observable<any> {
-    return this.http.put(`${this.baseUrl}/api/perfil/password`, payload);
+    return this.http.put(`${this.baseUrl}/perfil/password`, payload);
   }
 
   guardarMiFirma(firmaUrl: string): Observable<any> {
-    return this.http.put(`${this.baseUrl}/api/perfil/firma`, { firmaUrl });
+    return this.http.put(`${this.baseUrl}/perfil/firma`, { firmaUrl });
   }
 
   subirArchivo(file: File, tipo: 'logo' | 'firma'): Observable<{ url: string }> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<{ url: string }>(`${this.baseUrl}/api/upload/${tipo}`, formData);
+    return this.http.post<{ url: string }>(`${this.baseUrl}/upload/${tipo}`, formData);
   }
 }

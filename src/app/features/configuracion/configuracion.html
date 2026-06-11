@@ -14,23 +14,6 @@
       </div>
 
       <div class="sub-section-form">
-        <h4>Modificación de Credenciales</h4>
-        <div class="form-group-inline">
-          <div class="input-block">
-            <label>Email de acceso actual</label>
-            <input type="email" 
-                   [value]="inputActivo() === 'inputEmail' ? textoEmailTmp : inputEmail"
-                   (click)="activarTeclado('inputEmail')"
-                   (input)="inputEmail = $any($event.target).value; textoEmailTmp = $any($event.target).value"
-                   placeholder="ejemplo@correo.com">
-          </div>
-          <button class="btn-config save" (click)="guardarCredencialesPropias()">Actualizar Email</button>
-        </div>
-      </div>
-
-      <div class="divider-config"></div>
-
-      <div class="sub-section-form">
         <h4>Solicitar Cambio de Contraseña</h4>
         <div class="form-grid-inputs">
           <div class="input-block">
@@ -38,7 +21,6 @@
             <input type="password" 
                    [value]="inputActivo() === 'passActual' ? textoPassActualTmp : passActual"
                    (click)="activarTeclado('passActual')"
-                   (input)="passActual = $any($event.target).value; textoPassActualTmp = $any($event.target).value"
                    placeholder="••••••••">
           </div>
           <div class="input-block">
@@ -46,7 +28,6 @@
             <input type="password" 
                    [value]="inputActivo() === 'nuevaPass' ? textoNuevaPassTmp : nuevaPass"
                    (click)="activarTeclado('nuevaPass')"
-                   (input)="nuevaPass = $any($event.target).value; textoNuevaPassTmp = $any($event.target).value"
                    placeholder="Mínimo 8 caracteres">
           </div>
           <div class="input-block">
@@ -54,87 +35,149 @@
             <input type="password" 
                    [value]="inputActivo() === 'confirmarPass' ? textoConfirmarPassTmp : confirmarPass"
                    (click)="activarTeclado('confirmarPass')"
-                   (input)="confirmarPass = $any($event.target).value; textoConfirmarPassTmp = $any($event.target).value"
                    placeholder="Repite la contraseña">
           </div>
         </div>
-        <button class="btn-config password" (click)="solicitarCambioPassword()">Cambiar Mi Contraseña</button>
+        <button class="btn-config password" [disabled]="loading()" (click)="solicitarCambioPassword()">Cambiar Mi Contraseña</button>
       </div>
 
       <div class="divider-config"></div>
 
       <div class="sub-section-form">
-        <h4>Firma Digital del Propietario</h4>
-        <p class="info-text-sec">Esta firma se estampará automáticamente en los informes de cierre de caja, hojas de reclamaciones y vales de taller de calzado.</p>
+        <h4>Identidad Corporativa y Multimedia</h4>
+        <p class="info-text-sec">Configura los elementos visuales que se estamparán en facturas y tickets térmicos de 80mm.</p>
         
         <div class="upload-firma-area">
-          <label class="custom-file-upload">
+          <label class="custom-file-upload btn-upload-firma">
             <input type="file" (change)="onFirmaSeleccionada($event)" accept="image/png, image/jpeg">
-            <span>🖋️ Seleccionar Imagen de Firma (PNG/JPG)</span>
+            <span>🖋️ Subir Imagen de Firma (PNG/JPG)</span>
           </label>
           @if (nombreFirmaCargada()) {
-            <span class="badge-firma-ok">✓ Archivo: {{ nombreFirmaCargada() }}</span>
+            <span class="badge-firma-ok">✓ Firma: {{ nombreFirmaCargada() }}</span>
+          }
+
+          <label class="custom-file-upload btn-upload-logo">
+            <input type="file" (change)="onLogoSeleccionado($event)" accept="image/png, image/jpeg">
+            <span>👞 Subir Logotipo de la Tienda</span>
+          </label>
+          @if (nombreLogoCargado()) {
+            <span class="badge-firma-ok badge-logo-ok">✓ Logo: {{ nombreLogoCargado() }}</span>
           }
         </div>
       </div>
     </div>
 
     <div class="config-card">
-      <div class="card-section-title">
-        <h3>👥 Gestión de Usuarios de Empresa</h3>
-        <span>Control de accesos para dependientes y operarios de taller</span>
+      <div class="card-section-title card-title-flex">
+        <div>
+          <h3>👥 Gestión de Usuarios de Empresa</h3>
+          <span>Control de accesos para dependientes y operarios</span>
+        </div>
+        <button class="btn-config save btn-alta-toggle" (click)="usuarioSeleccionado.set(null); mostrarFormularioNuevo.set(!mostrarFormularioNuevo())">
+          {{ mostrarFormularioNuevo() ? 'Ver Lista' : '➕ Nuevo' }}
+        </button>
       </div>
 
-      <div class="usuarios-list-wrapper">
-        <h4>Lista de Personal Autorizado</h4>
-        <div class="tabla-usuarios-mini">
-          @for (user of usuariosEmpresa(); track user.id) {
-            <div class="usuario-row-item" [class.selected]="usuarioSeleccionado()?.id === user.id" (click)="seleccionarUsuario(user)">
-              <div class="user-info-text">
-                <span class="u-name">{{ user.nombre }}</span>
-                <span class="u-mail">{{ user.email }}</span>
+      @if (!mostrarFormularioNuevo()) {
+        <div class="usuarios-list-wrapper">
+          <h4>Lista de Personal Autorizado</h4>
+          <div class="tabla-usuarios-mini">
+            @for (user of usuariosEmpresa(); track user.id) {
+              <div class="usuario-row-item" [class.selected]="usuarioSeleccionado()?.id === user.id" (click)="seleccionarUsuario(user)">
+                <div class="user-info-text">
+                  <span class="u-name">{{ user.nombre }}</span>
+                  <span class="u-mail">{{ user.email }}</span>
+                </div>
+                <span class="badge-rol" [class.propietario]="user.rol === 'ADMIN'">{{ user.rol }}</span>
               </div>
-              <span class="badge-rol" [class.propietario]="user.rol === 'PROPIETARIO'">{{ user.rol }}</span>
-            </div>
-          }
-        </div>
-      </div>
-
-      @if (usuarioSeleccionado()) {
-        <div class="panel-edicion-usuario shadow-inner">
-          <div class="panel-user-header">
-            <h4>Modificar Operario: <span class="highlight">{{ usuarioSeleccionado().nombre }}</span></h4>
-            <button class="btn-close-panel" (click)="usuarioSeleccionado.set(null)">✕</button>
+            }
           </div>
+        </div>
 
-          <div class="form-grid-inputs spec-user">
+        @if (usuarioSeleccionado()) {
+          <div class="panel-edicion-usuario panel-inspeccion">
+            <div class="panel-user-header">
+              <h4>Ficha del Operario: <span class="highlight">{{ usuarioSeleccionado().nombre.toUpperCase() }}</span></h4>
+              <button class="btn-close-panel" (click)="usuarioSeleccionado.set(null)">✕</button>
+            </div>
+            
+            <div class="user-details-box">
+              <p><strong>📧 Correo Electrónico:</strong> {{ usuarioSeleccionado().email }}</p>
+              <p><strong>🔑 Rol de Acceso:</strong> <span class="badge-rol" [class.propietario]="usuarioSeleccionado().rol === 'ADMIN'">{{ usuarioSeleccionado().rol }}</span></p>
+            </div>
+
+            @if (nuevaPassUsuario) {
+              <div class="alerta-password-temporal">
+                <p class="alerta-titulo">⚠️ Nueva clave temporal generada:</p>
+                <span class="alerta-clave">{{ nuevaPassUsuario }}</span>
+                <p class="alerta-sub">Apúntala o dásela al operario para que pueda iniciar sesión.</p>
+              </div>
+            }
+
+            <p class="info-text-sec">Selecciona una de las acciones administrativas para este usuario:</p>
+            
+            <div class="action-buttons-user panel-acciones-flex">
+              <button class="btn-config btn-reset-pass" [disabled]="loading()" (click)="ejecutarResetPasswordEmpleado()">
+                🔄 Generar Nueva Clave
+              </button>
+              <button class="btn-config btn-baja-user" (click)="darDeBajaEmpleado()">
+                🗑️ Dar de Baja
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="no-user-selected-placeholder">
+            <p>Selecciona un usuario de la lista superior para inspeccionar sus datos de acceso.</p>
+          </div>
+        }
+      }
+
+      @if (mostrarFormularioNuevo()) {
+        <div class="panel-edicion-usuario panel-alta-wrapper">
+          <h4>Dar de alta nuevo trabajador en la zapatería</h4>
+          <div class="form-grid-inputs form-alta-inputs">
+            
             <div class="input-block">
-              <label>Modificar Email de Entrada</label>
+              <label>Nombre Completo</label>
+              <input type="text" 
+                     [value]="inputActivo() === 'nuevoEmpNombre' ? textoNuevoEmpNombreTmp : nuevoEmpleado.nombre"
+                     (click)="activarTeclado('nuevoEmpNombre')"
+                     placeholder="Ej: Juan Pérez">
+            </div>
+
+            <div class="input-block">
+              <label>Email de acceso corporativo</label>
               <input type="email" 
-                     [value]="inputActivo() === 'nuevoEmailUsuario' ? textoUserEmailTmp : nuevoEmailUsuario"
-                     (click)="activarTeclado('nuevoEmailUsuario')"
-                     (input)="nuevoEmailUsuario = $any($event.target).value; textoUserEmailTmp = $any($event.target).value">
+                     [value]="inputActivo() === 'nuevoEmpEmail' ? textoNuevoEmpEmailTmp : nuevoEmpleado.email"
+                     (click)="activarTeclado('nuevoEmpEmail')"
+                     placeholder="juan@zapateria.com">
             </div>
+
             <div class="input-block">
-              <label>Resetear Contraseña</label>
+              <label>Contraseña de Entrada Inicial</label>
               <input type="password" 
-                     [value]="inputActivo() === 'nuevaPassUsuario' ? textoUserPassTmp : nuevaPassUsuario"
-                     (click)="activarTeclado('nuevaPassUsuario')"
-                     (input)="nuevaPassUsuario = $any($event.target).value; textoUserPassTmp = $any($event.target).value"
-                     placeholder="Escribe nueva clave">
+                     [value]="inputActivo() === 'nuevoEmpPass' ? textoNuevoEmpPassTmp : nuevoEmpleado.password"
+                     (click)="activarTeclado('nuevoEmpPass')"
+                     placeholder="Mínimo 6 caracteres">
             </div>
+
+            <div class="input-block">
+              <label>Rol / Permisos en Tienda</label>
+              <select [(ngModel)]="nuevoEmpleado.rol">
+                <option value="EMPLEADO">EMPLEADO (Ventas/Caja)</option>
+                <option value="ADMIN">ADMINISTRADOR (Acceso Total)</option>
+              </select>
+            </div>
+
           </div>
 
-          <div class="action-buttons-user">
-            <button class="btn-config cancel" (click)="usuarioSeleccionado.set(null)">Cancelar</button>
-            <button class="btn-config save" (click)="guardarCambiosUsuario()">Guardar Credenciales de Usuario</button>
+          <div class="action-buttons-user form-alta-acciones">
+            <button class="btn-config cancel" (click)="mostrarFormularioNuevo.set(false)">Cancelar</button>
+            <button class="btn-config save btn-guardar-alta" [disabled]="loading()" (click)="crearNuevoOperario()">Guardar Alta</button>
           </div>
-        </div>
-      } @else {
-        <div class="no-user-selected-placeholder">
-          <p>Selecciona un usuario de la lista superior para resetear su clave o modificar su email de acceso.</p>
         </div>
       }
+
     </div>
 
   </div>

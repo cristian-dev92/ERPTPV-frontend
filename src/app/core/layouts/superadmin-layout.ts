@@ -1,6 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import { UiService } from '../services/ui.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -10,6 +12,8 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
   styleUrls: ['./superadmin-layout.scss']
 })
 export class SuperAdminLayoutComponent {
+  private authService = inject(AuthService);
+  private uiService = inject(UiService)
   // Signal para controlar si el menú lateral está compacto o expandido
   sidebarColapsado = signal<boolean>(false);
 
@@ -23,4 +27,13 @@ export class SuperAdminLayoutComponent {
   alternarSidebar() {
     this.sidebarColapsado.update(estado => !estado);
   }
+
+  ejecutarLogout() {
+    // Lanzamos el toast de aviso justo antes de limpiar el estado
+    this.uiService.mostrarToast('Sesión de SuperAdmin cerrada correctamente', 'success');
+    
+    // Ejecutamos la limpieza y la redirección al login
+    this.authService.logout();
+  }
+  
 }

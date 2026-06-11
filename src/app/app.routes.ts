@@ -17,6 +17,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/superadmin/gestion-empresas').then(m => m.GestionEmpresasComponent)
       },
       {
+        path: 'metricas',
+        loadComponent: () => import('./features/superadmin/gestion-empresas').then(m => m.GestionEmpresasComponent) // Temporal
+      },
+      {
+        path: 'config',
+        loadComponent: () => import('./features/superadmin/gestion-empresas').then(m => m.GestionEmpresasComponent) // Temporal
+      },
+      {
         path: '',
         redirectTo: 'empresas',
         pathMatch: 'full'

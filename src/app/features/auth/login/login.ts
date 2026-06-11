@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { Router } from '@angular/router';
+import { UiService } from '../../../core/services/ui.service';
 
 @Component({
   selector: 'app-login',
@@ -14,6 +15,7 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private uiService = inject(UiService);
 
   // Signal para gestionar mensajes de error de forma reactiva (Angular 21 style)
   errorMessage = signal<string | null>(null);
@@ -33,14 +35,23 @@ export class LoginComponent {
       
       this.authService.login(credentials).subscribe({
         next: () => {
-          // Si todo va bien, vamos al inventario (o al dashboard)
-          this.router.navigate(['/inventario']);
+        this.uiService.mostrarToast(`¡Bienvenido de nuevo, ${this.authService.usuarioNombre()}!`, 'success');
+        // Desviamos según el rol
+        const rol = this.authService.getRolActual();
+          if (rol === 'ROLE_SUPER_ADMIN') {
+            this.router.navigate(['/superadmin']);
+          } else if (rol === 'ROLE_ADMIN') {
+            this.router.navigate(['/ventas']);
+          }
         },
-        error: (err) => {
-          // Si el backend devuelve 400 o 401, mostramos el error
-          this.errorMessage.set('Credenciales incorrectas o error de servidor');
+        error: (err: any) => {
+          // Extraemos el mensaje del backend si existe, si no, ponemos el de por defecto
+          const mensajeError = err.error?.mensaje || 'Credenciales incorrectas o error de servidor';
+          // (Ajusta el método según cómo se llame en tu servicio: mostrarError, error, toast...)
+          this.uiService.mostrarToast(mensajeError, 'error');
         }
       });
+     }
     }
-  }
+  
 }

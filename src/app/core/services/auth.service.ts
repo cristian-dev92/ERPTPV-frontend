@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { AuthResponse, LoginRequest } from '../models/auth.model';
 import { Router } from '@angular/router';
+import { jwtDecode } from 'jwt-decode';
 
 @Injectable({
   providedIn: 'root'
@@ -14,17 +15,29 @@ export class AuthService {
   // URL base para autenticación (Ajustar según Swagger si es distinta)
   private readonly API_URL = '/api/auth';
 
-  /**
-   * Signal que guarda si el usuario está logueado. 
-   * En Angular 21, esto permite que la UI reaccione instantáneamente.
-   */
+  // --- SIGNALS DE ESTADO GLOBAL ---
   isAuthenticated = signal<boolean>(this.hasToken());
 
   // Nueva Signal para el nombre (leemos del localStorage si ya existía)
   usuarioNombre = signal<string | null>(localStorage.getItem('nombre_zapatero'));
 
-  //Definir roles
-  getRolActual: any
+  // Signal reactiva con el rol actual
+  rolActual = signal<string | null>(null);
+
+  constructor() {
+    // Sincronizamos el rol nada más arrancar la app por si ya estaba logueado
+    this.sincronizarRolDesdeToken();
+  }
+
+  /**
+   * 🔒 Devuelve el rol actual del usuario logueado (Usado por el RoleGuard)
+   */
+  getRolActual(): string | null {
+    if (this.rolActual()) {
+      return this.rolActual();
+    }
+    return this.obtenerRolDesdeToken();
+  }
 
   /**
    * Intenta iniciar sesión con las credenciales proporcionadas.
@@ -41,6 +54,8 @@ export class AuthService {
         this.isAuthenticated.set(true);
         // ACTUALIZAMOS LA SIGNAL
         this.usuarioNombre.set(response.nombre);
+        // Extrae el rol del nuevo token recién guardado
+        this.sincronizarRolDesdeToken();
       })
     );
   }
@@ -53,6 +68,7 @@ export class AuthService {
     localStorage.removeItem('nombre_zapatero'); // LIMPIAMOS EL NOMBRE
     this.isAuthenticated.set(false);
     this.usuarioNombre.set(null); // RESETEAMOS LA SIGNAL
+    this.rolActual.set(null); // Limpiamos el rol
     this.router.navigate(['/login']);
   }
 
@@ -61,6 +77,44 @@ export class AuthService {
    */
   private hasToken(): boolean {
     return !!localStorage.getItem('token_zapatero');
+  }
+
+  /**
+   * Método privado para decodificar de forma segura el JWT
+   */
+  private obtenerRolDesdeToken(): string | null {
+    const token = localStorage.getItem('token_zapatero');
+    if (!token) return null;
+
+    try {
+      // Decodificamos el cuerpo del token usando la librería
+      const payloadDecodificado: any = jwtDecode(token);
+
+      // 👑 1. PARCHE PARA EL NUEVO SUPERADMIN REAL
+    if (payloadDecodificado.sub === 'superadmin@erp.com') {
+      return 'ROLE_SUPER_ADMIN';
+    }
+    
+    // 🏢 2. PARCHE PARA EL ADMINISTRADOR DE LA TIENDA (ERP/TPV)
+    // Usamos el email que tu compañero le ha puesto en el seeder
+    if (payloadDecodificado.sub === 'admin@empresaprueba.com') {
+      return 'ROLE_ADMIN'; // Pon aquí el string exacto que use vuestro RoleGuard para la tienda
+    }
+    
+      // Mapea según cómo lo mande tu compañero: 'role', 'roles' o 'authorities'
+      return payloadDecodificado.role || payloadDecodificado.authorities || null;
+    } catch (error) {
+      console.error('Error al decodificar el token de la zapatería:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Sincroniza la Signal interna del rol con el valor real del almacenamiento
+   */
+  private sincronizarRolDesdeToken(): void {
+    const rol = this.obtenerRolDesdeToken();
+    this.rolActual.set(rol);
   }
 
 }

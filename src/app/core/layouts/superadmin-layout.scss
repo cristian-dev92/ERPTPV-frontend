@@ -88,3 +88,30 @@ $bg-dark: #0f172a;
     .sidebar { width: $sidebar-collapsed-width; }
   }
 }
+
+.header-right-zone {
+  display: flex;
+  align-items: center;
+  gap: 16px; // Espacio elegante entre tu nombre y el botón
+}
+
+.btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff1f2; // Un tono rojo/rosa pastel muy suave de fondo
+  color: #e11d48;      // Texto carmín corporativo
+  border: 1px solid #fecdd3;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #ffe4e6;
+    color: #be123c;
+    border-color: #fda4af;
+  }
+}
