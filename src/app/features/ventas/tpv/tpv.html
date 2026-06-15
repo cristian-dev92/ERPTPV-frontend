@@ -181,13 +181,6 @@
             class="input-descuento-manual">
         </div>
 
-        <!-- Entrada opcional de notas si el tipo de orden es Reparación -->
-          @if (tipoOrdenSeleccionada() === 'REPARACION') {
-            <input type="text" 
-                   [(ngModel)]="item.notasReparacion" 
-                   class="input-notas-linea">
-          }
-
         <!-- Derecha: Precio total de la línea y borrar -->
         <div class="precio-final">
           <div class="bloque-precio-tactil" (click)="abrirKeypadPrecio($index)" title="Cambiar precio">
@@ -215,13 +208,14 @@
         <div class="selector-botones">
           <button type="button" 
                   [class.activo]="tipoOrdenSeleccionada() === 'VENTA_DIRECTA'"
+                  [disabled]="tieneServicioEnCarrito()"
                   (click)="tipoOrdenSeleccionada.set('VENTA_DIRECTA')">
             🛒 Venta
           </button>
           <button type="button" 
                   [class.activo]="tipoOrdenSeleccionada() === 'REPARACION'"
                   (click)="tipoOrdenSeleccionada.set('REPARACION')">
-            🛠️ Reparación
+            🛠️ Reparación {{ tieneServicioEnCarrito() ? '(Obligatorio)' : '' }}
           </button>
         </div>
       </div>

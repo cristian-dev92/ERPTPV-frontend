@@ -42,29 +42,76 @@ $border-color: #cbd5e1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 0.6rem;
+  padding: 0.6rem;
   border-bottom: 2px solid #f1f5f9;
   margin-bottom: 0.75rem;
+  border-radius: 6px;
+
+  &.turno-finalizado-bg {
+    background-color: #fff1f2;
+    border-bottom: 2px solid #fecdd3;
+  }
 
   .info-meta {
-    p { margin: 2px 0 0 0; font-size: 0.85rem; color: #475569; }
+    p { 
+      margin: 4px 0 0 0; 
+      font-size: 0.85rem; 
+      color: #475569;
+     }
   }
+  
   .badge-active {
     background: #ecfdf5;
-    color: color.adjust($color-green, $lightness: -10%); // 🚀 Corregido
+    color: $color-green;
     padding: 3px 8px;
     border-radius: 20px;
-    font-size: 0.75rem;
+    font-size: 1.25rem;
     font-weight: 700;
   }
-  .fecha-meta { font-size: 0.85rem; font-weight: 600; color: #64748b; }
+
+  .badge-closed {
+    background: #ffe4e6;
+    color: $color-red;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .operador-texto {
+      font-size: 1.1rem; /* Operador más visible */
+      margin: 0;
+      color: #334155;
+      
+      strong {
+        font-weight: 700;
+      }
+    }
+
+  .fecha-meta { 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    color: #64748b; 
+    text-align: right; 
+  }
+  .fecha-item {
+      font-size: 1.05rem; /* Horas de apertura y cierre más legibles */
+      font-weight: 700; 
+      color: #475569;
+      margin-bottom: 2px;
+  }
+
+  .texto-cierre-alerta {
+    color: $color-red; // Le da un tono rojizo sutil para identificar que es el cierre del turno
+    margin-top: 2px;
+  }
 }
 
-// Grid súper ajustado contra espacios en blanco excesivos
+
 .tarjetas-grid-compact {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.5rem; // Espacio ultra optimizado
+  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
@@ -80,7 +127,7 @@ $border-color: #cbd5e1;
   .val { font-size: 1.25rem; font-weight: 700; color: $text-main; margin-top: 4px; }
 
   &.bg-neutral { background: #f8fafc; }
-  &.bg-positivo { background: #f0fdf4; border-left: 4px solid $color-green; .val { color: color.adjust($color-green, $lightness: -5%); } } // 🚀 Corregido
+  &.bg-positivo { background: #f0fdf4; border-left: 4px solid $color-green; .val { color: color.adjust($color-green, $lightness: -5%); } }
   &.bg-negativo { background: #fef2f2; border-left: 4px solid $color-red; .val { color: $color-red; } }
   
   &.bg-total {
@@ -89,12 +136,16 @@ $border-color: #cbd5e1;
     border-left: 5px solid $color-blue;
     grid-column: 1 / -1;
     @media (min-width: 580px) { grid-column: span 2; }
-    .lbl { color: color.adjust($color-blue, $lightness: -15%); } // 🚀 Corregido
-    .val { font-size: 1.5rem; color: color.adjust($color-blue, $lightness: -10%); } // 🚀 Corregido
+    .lbl { color: color.adjust($color-blue, $lightness: -15%); }
+    .val { font-size: 1.5rem; color: color.adjust($color-blue, $lightness: -10%); }
   }
+
+  // Estilos de Descuadres dinámicos post-arqueo
+  &.bg-descuadre-cero { background: #f0fdf4; border-left: 4px solid $color-green; .val { color: $color-green; } }
+  &.bg-descuadre-positivo { background: #fef9c3; border-left: 4px solid #eab308; .val { color: #a16207; } }
+  &.bg-descuadre-negativo { background: #fef2f2; border-left: 4px solid $color-red; .val { color: $color-red; } }
 }
 
-// Teclado/Panel de botones táctiles (Grosor dedo mínimo: 52px de altura)
 .caja-action-pad {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -103,7 +154,7 @@ $border-color: #cbd5e1;
   padding-top: 0.8rem;
 
   .pad-btn {
-    height: 54px; // Hit target perfecto para tablets/pantallas táctiles
+    height: 54px;
     border-radius: 10px;
     border: none;
     font-weight: 700;
@@ -119,13 +170,13 @@ $border-color: #cbd5e1;
 
     &.btn-grey { background: #e2e8f0; color: $dark-pad; }
     &.btn-blue { background: $color-blue; color: white; }
+    &.btn-green { background: $color-green; color: white; }
     &.btn-red { background: $color-red; color: white; }
     &.btn-purple { background: $color-purple; color: white; }
     .icon { font-size: 1.2rem; }
   }
 }
 
-// Hojas Modales Táctiles
 .modal-backdrop-blur {
   position: fixed;
   top: 0; left: 0; width: 100vw; height: 100vh;
@@ -158,43 +209,35 @@ $border-color: #cbd5e1;
   }
 }
 
-// Inputs optimizados para dedos del operario
 .tactil-form {
   padding: 1.25rem;
-
   .instruction { color: #64748b; font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.4; }
-
   .input-field-tactil {
     display: flex; flex-direction: column; gap: 4px; margin-bottom: 1rem;
     label { font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; }
     input {
       height: 48px; border: 2px solid $border-color; border-radius: 8px;
       padding: 0 12px; font-size: 1rem; outline: none; background: #fdfdfd;
-      &:focus { border-color: $color-blue; background: white; }
     }
-
     &.unique-huge {
       input {
         height: 64px; font-size: 1.8rem; font-weight: 700; text-align: center;
-        color: color.adjust($color-blue, $lightness: -15%); background: #f0fdfa; border-color: #a7f3d0; // 🚀 Corregido
+        color: color.adjust($color-blue, $lightness: -15%); background: #f0fdfa; border-color: #a7f3d0;
       }
     }
   }
 }
 
-// Pestanas Conmutadoras en Formulario
 .selector-tactil-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem;
   .select-opt {
     height: 50px; border: 2px solid $border-color; background: white;
     font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
-    
     &.positivo.active { background: $color-green; color: white; border-color: $color-green; }
     &.negativo.active { background: $color-red; color: white; border-color: $color-red; }
   }
 }
 
-// Boton de confirmacion masiva de accion
 .btn-confirm-tactil-action {
   width: 100%; height: 54px; border: none; border-radius: 10px;
   font-size: 1rem; font-weight: 700; color: white; cursor: pointer; margin-top: 0.5rem;
@@ -202,7 +245,6 @@ $border-color: #cbd5e1;
   &.danger { background: $color-red; }
 }
 
-// Maquetación del Selector de PDFs Dinámico Post-Cierre
 .selector-pdf-sheet {
   max-width: 500px !important;
   .success-icon {
@@ -216,21 +258,17 @@ $border-color: #cbd5e1;
 
 .pdf-buttons-vertical {
   padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 10px;
-
   .pdf-big-btn {
     display: flex; align-items: center; gap: 16px; padding: 1rem;
     border: 2px solid $border-color; border-radius: 12px; background: white;
     text-align: left; cursor: pointer; transition: all 0.1s ease;
-    
     &:active { transform: scale(0.98); }
     .btn-icon { font-size: 2rem; }
-    
     .btn-text {
       display: flex; flex-direction: column;
       strong { font-size: 1rem; color: $dark-pad; }
       span { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
     }
-
     &.ticket-color { border-color: #bfdbfe; background: #eff6ff; strong { color: $color-blue; } }
     &.folio-color { border-color: #e2e8f0; background: #f8fafc; }
   }
@@ -249,282 +287,94 @@ $border-color: #cbd5e1;
   text-align: center; 
   padding: 3rem 1.5rem; 
   background: #fafafa;
-  border: 2px dashed 
-  $border-color; 
+  border: 2px dashed $border-color; 
   border-radius: 12px;
   .icon-lock { font-size: 3rem; margin-bottom: 0.5rem; }
   h2 { margin: 0; color: $dark-pad; }
-  p { color: #64748b; font-size: 0.9rem; margin: 0.5rem 0 0 0; }
+  p { color: #64748b; font-size: 0.9rem; margin: 0.5rem 0 1.5rem 0; }
 }
 
-// Contenedor del modal ampliado para dar espacio al resumen lateral o superior
-.modal-cierre-ancho {
-  max-width: 550px; // Un poco más ancho que el estándar para que la tabla de datos respire
-  width: 90%;
+.btn-reapertura-directa {
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  background-color: $color-green;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  &:active { transform: scale(0.98); }
 }
 
-// Sección del resumen financiero
 .resumen-cierre-seccion {
   background-color: #f8f9fa;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
   border: 1px solid #e9ecef;
-
-  .titulo-seccion-modal {
-    margin-top: 0;
-    margin-bottom: 12px;
-    font-size: 1.1rem;
-    color: #495057;
-    text-align: center;
-    font-weight: 600;
-  }
+  .titulo-seccion-modal { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: #495057; text-align: center; font-weight: 600; }
 }
 
-// Grid de filas de auditoría
-.resumen-cierre-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.resumen-cierre-grid { display: flex; flex-direction: column; gap: 8px; }
 
-// Estructura de cada fila de datos
 .resumen-fila-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 8px;
-  border-bottom: 1px dashed #dee2e6;
-  font-size: 0.95rem;
-  color: #495057;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  // Modificadores de color semánticos
-  &.texto-positivo {
-    color: #2b8a3e;
-  }
-  &.texto-negativo {
-    color: #c92a2a;
-  }
-  &.texto-neutral {
-    color: #1c7ed6;
-  }
-
-  .concepto-lbl {
-    font-weight: 500;
-  }
-
-  .monto-val {
-    font-family: monospace;
-    font-size: 1rem;
-    font-weight: 600;
-  }
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 8px; border-bottom: 1px dashed #dee2e6; font-size: 0.95rem; color: #495057;
+  &:last-child { border-bottom: none; }
+  &.texto-positivo { color: #2b8a3e; }
+  &.texto-negativo { color: #c92a2a; }
+  &.texto-neutral { color: #1c7ed6; }
+  .concepto-lbl { font-weight: 500; }
+  .monto-val { font-size: 1rem; font-weight: 600; }
 }
 
-// Fila destacada para el Efectivo Esperado
 .fila-esperado-destacada {
-  background-color: #e8f5e9;
-  border: 1px solid #a5d6a7;
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-top: 6px;
-  color: #1b5e20;
-
-  .font-bold {
-    font-weight: 700;
-  }
-
-  .font-bold-total {
-    font-size: 1.2rem;
-    font-weight: 800;
-    font-family: monospace;
-  }
+  background-color: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 8px;
+  padding: 10px 12px; margin-top: 6px; color: #1b5e20;
+  .font-bold { font-weight: 700; }
+  .font-bold-total { font-size: 1.2rem; font-weight: 800; }
 }
 
-// Línea divisoria elegante
-.divisor-cierre-modal {
-  height: 1px;
-  background-color: #dee2e6;
-  margin: 20px 0;
-}
+.divisor-cierre-modal { height: 1px; background-color: #dee2e6; margin: 20px 0; }
 
-// Contenedor inferior del formulario
-.arqueo-seccion-formulario {
-  .instruction {
-    font-size: 0.95rem;
-    color: #6c757d;
-    margin-bottom: 15px;
-  }
-}
+.font-mono { font-family: monospace; }
 
-// Teclado Virtual Táctil
+// Estilos del Teclado Virtual Integrado
 .tpv-teclado-virtual {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: #2d3748;
-  color: white;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-  z-index: 9999; // Por encima de los modales
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  animation: slideUp 0.2s ease-out;
-
+  bottom: 0; left: 0; width: 100vw;
+  background: #1e293b; color: white;
+  box-shadow: 0 -10px 25px rgba(0,0,0,0.3);
+  z-index: 10000;
+  padding-bottom: env(safe-area-inset-bottom, 10px);
+  
   .teclado-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 2px 10px;
-    border-bottom: 1px solid #4a5568;
-    font-size: 0.9rem;
-
-    .btn-cerrar-teclado {
-      background: #e71010;
-      color: white;
-      border: none;
-      padding: 8px 20px;
-      border-radius: 6px;
-      font-size: 1.5rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; background: #0f172a; border-bottom: 1px solid #334155;
+    span { font-size: 0.9rem; color: #cbd5e1; strong { color: #38bdf8; } }
+    .btn-cerrar-teclado { background: transparent; border: none; color: #f1f5f9; font-weight: 700; cursor: pointer; }
   }
 
   .teclado-body {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-width: 900px;
-    margin: 0 auto;
-    width: 100%;
+    padding: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 800px; margin: 0 auto;
   }
 
   .teclado-fila {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-    width: 100%;
-
+    display: flex; gap: 4px; justify-content: center; width: 100%;
+    
     button {
-      flex: 1;
-      height: 48px;
-      background: #4a5568;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-
-      &:active {
-        background: #718096;
-        transform: scale(0.96);
-      }
+      flex: 1; height: 46px; border: none; border-radius: 6px;
+      background: #334155; color: white; font-weight: 700; font-size: 1.1rem;
+      cursor: pointer; &:active { background: #475569; }
     }
 
-    .btn-tecla-borrar {
-      background: #e53e3e;
-      flex: 1.5;
-      max-width: 150px;
-      &:active { background: #c53030; }
-    }
+    .btn-tecla-borrar { background: #b91c1c; flex: 2; &:active { background: #991b1b; } }
   }
 
   .fila-especial {
-    gap: 10px;
-
-    .btn-tecla-espacio {
-      flex: 6;
-      background: #3182ce;
-      &:active { background: #2b6cb0; }
-    }
-
-    .btn-tecla-aceptar {
-    flex: 3;
-    background: #48bb78; // Verde intenso
-    color: white;
-    font-size: 1.2rem;
-    height: 52px; // Un pelín más alto
-    border-radius: 6px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-    &:active { 
-      background: #38a169;
-      transform: scale(0.95);
-    }
+    button { height: 50px; }
+    .btn-tecla-espacio { background: #475569; flex: 3; }
+    .btn-tecla-aceptar { background: $color-green; flex: 2; }
   }
-  
-  // 📝 NUEVO: Visor de texto dentro del teclado virtual
-  .teclado-general-pantalla {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #1a202c;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    margin-bottom: 6px;
-
-    .texto-construccion {
-      font-size: 1.2rem;
-      font-weight: 600;
-      font-family: monospace;
-      color: #e2e8f0;
-    }
-
-    .btn-vaciar-pantalla {
-      font-size: 0.85rem;
-      color: #f56565;
-      cursor: pointer;
-      font-weight: bold;
-      user-select: none;
-      
-      &:active {
-        opacity: 0.7;
-      }
-    }
-  }
-
-  // 🔢 NUEVO: Grid especializado y limpio para cuando solo se meten números/descuentos
-  .teclado-fila-numerica-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr); // 4 columnas muy cómodas para dedos grandes
-    gap: 6px;
-    width: 100%;
-    
-    .btn-tecla-key, .btn-tecla-borrar {
-      height: 52px;
-      background: #4a5568;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-
-      &:active {
-        background: #718096;
-      }
-    }
-
-    .btn-tecla-borrar {
-      background: #e53e3e;
-      &:active { background: #c53030; }
-    }
-  }
- }
 }

@@ -62,33 +62,26 @@ export class OrdenListComponent implements OnInit {
       listaFiltrada = listaFiltrada.filter(orden =>
         orden.estadoTaller === 'ENTREGADO' || 
         (orden.tipoOrden || orden.tipo) === 'VENTA_DIRECTA'|| 
-        (orden.tipoOrden || orden.tipo) === 'DEVOLUCION' || 
-        orden.estadoPago === 'DEVOLUCION' ||
-        orden.estadoPago === 'DEVUELTO'
+        (orden.tipoOrden || orden.tipo) === 'DEVOLUCION'
       );
-      
       
       // Botones pequeños de Tickets Cerrados: Filtran por la variable 'tipo'
       if (subFiltro === 'VENTA_DIRECTA') {
         listaFiltrada = listaFiltrada.filter(orden =>
+          // Es venta directa pura y tiene importe positivo (es el ticket original)
           (orden.tipoOrden || orden.tipo) === 'VENTA_DIRECTA' &&
-          orden.estadoPago !== 'DEVOLUCION' && 
-          orden.estadoPago !== 'DEVUELTO' &&
           (orden.total >= 0 && (orden.importeTotal ?? 0) >= 0)
-         );
-        } else if (subFiltro === 'REPARACION') {
+        );
+      } else if (subFiltro === 'REPARACION') {
         listaFiltrada = listaFiltrada.filter(orden => 
-          (orden.tipoOrden || orden.tipo) === 'REPARACION' &&
-          orden.estadoPago !== 'DEVOLUCION' && 
-          orden.estadoPago !== 'DEVUELTO'
+          (orden.tipoOrden || orden.tipo) === 'REPARACION'
         );
       } else if (subFiltro === 'DEVOLUCION') {
         listaFiltrada = listaFiltrada.filter(orden => 
+          // Entra aquí si es el nuevo ticket de abono físico (tipo DEVOLUCION o total negativo)
           (orden.tipoOrden || orden.tipo) === 'DEVOLUCION' || 
           orden.tipoOrden === 'ABONO' ||
           orden.tipo === 'ABONO' ||
-          orden.estadoPago === 'DEVOLUCION' || 
-          orden.estadoPago === 'DEVUELTO' ||
           orden.total < 0 || 
           (orden.importeTotal < 0)
         );
@@ -341,9 +334,6 @@ export class OrdenListComponent implements OnInit {
       next: () => {
         this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada.`, 'success');
         //Forzamos el cambio en local para que el @if del HTML reaccione al instante
-        this.ordenes.update(lista => 
-          lista.map(o => o.id === orden.id ? { ...o, estadoPago: 'DEVOLUCION', estadoDevuelto: true } : o)
-        );
         this.cerrarPanelDevolucion();
         this.cerrarModal();
         this.cargarDatosDelServidor();
@@ -381,14 +371,30 @@ export class OrdenListComponent implements OnInit {
   } 
 
    getBadgeClass(orden: any): string {
-    if (!orden) return 'badge-info';
-    if (orden.estadoPago === 'CANCELADO' || orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') return 'badge-danger';
-    if (orden.estadoTaller === 'EN_TALLER') return 'badge-info';
-    if (orden.estadoTaller === 'LISTO') return 'badge-warning';
-    if (orden.estadoTaller === 'ENTREGADO') return 'badge-secondary';
-    if (orden.estadoPago === 'PAGADO') return 'badge-success';
-    return 'badge-info';
-  }
+    if (!orden) return 'badge-secondary';
+    // Solo va en rojo si está CANCELADO o si es el con saldo negativo
+    if (orden.estadoPago === 'CANCELADO' || (orden.tipoOrden || orden.tipo) === 'DEVOLUCION' || orden.total < 0 || (orden.importeTotal ?? 0) < 0) {
+      return 'badge-danger';
+    }
+    // Ventas directas de mostrador (Pagadas al momento)
+    if (orden.tipo === 'VENTA_DIRECTA') {
+    return 'badge-success';
+    }
+    if (orden.estadoTaller === 'ENTREGADO'){ 
+      return 'badge-entregado';
+    }
+    if (orden.estadoTaller === 'LISTO'){ 
+      return 'badge-warning';
+    }
+    if (orden.estadoTaller === 'EN_TALLER') {
+      return 'badge-taller';
+    }
+    // El Ticket original entrará aquí 
+    if (orden.estadoPago === 'PAGADO') {
+      return 'badge-success';
+    }
+  return 'badge-secondary';
+}
 
 // --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---
 mostrarTeclado = signal<boolean>(false);

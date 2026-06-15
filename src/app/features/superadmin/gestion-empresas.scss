@@ -20,7 +20,10 @@ $border-sa: #cbd5e1;
     .btn-alta {
       background: $bg-sa; color: white; border: none; padding: 10px 18px;
       font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;
-      &:hover { background: lighten($bg-sa, 10%); }
+      &:hover { 
+        background:
+         lightenss($bg-sa, 10%);
+         }
     }
   }
 

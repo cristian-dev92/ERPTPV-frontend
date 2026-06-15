@@ -12,12 +12,16 @@ $bg-modal: #1e2235;
 $text-main: #ffffff;
 $text-muted: #a0aec0;
 
-$color-accent: #3182ce;    // Azul - En Taller
-$color-success: #38a169;   // Verde - Pagado / Listo
-$color-warning: #dd6b20;   // Naranja - Pendiente
-$color-danger: #e53e3e;    // Rojo - Cancelado
-$color-secondary: #4a5568; // Gris - Entregado
-$color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
+// COLOR DE LAS PESTAÑAS
+$color-accent: #353535;
+// COLORES PARA LOS BADGES DE LOS TICKETS
+$color-taller: #d69e2e;    // En taller
+$color-success: #38a169;   // Pagado / Listo
+$color-entregado: #3182ce; // Entregado
+$color-warning: #dd6b20;   // Pendiente
+$color-danger: #e53e3e;    // Devolucion / Cancelado
+$color-secondary: #6e7270; // Gris secundario
+$color-pdf: #6b46c1;       // Para indicar PDFs y documentos
 
 // ==========================================
 // CONTENEDOR PRINCIPAL
@@ -279,9 +283,10 @@ $color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
   color: #fff;
 }
 
+.badge-taller    { background-color: $color-taller; color: #fff; }
 .badge-success { background-color: $color-success; }
-.badge-warning { background-color: $color-warning; color: #fff; }
-.badge-info     { background-color: $color-accent; }
+.badge-entregado { background-color: $color-entregado; }
+.badge-warning {background-color: $color-warning;}
 .badge-secondary{ background-color: $color-secondary; }
 .badge-danger   { background-color: $color-danger; }
 
@@ -377,7 +382,7 @@ $color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   display: inline-block;
-  color: color.adjust($color-warning, $lightness: 10%) !important;
+  color: color.adjust($color-warning, $lightness: 10%);
   font-weight: 600;
 }
 
@@ -615,6 +620,17 @@ $color-pdf: #6b46c1;       // Morado elegante para indicar PDFs y documentos
       background-color: rgba($color-warning, 0.1);
       &:active { background-color: rgba($color-warning, 0.2); }
     }
+  }
+}
+
+// Total Abono
+.display-total-abono { 
+  margin-top: 1.5rem; 
+  background: #fff5f5; 
+  border-color: #feb2b2; 
+  .label, 
+  .value { 
+    color: #c53030; 
   }
 }
 

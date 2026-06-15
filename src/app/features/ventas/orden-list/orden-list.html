@@ -58,7 +58,10 @@
         <div class="card-header">
           <span class="ticket-id">#{{ orden.id }}</span>
           <span class="badge" [ngClass]="getBadgeClass(orden)"> 
-            {{ orden.tipo === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO' ? 'DEVUELTO' : (orden.tipo === 'REPARACION' ? orden.estadoTaller : orden.estadoPago) }} </span>
+               {{ orden.total < 0 ? 'DEVOLUCION' : 
+                  ((orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') ? 'PAGADO' : 
+                  (orden.tipo === 'REPARACION' ? orden.estadoTaller : orden.estadoPago)) }}
+          </span>
         </div>
         <div class="card-body">
           <p class="cliente"><strong>👤 {{ orden.clienteNombre || orden.cliente?.nombre || 'Cliente General' }}</strong></p>
@@ -275,9 +278,9 @@
           <button type="button" [ngClass]="{'selected': metodoDevolucion() === 'OTRO'}" (click)="metodoDevolucion.set('OTRO')">📦 Devolver Otro</button>
         </div>
 
-        <div class="screen-display" style="margin-top: 1.5rem; background: #fff5f5; border-color: #feb2b2;">
-          <span class="label" style="color: #c53030;">Total a abonar:</span>
-          <span class="value" style="color: #c53030;">{{ ordenSeleccionada()?.total | currency:'EUR' }}</span>
+        <div class="screen-display display-total-abono">
+          <span class="label">Total a abonar:</span>
+          <span class="value">{{ ordenSeleccionada()?.total | currency:'EUR' }}</span>
         </div>
 
         <button class="btn-submit-pay" style="background-color: #e53e3e; margin-top: 1.5rem;" (click)="confirmarDevolucionTicket()">

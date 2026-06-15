@@ -19,10 +19,14 @@ export class CajaResumenComponent implements OnInit {
   cajaActual = this.cajaService.cajaActual;
   cargando = signal<boolean>(true);
 
+  // Almacena el reporte final tras el cierre para seguir mostrándolo en pantalla
+  ultimaCajaCerrada = signal<any | null>(null);
+
   // Modales táctiles (Signals)
   mostrarModalMovimiento = signal<boolean>(false);
   mostrarModalCierre = signal<boolean>(false);
   mostrarModalPdf = signal<boolean>(false);
+  mostrarModalApertura = signal<boolean>(false);
 
   // Variables de control de datos
   idCajaCerrada = signal<number | null>(null); // 🚀 Corregido a Signal
@@ -31,18 +35,19 @@ export class CajaResumenComponent implements OnInit {
   tipoMovimientoSeleccionado: 'INGRESO_MANUAL' | 'GASTO' = 'INGRESO_MANUAL';
   
   saldoFinalRealContado: number = 0;
+  montoApertura: number = 0;
 
-  // 🚀 Vinculamos 'turno()' al estado dinámico que exige tu HTML
-  turno = computed(() => this.cajaActual()); 
-  movimientos = signal<any[]>([]); // Inicializado como array reactivo vacío para evitar fallos en el @for
+  // Computado unificado para saber qué datos pintar en el informe (activa o recién cerrada)
+  datosInforme = computed(() => this.cajaActual() ?? this.ultimaCajaCerrada());
 
-  // 🚀 Completados los stubs mapeando las propiedades reales del DTO de Caja
+  // Completados los stubs mapeando las propiedades reales del DTO de Caja
   totalVentasEfectivo = computed(() => this.cajaActual()?.totalVentasEfectivo ?? 0);
   totalVentasTarjeta = computed(() => this.cajaActual()?.totalVentasTarjeta ?? 0);
   totalAnticipos = computed(() => this.cajaActual()?.totalAnticipos ?? 0);
   totalIngresos = computed(() => this.cajaActual()?.totalIngresosManuales ?? 0);
   totalGastos = computed(() => this.cajaActual()?.totalGastos ?? 0);
   totalDevoluciones = computed(() => this.cajaActual()?.totalDevoluciones ?? 0);
+  descuadre = computed(() => this.datosInforme()?.descuadre ?? 0);
 
   // --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---
   mostrarTeclado = signal<boolean>(false);
@@ -59,6 +64,7 @@ export class CajaResumenComponent implements OnInit {
   // Variables temporales para mostrar el texto en el teclado táctil mientras se escribe
   textoMontoTmp = '';
   textoSaldoTmp = '';
+  textoAperturaTmp = '';
 
   claseMovimiento(tipo: string): string {
     return tipo === 'INGRESO_MANUAL' ? 'badge-ingreso' : 'badge-gasto';
@@ -76,8 +82,12 @@ export class CajaResumenComponent implements OnInit {
     this.cargando.set(true);
     // Usamos checkEstadoCaja para que se actualice sincrónicamente tanto aquí como en el TPV
     this.cajaService.checkEstadoCaja().subscribe({
-      next: () => this.cargando.set(false),
-      error: (err: any) => { // 🚀 Tipado explícito para evitar TS7006
+      next: (res) => {
+        // Si hay una caja activa recuperada, limpiamos el histórico de cierre anterior
+        if (res) this.ultimaCajaCerrada.set(null);
+        this.cargando.set(false);
+      },
+      error: (err: any) => { // Tipado explícito para evitar TS7006
         console.error("Error al recuperar la caja", err);
         this.uiService.mostrarToast('Error al conectar con la caja física.', 'error');
         this.cargando.set(false);
@@ -118,14 +128,34 @@ export class CajaResumenComponent implements OnInit {
     this.cajaService.cerrarCaja(this.saldoFinalRealContado).subscribe({
       next: (cajaCerrada) => {
         this.idCajaCerrada.set(cajaCerrada.id);
+        // Guardamos el snapshot completo devuelto por el backend con el descuadre calculado
+        this.ultimaCajaCerrada.set(cajaCerrada);
+
         this.mostrarModalCierre.set(false);
-        
         this.uiService.mostrarToast('Turno de caja cerrado correctamente.', 'success');
         this.mostrarModalPdf.set(true); // Abre el selector del reporte post-cierre
         
+        // Sincroniza el estado (pasará a null en cajaActual, pero mantendremos el informe por el snapshot)
         this.cargarCaja();
       },
       error: (err: any) => this.uiService.mostrarToast("Error al cerrar: " + err.error, 'error')
+    });
+  }
+
+  ejecutarAperturaCaja() {
+    if (this.montoApertura < 0) {
+      this.uiService.mostrarToast("Introduce un monto inicial válido.", 'warning');
+      return;
+    }
+    // Llama al método correspondiente de tu CajaService (ej: abrirCaja)
+    this.cajaService.abrirCaja(this.montoApertura).subscribe({
+      next: () => {
+        this.uiService.mostrarToast("Caja abierta con éxito.", "success");
+        this.mostrarModalApertura.set(false);
+        this.ultimaCajaCerrada.set(null); // Reseteamos el estado viejo
+        this.cargarCaja();
+      },
+      error: (err: any) => this.uiService.mostrarToast("Error al abrir caja: " + err.error, "error")
     });
   }
 
@@ -175,13 +205,7 @@ escribirTeclado(caracter: string) {
   const campo = this.inputActivo();
   if (!campo) return;
 
-  // 1. Control para la barra de búsqueda clásica (si la sigues usando aquí)
-  if (campo === 'busqueda') {
-    this.terminoBusqueda.set(this.terminoBusqueda() + caracter);
-    return;
-  }
-
-  // 2. Control para el Concepto / Motivo (Texto normal)
+  // Control para el Concepto / Motivo (Texto normal)
   if (campo === 'descripcion') {
     this.descripcionMovimiento = (this.descripcionMovimiento || '') + caracter;
     return;
@@ -195,14 +219,16 @@ escribirTeclado(caracter: string) {
     this.textoMontoTmp += caracter;
     // Asignamos al modelo el valor numérico real de fondo, convirtiendo sobre la marcha
     this.montoMovimiento = parseFloat(this.textoMontoTmp) || 0;
-  } 
-  
-  else if (campo === 'saldoFinalRealContado') {
+  } else if (campo === 'saldoFinalRealContado') {
     if (caracter === '.' && this.textoSaldoTmp.includes('.')) return;
     
     this.textoSaldoTmp += caracter;
     this.saldoFinalRealContado = parseFloat(this.textoSaldoTmp) || 0;
-  }
+  } else if (campo === 'montoApertura') {
+      if (caracter === '.' && this.textoAperturaTmp.includes('.')) return;
+      this.textoAperturaTmp += caracter;
+      this.montoApertura = parseFloat(this.textoAperturaTmp) || 0;
+    }
 }
 
 // Borrar el último carácter (Tecla Retroceso ⌫)
@@ -210,22 +236,18 @@ borrarUltimoCaracter() {
   const campo = this.inputActivo();
   if (!campo) return;
 
-  if (campo === 'busqueda') {
-    this.terminoBusqueda.set(this.terminoBusqueda().slice(0, -1));
-    return;
-  }
-
   if (campo === 'descripcion') {
     this.descripcionMovimiento = this.descripcionMovimiento ? this.descripcionMovimiento.slice(0, -1) : '';
     return;
-  }
-
-  else if (campo === 'monto') {
+  } else if (campo === 'monto') {
     this.textoMontoTmp = this.textoMontoTmp.slice(0, -1);
     this.montoMovimiento = parseFloat(this.textoMontoTmp) || 0;
   } else if (campo === 'saldoFinalRealContado') {
     this.textoSaldoTmp = this.textoSaldoTmp.slice(0, -1);
     this.saldoFinalRealContado = parseFloat(this.textoSaldoTmp) || 0;
+  } else if (campo === 'montoApertura') {
+      this.textoAperturaTmp = this.textoAperturaTmp.slice(0, -1);
+      this.montoApertura = parseFloat(this.textoAperturaTmp) || 0;
   }
 }
 

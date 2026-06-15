@@ -151,6 +151,13 @@ export class TpvComponent implements OnInit {
   return this.modoDevolucion() ? -totalSeguro : totalSeguro;
   });
 
+  tieneServicioEnCarrito = computed(() => {
+    return this.carrito().some(item => {
+      const art = this.articulos().find(a => a.id === item.articuloId);
+      return art?.tipo === 'SERVICIO';
+    });
+  });
+
   // Filtrado de artículos en tiempo real
   articulosFiltrados = computed(() => {
     const listaOriginal = this.articulos();
@@ -216,6 +223,11 @@ export class TpvComponent implements OnInit {
       return;
     }
 
+    // CONTROL AUTOMÁTICO: Si metemos mano de obra/taller, cambiamos la operación a REPARACIÓN inmediatamente
+    if (articulo.tipo === 'SERVICIO') {
+      this.tipoOrdenSeleccionada.set('REPARACION');
+    }
+
     this.carrito.update((items: ItemCarrito[]): ItemCarrito[] => {
       // 1. Usamos la constante local que TypeScript ya sabe que es 100% number
       const existe = items.find(item => item.articuloId === idSeguro);
@@ -262,6 +274,16 @@ export class TpvComponent implements OnInit {
     const actual = this.carrito();
     actual.splice(index, 1);
     this.carrito.set([...actual]);
+    // ✨ Si vaciamos el carrito o ya no quedan servicios dentro, permitimos reevaluar el tipo
+    const tieneServicios = this.carrito().some(item => {
+      // Buscamos en la lista de artículos cargados si el item actual es de tipo SERVICIO
+      const art = this.articulos().find(a => a.id === item.articuloId);
+      return art?.tipo === 'SERVICIO';
+    });
+
+    if (!tieneServicios && this.carrito().length === 0) {
+      this.tipoOrdenSeleccionada.set('VENTA_DIRECTA');
+    }
   }
 
   // Método para finalizar la venta, que se ejecuta al hacer clic en el botón "Finalizar Venta" del HTML

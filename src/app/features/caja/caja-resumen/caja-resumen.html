@@ -5,83 +5,122 @@
   </div>
 } @else {
   
-  @if (cajaActual() === null) {
+  @if (cajaActual() === null && ultimaCajaCerrada() === null) {
     <div class="apertura-tactil-card">
-      <div class="icon-lock">🔓</div>
+      <div class="icon-lock">🔒</div>
       <h2>Turno de Caja Cerrado</h2>
       <p>Es necesario declarar el fondo de caja inicial para operar el TPV.</p>
-      </div>
+      <button class="btn-reapertura-directa" (click)="mostrarModalApertura.set(true)">
+        🔓 Abrir Turno de Caja
+      </button>
+    </div>
   } @else {
     
     <div class="caja-dashboard">
       
-      <div class="caja-header-compact">
+      <div class="caja-header-compact" [class.turno-finalizado-bg]="cajaActual() === null">
         <div class="info-meta">
-          <span class="badge-active">● TURNO ACTIVO #{{ cajaActual()?.id }}</span>
-          <p>Operador: <strong>{{ cajaActual()?.nombreUsuarioApertura }}</strong></p>
+          @if (cajaActual() !== null) {
+            <span class="badge-active">● TURNO ACTIVO #{{ datosInforme()?.id }}</span>
+          } @else {
+            <span class="badge-closed">● TURNO CERRADO #{{ datosInforme()?.id }}</span>
+          }
+          <p class="operador-texto">Operador: <strong>{{ datosInforme()?.nombreUsuarioApertura }}</strong></p>
         </div>
-        <span class="fecha-meta">{{ cajaActual()?.fechaHoraApertura | date:'dd/MM/yy HH:mm' }}</span>
+        <div class="fecha-meta">
+          <div class="fecha-item">Apertura: {{ datosInforme()?.fechaHoraApertura | date:'dd/MM/yy HH:mm' }}</div>
+          <!--Bloque limpio para renderizar la fecha de cierre si existe en el histórico -->
+          @if (datosInforme()?.fechaHoraCierre) {
+            <div class="fecha-item texto-cierre-alerta">
+              Cierre: {{ datosInforme()?.fechaHoraCierre | date:'dd/MM/yy HH:mm' }}
+            </div>
+           }
+        </div>
       </div>
 
       <div class="tarjetas-grid-compact">
         <div class="tile-caja bg-neutral">
           <span class="lbl">Fondo Inicial</span>
-          <span class="val">{{ cajaActual()?.saldoInicial | currency:'EUR' }}</span>
+          <span class="val">{{ datosInforme()?.saldoInicial | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-positivo">
           <span class="lbl">Ventas Efectivo</span>
-          <span class="val">+ {{ cajaActual()?.totalVentasEfectivo | currency:'EUR' }}</span>
+          <span class="val">+ {{ datosInforme()?.totalVentasEfectivo | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-neutral">
           <span class="lbl">Ventas Tarjeta</span>
-          <span class="val">{{ cajaActual()?.totalVentasTarjeta | currency:'EUR' }}</span>
+          <span class="val">{{ datosInforme()?.totalVentasTarjeta | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-neutral">
           <span class="lbl">Transferencias</span>
-          <span class="val">{{ cajaActual()?.totalVentasTransferencia | currency:'EUR' }}</span>
+          <span class="val">{{ datosInforme()?.totalVentasTransferencia | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-neutral">
           <span class="lbl">Otros Métodos</span>
-          <span class="val">{{ cajaActual()?.totalVentasOtros | currency:'EUR' }}</span>
+          <span class="val">{{ datosInforme()?.totalVentasOtros | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-positivo">
           <span class="lbl">Anticipos (Fianza)</span>
-          <span class="val">+ {{ cajaActual()?.totalAnticipos | currency:'EUR' }}</span>
+          <span class="val">+ {{ datosInforme()?.totalAnticipos | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-positivo">
           <span class="lbl">Ingresos Manuales</span>
-          <span class="val">+ {{ cajaActual()?.totalIngresosManuales | currency:'EUR' }}</span>
+          <span class="val">+ {{ datosInforme()?.totalIngresosManuales | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-negativo">
           <span class="lbl">Gastos / Compras</span>
-          <span class="val">- {{ cajaActual()?.totalGastos | currency:'EUR' }}</span>
+          <span class="val">- {{ datosInforme()?.totalGastos | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-negativo">
           <span class="lbl">Devoluciones</span>
-          <span class="val">- {{ cajaActual()?.totalDevoluciones | currency:'EUR' }}</span>
+          <span class="val">- {{ datosInforme()?.totalDevoluciones | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-total">
-          <span class="lbl">Efectivo Teorico Esperado</span>
-          <span class="val">{{ cajaActual()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</span>
+          <span class="lbl">Efectivo Teórico Esperado</span>
+          <span class="val">{{ datosInforme()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</span>
         </div>
+
+        @if (cajaActual() === null) {
+          <div class="tile-caja bg-neutral">
+            <span class="lbl">Efectivo Real Contado</span>
+            <span class="val">{{ datosInforme()?.saldoFinalRealEfectivo | currency:'EUR' }}</span>
+          </div>
+          
+          <div class="tile-caja" [ngClass]="descuadre() === 0 ? 'bg-descuadre-cero' : (descuadre() > 0 ? 'bg-descuadre-positivo' : 'bg-descuadre-negativo')">
+            <span class="lbl">Estado del Arqueo (Descuadre)</span>
+            <span class="val">
+              @if (descuadre() === 0) { 👍 Caja Clavada (0,00 €) }
+              @else if (descuadre() > 0) { 📈 Sobrante: +{{ descuadre() | currency:'EUR' }} }
+              @else { 📉 Faltante: {{ descuadre() | currency:'EUR' }} }
+            </span>
+          </div>
+        }
       </div>
 
       <div class="caja-action-pad">
-        <button class="pad-btn btn-grey" (click)="mostrarModalMovimiento.set(true)">
-          <span class="icon">💸</span> Movimiento Manual
-        </button>
-        
-        <button class="pad-btn btn-blue" (click)="verPdf(cajaActual()!.id, '80mm')">
+        @if (cajaActual() !== null) {
+          <button class="pad-btn btn-grey" (click)="mostrarModalMovimiento.set(true)">
+            <span class="icon">💸</span> Movimiento Manual
+          </button>
+        }
+
+        <button class="pad-btn btn-blue" (click)="verPdf(datosInforme()!.id, '80mm')">
           <span class="icon">🖨️</span> Ticket (80mm)
         </button>
         
-        <button class="pad-btn btn-purple" (click)="verPdf(cajaActual()!.id, 'a4')">
+        <button class="pad-btn btn-purple" (click)="verPdf(datosInforme()!.id, 'a4')">
           <span class="icon">📄</span> Factura (A4)
         </button>
         
-        <button class="pad-btn btn-red" (click)="mostrarModalCierre.set(true)">
-          <span class="icon">🔒</span> Cerrar Caja
-        </button>
+        @if (cajaActual() !== null) {
+          <button class="pad-btn btn-red" (click)="mostrarModalCierre.set(true)">
+            <span class="icon">🔒</span> Cerrar Caja
+          </button>
+        } @else {
+          <button class="pad-btn btn-green" (click)="mostrarModalApertura.set(true)">
+            <span class="icon">🔓</span> Abrir Nueva Caja
+          </button>
+        }
       </div>
 
     </div>
@@ -113,15 +152,14 @@
               <input type="text" 
                [value]="inputActivo() === 'monto' ? textoMontoTmp : (montoMovimiento || '')"
                (click)="activarTeclado('monto')"
-               (input)="montoMovimiento = +$any($event.target).value; textoMontoTmp = $any($event.target).value" 
-               inputmode="decimal">
+               readonly>
             </div>
 
             <div class="input-field-tactil">
               <label>Concepto / Motivo</label>
               <input type="text" 
               (click)="activarTeclado('descripcion')"
-              [(ngModel)]="descripcionMovimiento">
+              [(ngModel)]="descripcionMovimiento" readonly>
             </div>
 
             <button class="btn-confirm-tactil-action success" (click)="guardarMovimientoManual()">
@@ -141,82 +179,82 @@
           </div>
 
           <div class="tactil-form">
-        
-        <div class="resumen-cierre-seccion">
-          <h4 class="titulo-seccion-modal">Balance de Cuentas del Día</h4>
-          
-          <div class="resumen-cierre-grid">
-            <div class="resumen-fila-item">
-              <span class="concepto-lbl">Fondo Inicial de Caja:</span>
-              <span class="monto-val">{{ cajaActual()?.saldoInicial | currency:'EUR' }}</span>
+            <div class="resumen-cierre-seccion">
+              <h4 class="titulo-seccion-modal">Balance de Cuentas del Día</h4>
+              <div class="resumen-cierre-grid">
+                <div class="resumen-fila-item">
+                  <span class="concepto-lbl">Fondo Inicial de Caja:</span>
+                  <span class="monto-val">{{ cajaActual()?.saldoInicial | currency:'EUR' }}</span>
+                </div>
+                <div class="resumen-fila-item texto-positivo">
+                  <span class="concepto-lbl">📥 Ventas en Efectivo:</span>
+                  <span class="monto-val font-mono">+{{ totalVentasEfectivo() | currency:'EUR' }}</span>
+                </div>
+                <div class="resumen-fila-item texto-neutral">
+                  <span class="concepto-lbl">💳 Ventas en Tarjeta:</span>
+                  <span class="monto-val font-mono">{{ totalVentasTarjeta() | currency:'EUR' }}</span>
+                </div>
+                <div class="resumen-fila-item texto-positivo">
+                  <span class="concepto-lbl">💰 Anticipos Recibidos:</span>
+                  <span class="monto-val font-mono">+{{ totalAnticipos() | currency:'EUR' }}</span>
+                </div>
+                <div class="resumen-fila-item texto-positivo">
+                  <span class="concepto-lbl">🟢 Entradas Manuales:</span>
+                  <span class="monto-val font-mono">+{{ totalIngresos() | currency:'EUR' }}</span>
+                </div>
+                <div class="resumen-fila-item texto-negativo">
+                  <span class="concepto-lbl">🔴 Gastos / Pagos Caja:</span>
+                  <span class="monto-val font-mono">-{{ totalGastos() | currency:'EUR' }}</span>
+                </div>
+                <div class="resumen-fila-item texto-negativo">
+                  <span class="concepto-lbl">⏪ Devoluciones Emitidas:</span>
+                  <span class="monto-val font-mono">-{{ totalDevoluciones() | currency:'EUR' }}</span>
+                </div>
+                <div class="resumen-fila-item fila-esperado-destacada">
+                  <span class="concepto-lbl font-bold">Efectivo Teórico Esperado:</span>
+                  <span class="monto-val font-bold-total font-mono">{{ cajaActual()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</span>
+                </div>
+              </div>
             </div>
-            
-            <div class="resumen-fila-item texto-positivo">
-              <span class="concepto-lbl">📥 Ventas en Efectivo:</span>
-              <span class="monto-val">+{{ totalVentasEfectivo() | currency:'EUR' }}</span>
-            </div>
-            
-            <div class="resumen-fila-item texto-neutral">
-              <span class="concepto-lbl">💳 Ventas en Tarjeta:</span>
-              <span class="monto-val">{{ totalVentasTarjeta() | currency:'EUR' }}</span>
-            </div>
-            
-            <div class="resumen-fila-item texto-positivo">
-              <span class="concepto-lbl">💰 Anticipos Recibidos:</span>
-              <span class="monto-val">+{{ totalAnticipos() | currency:'EUR' }}</span>
-            </div>
-            
-            <div class="resumen-fila-item texto-positivo">
-              <span class="concepto-lbl">🟢 Entradas Manuales:</span>
-              <span class="monto-val">+{{ totalIngresos() | currency:'EUR' }}</span>
-            </div>
-            
-            <div class="resumen-fila-item texto-negativo">
-              <span class="concepto-lbl">🔴 Gastos / Pagos Caja:</span>
-              <span class="monto-val">-{{ totalGastos() | currency:'EUR' }}</span>
-            </div>
-            
-            <div class="resumen-fila-item texto-negativo">
-              <span class="concepto-lbl">⏪ Devoluciones Emitidas:</span>
-              <span class="monto-val">-{{ totalDevoluciones() | currency:'EUR' }}</span>
-            </div>
-            
-            <div class="resumen-fila-item fila-esperado-destacada">
-              <span class="concepto-lbl font-bold">Efectivo Teórico Esperado:</span>
-              <span class="monto-val font-bold-total">{{ cajaActual()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</span>
+
+            <div class="divisor-cierre-modal"></div>
+              
+            <div class="tactil-form text-center">
+              <p class="instruction">Cuenta todo el dinero físico introduciendo el total real:</p>
+              <div class="input-field-tactil unique-huge">
+                <label>EFECTIVO TOTAL EN CAJA (€)</label>
+                <input type="text" 
+                 [value]="inputActivo() === 'saldoFinalRealContado' ? textoSaldoTmp : (saldoFinalRealContado || '')"
+                 (click)="activarTeclado('saldoFinalRealContado')" readonly>
+              </div>
+
+              <button class="btn-confirm-tactil-action danger" (click)="ejecutarCierreCaja()">
+                🔒 Ejecutar Arqueo y Cerrar Turno
+              </button>
             </div>
           </div>
         </div>
+      </div>
+    }
 
-         <div class="caja-action-pad">
-          <button class="pad-btn btn-blue" (click)="verPdf(cajaActual()!.id, '80mm')">
-            <span class="icon">🖨️</span> Ticket (80mm)
-          </button>
-        
-          <button class="pad-btn btn-purple" (click)="verPdf(cajaActual()!.id, 'a4')">
-            <span class="icon">📄</span> Folio (A4)
-          </button>
-         </div>
-
-        <div class="divisor-cierre-modal"></div>
-          
+    @if (mostrarModalApertura()) {
+      <div class="modal-backdrop-blur">
+        <div class="modal-sheet-tactil">
+          <div class="sheet-header">
+            <h3>Declaración de Fondo Inicial</h3>
+            <button class="close-tactil" (click)="mostrarModalApertura.set(false)">✕</button>
+          </div>
           <div class="tactil-form text-center">
-            <p class="instruction">Cuenta todo el dinero físico introduciendo el total real:</p>
-            
+            <p class="instruction font-medium">Introduce la cantidad de efectivo físico con la que inicia el cajón:</p>
             <div class="input-field-tactil unique-huge">
-              <label>EFECTIVO TOTAL EN CAJA (€)</label>
+              <label>FONDO DE CAJA INICIAL (€)</label>
               <input type="text" 
-               [value]="inputActivo() === 'saldoFinalRealContado' ? textoSaldoTmp : (saldoFinalRealContado || '')"
-               (click)="activarTeclado('saldoFinalRealContado')"
-               (input)="textoSaldoTmp = $any($event.target).value; saldoFinalRealContado = +$any($event.target).value"
-               inputmode="decimal" autofocus>
+                     [value]="inputActivo() === 'montoApertura' ? textoAperturaTmp : (montoApertura || '')"
+                     (click)="activarTeclado('montoApertura')" readonly>
             </div>
-
-            <button class="btn-confirm-tactil-action danger" (click)="ejecutarCierreCaja()">
-              🔒 Ejecutar Arqueo y Cerrar Turno
+            <button class="btn-confirm-tactil-action success" (click)="ejecutarAperturaCaja()">
+              🔓 Confirmar Apertura de Caja
             </button>
-            </div>
-            
           </div>
         </div>
       </div>
@@ -251,7 +289,7 @@
 
           <div class="sheet-footer">
             <button class="btn-skip-tactil" (click)="mostrarModalPdf.set(false)">
-              Salir al Panel Principal
+              Ver Informe en Pantalla
             </button>
           </div>
         </div>
@@ -269,7 +307,7 @@
     </div>
     
     <div class="teclado-body">
-     <div class="teclado-fila">
+      <div class="teclado-fila">
         @for (num of lineaNumeros; track num) {
           <button type="button" (click)="escribirTeclado(num)">{{ num }}</button>
         }
