@@ -28,6 +28,8 @@ export class InventarioListComponent implements OnInit {
   // === MAQUINARIA DEL TECLADO TÁCTIL MASTER ===
   mostrarTecladoGeneral = signal<boolean>(false);
   valorTecladoEnConstruccion = signal<string>('');
+  mayusculasGeneral = signal<boolean>(true);
+
 
   // Estado para mostrar el modal de confirmación de anticipar stock
   mostrarModalConfirmar = signal<boolean>(false);
@@ -69,7 +71,19 @@ export class InventarioListComponent implements OnInit {
   }
 
   pulsarTeclaGeneral(caracter: string) {
-    this.valorTecladoEnConstruccion.update(val => val + caracter);
+    // Procesamos si el carácter es una letra para respetar el estado del Shift
+    let valorAInsertar = caracter;
+    const esLetra = /^[a-zA-ZÑñ]$/.test(caracter);
+    
+    if (esLetra) {
+      valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
+    }
+
+    this.valorTecladoEnConstruccion.update(val => val + valorAInsertar);
+  }
+
+  alternarMayusculasGeneral() {
+    this.mayusculasGeneral.set(!this.mayusculasGeneral());
   }
 
   borrarUltimoCaracterGeneral() {

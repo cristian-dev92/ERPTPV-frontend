@@ -26,6 +26,7 @@ export class ProveedoresComponent implements OnInit {
   mostrarTecladoGeneral = signal<boolean>(false);
   inputObjetivoTeclado = signal<string>('');
   valorTecladoEnConstruccion = signal<string>('');
+  mayusculasGeneral = signal<boolean>(true);
 
   // Modal de confirmación para eliminación
   mostrarModalBorrar = signal<boolean>(false);
@@ -87,7 +88,19 @@ export class ProveedoresComponent implements OnInit {
   }
 
   pulsarTeclaGeneral(caracter: string) {
-    this.valorTecladoEnConstruccion.update(val => val + caracter);
+   // Comprobamos si es una letra para transformarla según el estado del Shift
+    let valorAInsertar = caracter;
+    const esLetra = /^[a-zA-ZÑñ]$/.test(caracter);
+    
+    if (esLetra) {
+      valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
+    }
+
+    this.valorTecladoEnConstruccion.update(val => val + valorAInsertar);
+  }
+
+  alternarMayusculasGeneral() {
+    this.mayusculasGeneral.set(!this.mayusculasGeneral());
   }
 
   borrarUltimoCaracterGeneral() {

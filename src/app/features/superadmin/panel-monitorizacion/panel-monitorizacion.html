@@ -1,0 +1,81 @@
+<div class="superadmin-container">
+  <header class="sa-header">
+    <div>
+      <h1>Panel de Monitorización de Infraestructura</h1>
+      <p>Pasarela fiscal unificada. Verificación de conexiones en tiempo real con los servidores de Hacienda (VeriFactu).</p>
+    </div>
+    <button type="button" class="btn-refresh" [disabled]="loading()" (click)="comprobarConectividadSaaS()">
+      <span class="icon">🔄</span> Recomprobar Líneas
+    </button>
+  </header>
+
+  <div class="kpi-grid">
+    <div class="kpi-card text-slate">
+      <span class="kpi-title">Inquilinos Operando</span>
+      <span class="kpi-value">{{ entornosTotales() }}</span>
+    </div>
+    <div class="kpi-card" [class.text-green]="entornosCaidos() === 0" [class.text-red]="entornosCaidos() > 0">
+      <span class="kpi-title">Integraciones Rotas (Hacienda)</span>
+      <span class="kpi-value">{{ entornosCaidos() }}</span>
+    </div>
+    <div class="kpi-card text-blue">
+      <span class="kpi-title">Core Engine Status</span>
+      <span class="kpi-value">ONLINE</span>
+    </div>
+  </div>
+
+  <hr class="divisor" />
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Haciendo ping a los endpoints regionales de la AEAT...</p>
+    </div>
+  }
+
+  @if (!loading()) {
+    <div class="table-responsive">
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>ID Tenant</th>
+            <th>Razón Social / Comercio</th>
+            <th>NIF Estructura</th>
+            <th>Estado Núcleo</th>
+            <th>Semáforo Fiscal (VeriFactu)</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (emp of empresasSistemas(); track emp.id) {
+            <tr>
+              <td><strong>#{{ emp.id }}</strong></td>
+              <td>{{ emp.nombre }}</td>
+              <td><code>{{ emp.nif }}</code></td>
+              <td>
+                <span class="dot-status" [class.dot-on]="emp.activa" [class.dot-off]="!emp.activa"></span>
+                {{ emp.activa ? 'En Línea' : 'SaaS Suspendido' }}
+              </td>
+              <td>
+                <div class="status-pill-container">
+                  @if (emp.verifactuOk) {
+                    <span class="pill-fiscal state-ok">
+                      <span class="pulse-dot"></span> 🟢 ENVIANDO CORRECTAMENTE
+                    </span>
+                  } @else {
+                    <span class="pill-fiscal state-error">
+                      ❌ CONEXIÓN INTERRUMPIDA / CERTIFICADO INCORRECTO
+                    </span>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center">No hay pasarelas activas para auditar actualmente.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

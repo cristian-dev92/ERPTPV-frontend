@@ -14,15 +14,15 @@ export const routes: Routes = [
     children: [
       {
         path: 'empresas',
-        loadComponent: () => import('./features/superadmin/gestion-empresas').then(m => m.GestionEmpresasComponent)
+        loadComponent: () => import('./features/superadmin/gestion-empresas/gestion-empresas').then(m => m.GestionEmpresasComponent)
       },
       {
-        path: 'metricas',
-        loadComponent: () => import('./features/superadmin/gestion-empresas').then(m => m.GestionEmpresasComponent) // Temporal
+        path: 'jefes',
+        loadComponent: () => import('./features/superadmin/gestion-jefes/gestion-jefes').then(m => m.GestionJefesComponent) 
       },
       {
-        path: 'config',
-        loadComponent: () => import('./features/superadmin/gestion-empresas').then(m => m.GestionEmpresasComponent) // Temporal
+        path: 'monitorizacion',
+        loadComponent: () => import('./features/superadmin/panel-monitorizacion/panel-monitorizacion').then(m => m.PanelMonitorizacionComponent) // Temporal
       },
       {
         path: '',

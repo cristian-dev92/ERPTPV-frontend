@@ -8,6 +8,7 @@ export interface TurnoCajaResponseDTO {
   empresaId: number;
   nombreUsuarioApertura: string;
   fechaHoraApertura: string;
+  fechaHoraCierre: string;
   saldoInicial: number;
   totalVentasEfectivo: number;
   totalVentasTarjeta: number;
@@ -97,4 +98,16 @@ export class CajaService {
   descargarPdfA4(id: number): Observable<Blob> {
     return this.http.get(`${this.apiUrl}/${id}/pdf/a4`, { responseType: 'blob' });
   }
+
+  // Recupera el último turno cerrado de la base de datos para no perder el histórico al refrescar
+  obtenerUltimoCierreHistorico(): Observable<TurnoCajaResponseDTO | null> {
+    return this.http.get<TurnoCajaResponseDTO>(`${this.apiUrl}/ultimo-cierre`).pipe(
+      tap(caja => this.ultimoTurnoCerrado.set(caja || null)),
+      catchError(() => {
+        this.ultimoTurnoCerrado.set(null);
+        return of(null);
+      })
+    );
+  }
+  
 }

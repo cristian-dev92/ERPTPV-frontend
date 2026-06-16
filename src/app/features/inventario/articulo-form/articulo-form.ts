@@ -34,6 +34,7 @@ export class ArticuloFormComponent implements OnInit {
   mostrarTecladoGeneral = signal<boolean>(false);
   inputObjetivoTeclado = signal<string>('');
   valorTecladoEnConstruccion = signal<string>('');
+  mayusculasGeneral = signal<boolean>(true);
 
    // Inyección de dependencias
   private articuloService = inject(ArticuloService);
@@ -110,7 +111,19 @@ export class ArticuloFormComponent implements OnInit {
     if (caracter === '.' && actual.includes('.')) return;
     if (actual.includes('.') && actual.split('.')[1].length >= 2 && (objetivo === 'PRECIO' || objetivo === 'IVA')) return;
 
-    this.valorTecladoEnConstruccion.update(val => val + caracter);
+    // Si es una letra alfabética (no números, ni espacios, ni caracteres especiales), respetamos el Shift
+    let valorAInsertar = caracter;
+    const esLetra = /^[a-zA-ZÑñ]$/.test(caracter);
+    
+    if (esLetra) {
+      valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
+    }
+
+    this.valorTecladoEnConstruccion.update(val => val + valorAInsertar);
+  }
+
+  alternarMayusculasGeneral() {
+    this.mayusculasGeneral.set(!this.mayusculasGeneral());
   }
 
   borrarUltimoCaracterGeneral() {

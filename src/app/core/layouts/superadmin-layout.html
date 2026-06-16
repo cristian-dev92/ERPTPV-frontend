@@ -3,17 +3,23 @@
   <aside class="sidebar">
     <div class="sidebar-brand">
       <span class="logo-icon">🚀</span>
-      <span class="logo-text" *ngIf="!sidebarColapsado()">ERP SaaS</span>
+      @if (!sidebarColapsado()) {
+        <span class="logo-text">Core SaaS Panel</span>
+      }
     </div>
 
     <nav class="sidebar-menu">
       <ul>
-        <li *ngFor="let item of menuItems">
-          <a [routerLink]="item.ruta" routerLinkActive="active" class="menu-link">
-            <span class="icon">{{ item.icono }}</span>
-            <span class="label" *ngIf="!sidebarColapsado()">{{ item.etiqueta }}</span>
-          </a>
-        </li>
+        @for (item of menuItems; track item.ruta) {
+          <li>
+            <a [routerLink]="item.ruta" routerLinkActive="active" class="menu-link">
+              <span class="icon">{{ item.icono }}</span>
+              @if (!sidebarColapsado()) {
+                <span class="label">{{ item.etiqueta }}</span>
+              }
+            </a>
+          </li>
+        }
       </ul>
     </nav>
   </aside>
@@ -25,12 +31,12 @@
       </button>
 
       <div class="header-right-zone">
-      <div class="header-user">
-        <span class="user-badge">SuperAdmin</span>
-        <span class="user-name">Cristian</span>
-      </div>
+        <div class="header-user">
+          <span class="user-badge">SuperAdmin</span>
+          <span class="user-name">Cristian</span>
+        </div>
 
-      <button class="btn-logout" (click)="ejecutarLogout()" title="Cerrar Sesión">
+        <button class="btn-logout" (click)="ejecutarLogout()" title="Cerrar Sesión">
           <span class="icon">🚪</span> Salir
         </button>
       </div>

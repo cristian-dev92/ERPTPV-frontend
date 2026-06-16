@@ -1,0 +1,139 @@
+<div class="superadmin-container">
+  <header class="sa-header">
+    <div>
+      <h1>Gestión Global de Empresas</h1>
+      <p>Alta rápida de inquilinos SaaS y control total de activación de entornos.</p>
+    </div>
+    <button class="btn-alta" (click)="mostrarModalAlta.set(true)">
+      <span class="icon">➕</span> Alta Rápida de Empresa
+    </button>
+  </header>
+
+  <hr class="divisor" />
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando registros del ecosistema SaaS...</p>
+    </div>
+  }
+
+  @if (!loading()) {
+    <div class="table-responsive">
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre Comercial</th>
+            <th>NIF / CIF</th>
+            <th>Estado Operativo</th>
+            <th>Acción Crítica</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (emp of empresas(); track emp.id) {
+            <tr>
+              <td><strong>#{{ emp.id }}</strong></td>
+              <td>{{ emp.nombre }}</td>
+              <td><code>{{ emp.nif }}</code></td>
+              
+              <td>
+                <span class="badge-estado" [class.badge-active]="emp.activa" [class.badge-suspended]="!emp.activa">
+                  {{ emp.activa ? '🟢 ACTIVA / EN SERVICIO' : '🔴 SUSPENDIDA / BLOQUEADA' }}
+                </span>
+              </td>
+
+              <td>
+                <button class="btn-panic" [class.active]="emp.activa" [class.suspended]="!emp.activa" (click)="solicitarConfirmacionPanic(emp)">
+                  {{ emp.activa ? '🔒 Suspender Empresa' : '🔓 Activar Empresa' }}
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center">No hay ninguna empresa registrada en el sistema.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (mostrarModalPanic()) {
+    <div class="modal-backdrop-blur-sa">
+      <div class="modal-sheet-sa text-center">
+        <div class="modal-header-sa text-danger">⚠️ ¿Confirmar cambio de estado crítico?</div>
+        <div class="modal-body-sa">
+          <p>Vas a modificar el estado de la empresa <strong>"{{ empresaSeleccionadaPanic()?.nombre }}"</strong>.</p>
+          @if (empresaSeleccionadaPanic()?.activa) {
+            <p class="advertencia-sub">Esto suspenderá el acceso a todos los terminales TPV y paneles de gestión de este inquilino inmediatamente.</p>
+          } @else {
+            <p class="advertencia-sub" style="color: #4caf50;">Esto restablecerá el acceso comercial completo al entorno de trabajo.</p>
+          }
+        </div>
+        <div class="form-actions" style="justify-content: center; gap: 15px; margin-top: 20px;">
+          <button class="btn-close-sa cancel" (click)="cerrarModalPanic()">No, cancelar</button>
+          <button class="btn-close-sa success" [style.background-color]="empresaSeleccionadaPanic()?.activa ? '#f44336' : '#4caf50'" (click)="confirmarAlternarEstado()">
+            Sí, ejecutar acción
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (mostrarModalAlta()) {
+    <div class="modal-backdrop-blur-sa">
+      <div class="modal-sheet-sa large">
+        <div class="modal-header-sa">🏢 Crear Nuevo Inquilino SaaS</div>
+        <form (ngSubmit)="ejecutarAlta()" #altaForm="ngForm" class="sa-form">
+          <div class="form-grid">
+            <div>
+              <h3>Datos de la Empresa</h3>
+              <div class="field">
+                <label>Nombre Comercial</label>
+                <input type="text" [(ngModel)]="nuevaEmpresa.nombreComercial" name="nombre" required />
+              </div>
+              <div class="field">
+                <label>NIF / CIF</label>
+                <input type="text" [(ngModel)]="nuevaEmpresa.cif" name="cif" required />
+              </div>
+              <div class="field">
+                <label>Dirección</label>
+                <input type="text" [(ngModel)]="nuevaEmpresa.direccion" name="direccion" required />
+              </div>
+              <div class="field">
+                <label>Ciudad</label>
+                <input type="text" [(ngModel)]="nuevaEmpresa.ciudad" name="ciudad" required />
+              </div>
+            </div>
+
+            <div>
+              <h3>Credenciales del Dueño (Admin)</h3>
+              <div class="field">
+                <label>Nombre Completo</label>
+                <input type="text" [(ngModel)]="nuevaEmpresa.nombreAdmin" name="nombreAd" required />
+              </div>
+              <div class="field">
+                <label>Email Corporativo</label>
+                <input type="email" [(ngModel)]="nuevaEmpresa.emailAdmin" name="emailAd" required />
+              </div>
+              <div class="field">
+                <label>Contraseña Inicial</label>
+                <input type="password" [(ngModel)]="nuevaEmpresa.passwordAdmin" name="passAd" required />
+              </div>
+              <div class="field">
+                <label>Teléfono de Contacto</label>
+                <input type="text" [(ngModel)]="nuevaEmpresa.telefono" name="telefono" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-close-sa cancel" (click)="mostrarModalAlta.set(false)">Cancelar</button>
+            <button type="submit" class="btn-close-sa success" [disabled]="!altaForm.valid">Guardar e Inyectar Inquilino</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

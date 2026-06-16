@@ -54,6 +54,7 @@ export class ClientesComponent implements OnInit {
   mostrarTecladoGeneral = signal<boolean>(false);
   inputObjetivoTeclado = signal<string>('');
   valorTecladoEnConstruccion = signal<string>('');
+  mayusculasGeneral = signal<boolean>(true);
 
   // CONTROL DE MODO MODAL PARA SELECCIÓN RÁPIDA DESDE TPV
   modoEdicion = signal<boolean>(false);
@@ -82,20 +83,32 @@ export class ClientesComponent implements OnInit {
   }
 
   pulsarTeclaGeneral(caracter: string) {
-    this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + caracter);
+   // 🚀 NUEVO: Procesamos si el carácter es una letra para respetar el estado de las mayúsculas
+    let valorAInsertar = caracter;
+    const esLetra = /^[a-zA-ZÑñ]$/.test(caracter);
+    
+    if (esLetra) {
+      valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
+    }
+
+    // Mantenemos tu lógica original de actualización de strings y filtrado reactivo al vuelo
+    this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + valorAInsertar);
     
     if (this.inputObjetivoTeclado() === 'BUSQUEDA') {
       this.filtroBusqueda.set(this.valorTecladoEnConstruccion());
     }
   }
 
-  borrarUltimoCaracterGeneral() {
-    const actual = this.valorTecladoEnConstruccion();
-    const nuevoValor = actual.slice(0, -1);
-    this.valorTecladoEnConstruccion.set(nuevoValor);
+  alternarMayusculasGeneral() {
+    this.mayusculasGeneral.set(!this.mayusculasGeneral());
+  }
 
+  borrarUltimoCaracterGeneral() {
+   this.valorTecladoEnConstruccion.update(val => val.slice(0, -1));
+    
+    // 💡 Clonamos la validación del filtro para que la búsqueda responda también al borrar de forma táctil
     if (this.inputObjetivoTeclado() === 'BUSQUEDA') {
-      this.filtroBusqueda.set(nuevoValor);
+      this.filtroBusqueda.set(this.valorTecladoEnConstruccion());
     }
   }
 

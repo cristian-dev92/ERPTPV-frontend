@@ -1,0 +1,95 @@
+<div class="superadmin-container">
+  <header class="sa-header">
+    <div>
+      <h1>Gestión de Jefes (Admins)</h1>
+      <p>Control directo de credenciales de acceso, rescate de cuentas corporativas y contraseñas de soporte.</p>
+    </div>
+  </header>
+
+  <hr class="divisor" />
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Sincronizando cuentas de administración...</p>
+    </div>
+  }
+
+  @if (!loading()) {
+    <div class="table-responsive">
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>ID Empresa</th>
+            <th>Empresa Asignada</th>
+            <th>Nombre del Dueño</th>
+            <th>Email de Acceso</th>
+            <th>Acciones de Credenciales</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (jefe of jefes(); track jefe.usuarioId) {
+            <tr>
+              <td><strong>#{{ jefe.empresaId }}</strong></td>
+              <td>{{ jefe.nombreEmpresa }}</td>
+              <td>{{ jefe.nombreAdmin }}</td>
+              <td><code>{{ jefe.emailAdmin }}</code></td>
+              <td>
+                <div class="action-bundle">
+                  <button type="button" class="btn-action-tool type-email" (click)="abrirModalEmail(jefe)" title="Modificar Email de Entrada">
+                    📧 Modificar Email
+                  </button>
+                  <button type="button" class="btn-action-tool type-key" (click)="solicitarResetClave(jefe)" title="Forzar Clave Temporal">
+                    🔑 Resetear Clave
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center">No se han encontrado administradores dados de alta en ningún entorno.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (mostrarModalEmail()) {
+    <div class="modal-backdrop-blur-sa">
+      <div class="modal-sheet-sa">
+        <div class="modal-header-sa">📧 Cambiar Email de Autenticación</div>
+        <div class="modal-body-sa">
+          <p>Vas a modificar el correo electrónico de acceso para el administrador de <strong>"{{ jefeSeleccionado()?.nombreEmpresa }}"</strong>.</p>
+          
+          <div class="sa-form" style="padding: 1rem 0 0 0;">
+            <div class="field">
+              <label>Nuevo Email Corporativo</label>
+              <input type="email" [(ngModel)]="nuevoEmailInput" name="nuevoEmail" placeholder="ejemplo@empresa.com" required />
+            </div>
+          </div>
+        </div>
+        <div class="form-actions-footer">
+          <button type="button" class="btn-close-sa cancel" (click)="cerrarModalEmail()">Cancelar</button>
+          <button type="button" class="btn-close-sa success" [disabled]="!nuevoEmailInput()" (click)="ejecutarCambioEmail()">Actualizar Acceso</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (mostrarModalClave()) {
+    <div class="modal-backdrop-blur-sa">
+      <div class="modal-sheet-sa text-center">
+        <div class="modal-header-sa text-danger">⚠️ Clave Temporal Generada con Éxito</div>
+        <div class="modal-body-sa">
+          <p>Copia y transfiérele de forma segura este token de acceso de contingencia al cliente:</p>
+          <div class="key-viewer">{{ passwordTemporalGenerada() }}</div>
+          <p class="text-small">El sistema forzará al administrador a actualizarla en cuanto inicie sesión en su panel.</p>
+        </div>
+        <div class="form-actions-footer" style="padding: 1rem;">
+          <button type="button" class="btn-close-sa success" (click)="cerrarModalClave()">He copiado la clave con éxito</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

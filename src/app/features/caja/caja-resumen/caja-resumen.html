@@ -83,7 +83,7 @@
         @if (cajaActual() === null) {
           <div class="tile-caja bg-neutral">
             <span class="lbl">Efectivo Real Contado</span>
-            <span class="val">{{ datosInforme()?.saldoFinalRealEfectivo | currency:'EUR' }}</span>
+            <span class="val">{{ datosInforme()?.saldoFinalReal | currency:'EUR' }}</span>
           </div>
           
           <div class="tile-caja" [ngClass]="descuadre() === 0 ? 'bg-descuadre-cero' : (descuadre() > 0 ? 'bg-descuadre-positivo' : 'bg-descuadre-negativo')">
@@ -104,11 +104,11 @@
           </button>
         }
 
-        <button class="pad-btn btn-blue" (click)="verPdf(datosInforme()!.id, '80mm')">
+        <button class="pad-btn btn-blue" [disabled]="!datosInforme()" (click)="datosInforme() && verPdf(datosInforme()!.id, '80mm')">
           <span class="icon">🖨️</span> Ticket (80mm)
         </button>
         
-        <button class="pad-btn btn-purple" (click)="verPdf(datosInforme()!.id, 'a4')">
+        <button class="pad-btn btn-purple" [disabled]="!datosInforme()" (click)="datosInforme() && verPdf(datosInforme()!.id, 'a4')">
           <span class="icon">📄</span> Factura (A4)
         </button>
         
@@ -184,7 +184,7 @@
               <div class="resumen-cierre-grid">
                 <div class="resumen-fila-item">
                   <span class="concepto-lbl">Fondo Inicial de Caja:</span>
-                  <span class="monto-val">{{ cajaActual()?.saldoInicial | currency:'EUR' }}</span>
+                  <span class="monto-val">{{ datosInforme()?.saldoInicial | currency:'EUR' }}</span>
                 </div>
                 <div class="resumen-fila-item texto-positivo">
                   <span class="concepto-lbl">📥 Ventas en Efectivo:</span>
@@ -212,7 +212,7 @@
                 </div>
                 <div class="resumen-fila-item fila-esperado-destacada">
                   <span class="concepto-lbl font-bold">Efectivo Teórico Esperado:</span>
-                  <span class="monto-val font-bold-total font-mono">{{ cajaActual()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</span>
+                  <span class="monto-val font-bold-total font-mono">{{ datosInforme()?.saldoFinalEsperadoEfectivo | currency:'EUR' }}</span>
                 </div>
               </div>
             </div>

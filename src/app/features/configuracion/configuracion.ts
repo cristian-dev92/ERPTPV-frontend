@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiService } from '../../core/services/ui.service';
@@ -19,8 +19,14 @@ export class ConfiguracionComponent implements OnInit {
   loading = signal<boolean>(false);
   mostrarFormularioNuevo = signal<boolean>(false);
 
-  // --- DATOS PERFIL PROPIO (MOCK) ---
-  emailActual = signal<string>('');
+  // --- VISIBILIDAD DE CONTRASEÑAS (Ojo para ver puntitos) ---
+  verPassActual = signal<boolean>(false);
+  verNuevaPass = signal<boolean>(false);
+  verConfirmarPass = signal<boolean>(false);
+  verPassNuevoEmp = signal<boolean>(false);
+
+  // --- DATOS PERFIL PROPIO ---
+  emailActual = signal<string>('admin@empresaprueba.com'); // Debería venir de tu AuthService
   inputEmail = '';
   passActual = '';
   nuevaPass = '';
@@ -28,38 +34,37 @@ export class ConfiguracionComponent implements OnInit {
   nombreFirmaCargada = signal<string | null>(null);
   nombreLogoCargado = signal<string | null>(null);
 
-  // --- DATOS GESTIÓN USUARIOS EMPRESA (CONECTADO A BACKEND) ---
+  // --- DATOS GESTIÓN USUARIOS EMPRESA ---
   usuariosEmpresa = signal<any[]>([]);
   usuarioSeleccionado = signal<any | null>(null);
   nuevaPassUsuario = '';
   nuevoEmailUsuario = '';
 
-  // --- FORMULARIO NUEVO EMPLEADO (NuevoEmpleadoRequest) ---
+  // --- FORMULARIO NUEVO EMPLEADO ---
   nuevoEmpleado = {
     nombre: '',
     email: '',
     password: '',
-    rol: 'EMPLEADO'
+    rol: 'EMPLEADO' // 'EMPLEADO' | 'ADMIN'
   };
 
   // --- CONFIGURACIÓN TECLADO TÁCTIL ---
   mostrarTeclado = signal<boolean>(false);
   inputActivo = signal<string>('');
+  mayusculas = signal<boolean>(true); // NUEVO: Estado para alternar Mayús/Minús
 
   lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@'];
   lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ', '.'];
   lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '_', 'com'];
   lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
-  // Buffers temporales para escritura fluida
+  // Buffers temporales
   textoEmailTmp = '';
   textoPassActualTmp = '';
   textoNuevaPassTmp = '';
   textoConfirmarPassTmp = '';
   textoUserEmailTmp = '';
   textoUserPassTmp = '';
-
-  // Nuevos buffers para el alta de operarios
   textoNuevoEmpNombreTmp = '';
   textoNuevoEmpEmailTmp = '';
   textoNuevoEmpPassTmp = '';
@@ -68,18 +73,14 @@ export class ConfiguracionComponent implements OnInit {
     this.obtenerPersonalAutorizado();
   }
 
-  /**
-   * Carga la lista de empleados reales desde la base de datos
-   */
   obtenerPersonalAutorizado(): void {
     this.configService.listarEmpleados().subscribe({
-      next: (empleados) =>
-        this.usuariosEmpresa.set(empleados),
+      next: (empleados) => this.usuariosEmpresa.set(empleados),
       error: () => this.uiService.mostrarToast('Error al obtener la lista de operarios.', 'error')
     });
   }
 
-  // --- MÉTODOS TECLADO TÁCTIL ---
+  // --- MÉTODOS TECLADO TÁCTIL (CORREGIDO PARA MEMORIZAR Y SINCRONIZAR FÍSICO) ---
   activarTeclado(campo: string) {
     this.inputActivo.set(campo);
     this.mostrarTeclado.set(true);
@@ -96,17 +97,35 @@ export class ConfiguracionComponent implements OnInit {
     if (campo === 'nuevoEmpPass') this.textoNuevoEmpPassTmp = this.nuevoEmpleado.password;
   }
 
+  // 🚀 NUEVO: Sincroniza lo que el usuario escribe físicamente con los buffers internos del teclado virtual
+  sincronizarTecladoFisico(campo: string, valorActual: string) {
+    if (campo === 'inputEmail') { this.inputEmail = valorActual; this.textoEmailTmp = valorActual; }
+    if (campo === 'passActual') { this.passActual = valorActual; this.textoPassActualTmp = valorActual; }
+    if (campo === 'nuevaPass') { this.nuevaPass = valorActual; this.textoNuevaPassTmp = valorActual; }
+    if (campo === 'confirmarPass') { this.confirmarPass = valorActual; this.textoConfirmarPassTmp = valorActual; }
+    if (campo === 'nuevoEmailUsuario') { this.nuevoEmailUsuario = valorActual; this.textoUserEmailTmp = valorActual; }
+    if (campo === 'nuevaPassUsuario') { this.nuevaPassUsuario = valorActual; this.textoUserPassTmp = valorActual; }
+    if (campo === 'nuevoEmpNombre') { this.nuevoEmpleado.nombre = valorActual; this.textoNuevoEmpNombreTmp = valorActual; }
+    if (campo === 'nuevoEmpEmail') { this.nuevoEmpleado.email = valorActual; this.textoNuevoEmpEmailTmp = valorActual; }
+    if (campo === 'nuevoEmpPass') { this.nuevoEmpleado.password = valorActual; this.textoNuevoEmpPassTmp = valorActual; }
+  }
+
   cerrarTeclado() {
     this.mostrarTeclado.set(false);
     this.inputActivo.set('');
   }
 
+  // MEJORADO: Ahora respeta si está activo el modo mayúsculas o minúsculas
   escribirTeclado(caracter: string) {
     const campo = this.inputActivo();
     if (!campo) return;
 
-    // Tratamos el atajo '.com'
-    const valorAInsertar = caracter === 'com' ? '.com' : caracter;
+    let valorAInsertar = caracter === 'com' ? '.com' : caracter;
+    
+    // Si no es un carácter especial o número, aplicamos la transformación de caja
+    if (caracter !== 'com' && !this.lineaNumeros.includes(caracter) && caracter !== '-' && caracter !== '_' && caracter !== '.' && caracter !== '@') {
+      valorAInsertar = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
+    }
 
     if (campo === 'inputEmail') { this.textoEmailTmp += valorAInsertar; this.inputEmail = this.textoEmailTmp; }
     if (campo === 'passActual') { this.textoPassActualTmp += valorAInsertar; this.passActual = this.textoPassActualTmp; }
@@ -117,6 +136,10 @@ export class ConfiguracionComponent implements OnInit {
     if (campo === 'nuevoEmpNombre') { this.textoNuevoEmpNombreTmp += valorAInsertar; this.nuevoEmpleado.nombre = this.textoNuevoEmpNombreTmp; }
     if (campo === 'nuevoEmpEmail') { this.textoNuevoEmpEmailTmp += valorAInsertar; this.nuevoEmpleado.email = this.textoNuevoEmpEmailTmp; }
     if (campo === 'nuevoEmpPass') { this.textoNuevoEmpPassTmp += valorAInsertar; this.nuevoEmpleado.password = this.textoNuevoEmpPassTmp; }
+  }
+
+  alternarMayusculas() {
+    this.mayusculas.set(!this.mayusculas());
   }
 
   borrarUltimoCaracter() {
@@ -148,7 +171,7 @@ export class ConfiguracionComponent implements OnInit {
       this.uiService.mostrarToast('Las nuevas contraseñas no coinciden.', 'error');
       return;
     }
-   this.loading.set(true);
+    this.loading.set(true);
     const payload = {
       passwordActual: this.passActual,
       nuevaPassword: this.nuevaPass
@@ -167,36 +190,24 @@ export class ConfiguracionComponent implements OnInit {
     });
   }
 
-  /**
-   * Sube la firma digital del propietario al StorageService y la guarda
-   */
   onFirmaSeleccionada(event: any) {
     const file: File = event.target.files[0];
     if (!file) return;
-
     this.uiService.mostrarToast('Subiendo archivo de firma...', 'warning');
-
     this.configService.subirArchivo(file, 'firma').subscribe({
       next: (res) => {
         this.nombreFirmaCargada.set(file.name);
-        // Una vez subido el archivo físico, guardamos la URL en el perfil
         this.configService.guardarMiFirma(res.url).subscribe({
-          next: () => {
-            this.uiService.mostrarToast('Firma digital vinculada correctamente en tu perfil.', 'success');
-          }
+          next: () => this.uiService.mostrarToast('Firma digital vinculada correctamente.', 'success')
         });
       },
-      error: () => {
-        this.uiService.mostrarToast('Error al procesar la subida de la firma.', 'error');
-      }
+      error: () => this.uiService.mostrarToast('Error al procesar la subida de la firma.', 'error')
     });
   }
 
-  // Logo de la empresa
   onLogoSeleccionado(event: any) {
     const file = event.target.files[0];
     if (!file) return;
-
     this.configService.subirArchivo(file, 'logo').subscribe({
       next: (res) => {
         this.nombreLogoCargado.set(file.name);
@@ -206,7 +217,7 @@ export class ConfiguracionComponent implements OnInit {
     });
   }
 
-  // --- ACCIONES GESTIÓN DE TERCEROS ---
+  // --- GESTIÓN DE TERCEROS ---
   seleccionarUsuario(usuario: any) {
     this.mostrarFormularioNuevo.set(false);
     this.usuarioSeleccionado.set(usuario);
@@ -221,15 +232,25 @@ export class ConfiguracionComponent implements OnInit {
     }
 
     this.loading.set(true);
-    this.configService.crearEmpleado(this.nuevoEmpleado).subscribe({
+
+    // VOLVEMOS AL ROL LIMPIO: Enviamos exactamente lo que el backend espera ("EMPLEADO" o "ADMIN")
+    const payloadAlta = {
+      nombre: this.nuevoEmpleado.nombre,
+      email: this.nuevoEmpleado.email,
+      password: this.nuevoEmpleado.password,
+      rol: this.nuevoEmpleado.rol // Enviará "EMPLEADO" o "ADMIN" sin prefijos
+    };
+
+    this.configService.crearEmpleado(payloadAlta).subscribe({
       next: () => {
-        this.uiService.mostrarToast(`Operario ${this.nuevoEmpleado.nombre} creado correctamente.`, 'success');
+        this.uiService.mostrarToast(`Operario ${this.nuevoEmpleado.nombre} creado correctamente con permisos de acceso.`, 'success');
         this.nuevoEmpleado = { nombre: '', email: '', password: '', rol: 'EMPLEADO' };
         this.mostrarFormularioNuevo.set(false);
         this.loading.set(false);
         this.obtenerPersonalAutorizado();
       },
       error: (err) => {
+        console.error('Error detallado del backend:', err);
         this.uiService.mostrarToast(err.error || 'Error al crear el empleado.', 'error');
         this.loading.set(false);
       }
@@ -243,7 +264,6 @@ export class ConfiguracionComponent implements OnInit {
     this.loading.set(true);
     this.configService.resetearPasswordEmpleado(usr.id).subscribe({
       next: (res) => {
-        // El backend nos devuelve la contraseña temporal generada en res.passwordTemporal
         this.nuevaPassUsuario = res.passwordTemporal;
         this.uiService.mostrarToast(`¡Contraseña restablecida con éxito para ${usr.nombre}!`, 'success');
         this.loading.set(false);
@@ -259,11 +279,15 @@ export class ConfiguracionComponent implements OnInit {
     const usr = this.usuarioSeleccionado();
     if (!usr) return;
 
-    // Como tu compañero no ha creado el Endpoint DELETE en el backend todavía, avisamos en local
+    // FIX: Impedir que el administrador en sesión se de de baja a sí mismo y rompa el tenant
+    if (usr.email === this.emailActual() || usr.rol === 'ADMIN' && this.usuariosEmpresa().filter(u => u.rol === 'ADMIN').length === 1) {
+      this.uiService.mostrarToast('Acción denegada: Un Administrador principal no puede darse de baja a sí mismo.', 'error');
+      return;
+    }
+
     this.uiService.mostrarToast(
       `El backend no dispone de DELETE /api/admin/empleados/${usr.id}. Pídeselo a tu compañero para activar la baja real de ${usr.nombre}.`, 
       'warning'
     );
   }
-
 }

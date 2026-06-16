@@ -40,13 +40,13 @@ export class CajaResumenComponent implements OnInit {
   // Computado unificado para saber qué datos pintar en el informe (activa o recién cerrada)
   datosInforme = computed(() => this.cajaActual() ?? this.ultimaCajaCerrada());
 
-  // Completados los stubs mapeando las propiedades reales del DTO de Caja
-  totalVentasEfectivo = computed(() => this.cajaActual()?.totalVentasEfectivo ?? 0);
-  totalVentasTarjeta = computed(() => this.cajaActual()?.totalVentasTarjeta ?? 0);
-  totalAnticipos = computed(() => this.cajaActual()?.totalAnticipos ?? 0);
-  totalIngresos = computed(() => this.cajaActual()?.totalIngresosManuales ?? 0);
-  totalGastos = computed(() => this.cajaActual()?.totalGastos ?? 0);
-  totalDevoluciones = computed(() => this.cajaActual()?.totalDevoluciones ?? 0);
+  // Mapeamos los contadores contra datosInforme() para que persistan al cerrar o recargar
+  totalVentasEfectivo = computed(() => this.datosInforme()?.totalVentasEfectivo ?? 0);
+  totalVentasTarjeta = computed(() => this.datosInforme()?.totalVentasTarjeta ?? 0);
+  totalAnticipos = computed(() => this.datosInforme()?.totalAnticipos ?? 0);
+  totalIngresos = computed(() => this.datosInforme()?.totalIngresosManuales ?? 0);
+  totalGastos = computed(() => this.datosInforme()?.totalGastos ?? 0);
+  totalDevoluciones = computed(() => this.datosInforme()?.totalDevoluciones ?? 0);
   descuadre = computed(() => this.datosInforme()?.descuadre ?? 0);
 
   // --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---
@@ -78,16 +78,33 @@ export class CajaResumenComponent implements OnInit {
     this.cargarCaja();
   }
 
-  cargarCaja() {
+ cargarCaja() {
     this.cargando.set(true);
-    // Usamos checkEstadoCaja para que se actualice sincrónicamente tanto aquí como en el TPV
+    
+    // 1. Comprobamos si hay turno activo en el TPV
     this.cajaService.checkEstadoCaja().subscribe({
       next: (res) => {
-        // Si hay una caja activa recuperada, limpiamos el histórico de cierre anterior
-        if (res) this.ultimaCajaCerrada.set(null);
-        this.cargando.set(false);
+        if (res) {
+          // Si hay caja activa, el informe es la caja actual, limpiamos snapshot histórico
+          this.ultimaCajaCerrada.set(null);
+          this.cargando.set(false);
+        } else {
+          // 🚀 NO hay caja activa. Tiramos del servicio para rescatar el último turno del histórico
+          this.cajaService.obtenerUltimoCierreHistorico().subscribe({
+            next: (ultimoCierre) => {
+              if (ultimoCierre) {
+                this.ultimaCajaCerrada.set(ultimoCierre);
+              }
+              this.cargando.set(false);
+            },
+            error: () => {
+              // Si falla o no hay histórico (caso de base de datos vacía de prueba), cerramos carga sin romper nada
+              this.cargando.set(false);
+            }
+          });
+        }
       },
-      error: (err: any) => { // Tipado explícito para evitar TS7006
+      error: (err: any) => {
         console.error("Error al recuperar la caja", err);
         this.uiService.mostrarToast('Error al conectar con la caja física.', 'error');
         this.cargando.set(false);

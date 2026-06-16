@@ -1,5 +1,4 @@
 import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { UiService } from '../services/ui.service';
@@ -7,7 +6,7 @@ import { UiService } from '../services/ui.service';
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './superadmin-layout.html',
   styleUrls: ['./superadmin-layout.scss']
 })
@@ -20,8 +19,8 @@ export class SuperAdminLayoutComponent {
   // Podríamos tipar esto según el rol, ahora mismo enfocado a SuperAdmin
   menuItems = [
     { ruta: '/superadmin/empresas', etiqueta: 'Gestión Empresas', icono: '🏢' },
-    { ruta: '/superadmin/metricas', etiqueta: 'Métricas SaaS', icono: '📊' },
-    { ruta: '/superadmin/config', etiqueta: 'Configuración Global', icono: '⚙️' }
+    { ruta: '/superadmin/jefes', etiqueta: 'Gestión de Jefes (Admins)', icono: '🔑' },
+    { ruta: '/superadmin/monitorizacion', etiqueta: 'Panel Monitorización', icono: '🖥️' }
   ];
 
   alternarSidebar() {
