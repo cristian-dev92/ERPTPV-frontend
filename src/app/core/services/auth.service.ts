@@ -108,9 +108,11 @@ export class AuthService {
         extRol = extRol[0];
       }
 
-      // Si viene como un objeto de tipo GrantedAuthority (ej: {authority: 'ROLE_EMPLEADO'})
-      if (extRol && typeof extRol === 'object' && extRol.authority) {
-        extRol = extRol.authority;
+      // NORMALIZACIÓN DE PREFIJO: Si viene "EMPLEADO" o "ADMIN", le metemos el "ROLE_" antes de devolverlo
+      if (extRol && typeof extRol === 'string') {
+        if (!extRol.startsWith('ROLE_')) {
+          extRol = `ROLE_${extRol.toUpperCase()}`;
+        }
       }
 
       return extRol || null;

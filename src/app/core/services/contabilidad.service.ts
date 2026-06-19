@@ -15,6 +15,7 @@ export interface OrdenDTO {
   id?: number;
   numeroTicket: string;
   fechaHora: string;
+  fechaCreacion?: string;
   total: number;
   estadoPago: string;
   nombreCliente?: string;

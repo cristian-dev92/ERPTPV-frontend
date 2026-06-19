@@ -74,6 +74,7 @@ export class TpvComponent implements OnInit {
   private ultimaPulsacion: number = 0;
   private router = inject(Router);
   private sanitizer: DomSanitizer = inject(DomSanitizer);
+  public Math = Math;
   @ViewChild(ClientesComponent) clientesComponent!: ClientesComponent;
 
   // Estados del catalogo tactil
@@ -130,8 +131,12 @@ export class TpvComponent implements OnInit {
   // Variable para recordar la orden que se acaba de crear mientras se responde al flujo táctil
   idOrdenPendienteAnticipo = signal<number | null>(null);
 
-  // Estado para controlar si el TPV opera en modo devolución manual sin ticket
-  modoDevolucion = signal<boolean>(false);
+  // Estados para el nuevo modal interactivo de devolución parcial
+  mostrarModalSeleccionDevolucion = false;
+  ticketOrigenEncontrado: any = null;
+  lineasSeleccionadasParaDevolver: Map<number, { checked: boolean, cantidadADevolver: number }> = new Map();
+  numeroTicketBuscarInput = '';
+  mostrarModalPedirTicket = false;
  
   // Totales automáticos
   totalTicket = computed(() => {
@@ -148,7 +153,7 @@ export class TpvComponent implements OnInit {
     const totalSeguro = totalFinal > 0 ? totalFinal : 0;
 
   // Si está activo el modo devolución, el total pasa a ser negativo para restar de caja
-  return this.modoDevolucion() ? -totalSeguro : totalSeguro;
+  return totalSeguro;
   });
 
   tieneServicioEnCarrito = computed(() => {
@@ -299,76 +304,6 @@ export class TpvComponent implements OnInit {
       this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
       return;
    }
-
-  // =========================================================================
-  // 🔄 MODO DEVOLUCIÓN / ABONO ACTIVO
-  // =========================================================================
-  if (this.modoDevolucion && this.modoDevolucion()) {
-    
-    // Construimos el DTO mapeando exactamente a DevolucionRequest de Java
-    const requestDevolucion = {
-      // Si tenéis guardado el ID del ticket que se está devolviendo, se pone aquí. Si es anónimo/sin ticket, va null.
-      ordenOrigenId: (this.idTicketOrigenDevolucion ? this.idTicketOrigenDevolucion() : null), 
-      metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO',
-      lineas: this.carrito().map(item => ({
-        articuloId: item.articuloId,
-        cantidad: Math.abs(item.cantidad) // Javi pide la cantidad en POSITIVO, nos aseguramos con Math.abs
-      }))
-    };
-
-    this.ordenService.procesarDevolucion(requestDevolucion).subscribe({
-      next: (devolucionGuardada) => {
-        this.uiService.mostrarToast(`✅ Devolución procesada con éxito. Abono de ${this.totalTicket()}€ registrado.`, 'success');
-        
-        // Preparamos las referencias del ticket actual con los datos del abono generado
-        this.idOperacionProcesada.set(devolucionGuardada.id);
-        this.numeroTicketActual.set(devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`);
-        this.horaTicketActual.set(new Date().toLocaleTimeString());
-
-        // Insertamos la devolución en el historial inferior (en negativo para que cuadre visualmente)
-        const ticketAbonoHistorial: TicketHistorial = {
-          id: devolucionGuardada.id,
-          numeroTicket: devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`, 
-          fecha: new Date(),
-          cliente: this.clienteSeleccionado() ? { nombre: this.clienteSeleccionado()!.nombre } : null,
-          clienteNombre: this.clienteSeleccionado()?.nombre || 'Cliente General', // Para evitar fallos con NIF/Anónimos
-          total: -Math.abs(this.totalTicket()), // Lo pintamos en negativo en la lista
-          estadoAeat: 'PENDIENTE',
-          estadoPago: 'DEVOLUCION', 
-          tipo: 'VENTA_DIRECTA'
-        };
-
-        this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
-
-        // Si el backend devolviera QR de VeriFactu para el abono, lo preparamos
-        if (devolucionGuardada.aeatQrUrl || devolucionGuardada.aeatIdentificador) {
-          this.datosFacturaAeat.set({
-            qr: devolucionGuardada.aeatQrUrl,
-            ref: devolucionGuardada.aeatIdentificador,
-            total: -Math.abs(this.totalTicket()),
-            fecha: new Date().toLocaleTimeString()
-          });
-        }
-
-        // Activamos el visor y forzamos la previsualización e impresión del ticket de abono
-        this.isTicketVisible.set(true);
-        this.generarYPrevisualizarTicket();
-
-        // Limpiamos el estado de la devolución y el carrito
-        if (this.desactivarModoDevolucion) this.desactivarModoDevolucion(); // Función tuya para apagar el botón rojo si la tienes
-        this.limpiarCarrito();
-        this.deseleccionarCliente();
-        if (this.idTicketOrigenDevolucion) this.idTicketOrigenDevolucion.set(null); // Reset de la orden ligada a la devolución para evitar confusiones en futuras operaciones
-      },
-      error: (err) => {
-        console.error('Error en devolución:', err);
-        this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error?.message || err.error || 'Error desconocido'), 'error');
-      }
-    });
-
-    return; // Salimos de la función para que no ejecute el flujo de venta ordinaria
-  }
-
     // ==================================================
     // 💰 FLUJO ORDINARIO: VENTAS DIRECTAS Y REPARACIONES
     // ==================================================
@@ -656,7 +591,6 @@ export class TpvComponent implements OnInit {
     this.sinFechaRecogida.set(false); // Reseteamos el toggle de "Sin fecha de recogida" para la siguiente venta normal
     this.deseleccionarCliente(); // Reseteamos el cliente seleccionado a null para la siguiente venta anónima
     this.descuentoGlobal.set(0); // Reseteamos el descuento global para la siguiente venta
-    this.modoDevolucion.set(false); // Reseteamos el modo devolución para la siguiente venta normal
     this.tipoOrdenSeleccionada.set('VENTA_DIRECTA'); // Reseteamos el tipo de orden a venta directa para la siguiente venta
     this.metodoPagoSeleccionado.set('EFECTIVO'); // Reseteamos el método de pago a efectivo para la siguiente venta
     this.seleccionarCategoria('TODOS'); // Reseteamos el filtro de categoría para mostrar todo el catálogo en la siguiente venta
@@ -993,23 +927,6 @@ aplicarAccionTeclado() {
   this.cerrarTecladoGeneral();
 }
 
-// === MODOS DE VENTA / DEVOLUCIÓN ===
-
-toggleModoDevolucion() {
-  this.modoDevolucion.update(activo => !activo);
-  this.uiService.mostrarToast(
-    this.modoDevolucion() 
-      ? '⚠️ TPV en MODO DEVOLUCIÓN (Importes Negativos)' 
-      : '🛒 TPV en Modo Venta Ordinaria', 
-    this.modoDevolucion() ? 'warning' : 'success'
-  );
-}
-
-desactivarModoDevolucion(): void {
-  this.modoDevolucion.set(false);
-  this.idTicketOrigenDevolucion.set(null);
-}
-
 // === FLUJO DE ANTICIPOS (MODAL CENTRADO INTERACTIVO) ===
 
 responderSiAnticipo() {
@@ -1060,7 +977,6 @@ abrirModal() {
   this.carrito.set([]); // Vaciamos el carrito
   this.descuentoGlobal.set(0);
   this.deseleccionarCliente(); // Volvemos a cliente general / anónimo
-  this.modoDevolucion.set(false);
   this.tipoOrdenSeleccionada.set('VENTA_DIRECTA');
   this.metodoPagoSeleccionado.set('EFECTIVO');
  }
@@ -1069,107 +985,135 @@ abrirModal() {
   // Reutilizamos toda la lógica (guarda objeto, guarda ID y limpia búsquedas)
   this.seleccionarCliente(cliente);
   this.clienteSeleccionadoId.set(cliente.id);
-}
+ }
 
-/* 🔄 ACCIÓN TÁCTIL: Devuelve todo el contenido del ticket adaptándose al DevolucionRequest de Java */
-  devolverTicketCompleto(ticket: any): void {
-    // CONTROL DE SEGURIDAD: Si ya está devuelto, frenamos inmediatamente
-    if (ticket.estadoPago === 'DEVOLUCION') {
-      this.uiService.mostrarToast('⚠️ Este ticket ya figura como devuelto o abonado en el sistema.', 'warning');
-      return;
-    }
-    // 1. Nos aseguramos de que el ticket tiene líneas o artículos dentro para poder devolverlos
-    const lineasTicket = ticket.lineas || ticket.items || ticket.detalles || [];
+ // === MODO DEVOLUCION ===
 
-    if (lineasTicket.length === 0) {
-      this.uiService.mostrarToast('⚠️ Este ticket no contiene artículos registrados para poder devolver.', 'warning');
-      return;
-    }
-
-    // Guardamos los datos para usarlos al pulsar "Aceptar"
-    this.ticketParaDevolver = ticket;
-    this.mensajeModalDevolucion = `¿Estás seguro de que deseas realizar la DEVOLUCIÓN COMPLETA del ticket #${ticket.numeroTicket || ticket.id}? Se reincorporarán las ${lineasTicket.length} líneas de artículos al stock.`;
-    
-    // Abrimos el modal de SCSS
-    this.mostrarModalDevolucion = true;
+ buscarTicketOriginal(): void {
+  if (!this.numeroTicketBuscarInput.trim()) {
+    this.uiService.mostrarToast('Introduce un número de ticket válido (ej. TCK-2600004).', 'warning');
+    return;
   }
 
-  // 2. Este método se ejecuta si le dan a "❌ Cancelar"
-  cancelarDevolucion(): void {
-    this.mostrarModalDevolucion = false;
-    this.ticketParaDevolver = null;
-    this.uiService.mostrarToast('Devolución cancelada por el operario.', 'warning');
-  }
+  this.uiService.mostrarToast('🔍 Buscando ticket en el sistema...', 'success');
 
-  // 3. Este método se ejecuta si le dan a "✓ Confirmar" (TODA TU LÓGICA INTACTA)
-  ejecutarDevolucionConfirmada(): void {
-    this.mostrarModalDevolucion = false; // Cerramos el modal primero
-    const ticket = this.ticketParaDevolver;
-
-    if (!ticket) return;
-
-    const lineasTicket = ticket.lineas || ticket.items || ticket.detalles || [];
-      
-    this.uiService.mostrarToast('Procesando abono total...', 'success');
-
-    // 3. Construimos el JSON mapeando EXACTAMENTE al DevolucionRequest de Java que me has pasado
-    const requestDevolucion = {
-      ordenOrigenId: ticket.id, // Vinculamos la orden origen
-      metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO',
-      // Mapeamos las líneas del historial al DTO estricto del Back. 
-      lineas: lineasTicket.map((linea: any) => ({
-        articuloId: linea.articuloId || linea.productoId || linea.articulo?.id, 
-        cantidad: Math.abs(linea.cantidad) // Tiene que ser en POSITIVO, nos aseguramos con Math.abs
-      }))
-    };
-
-    // 4. Llamamos al endpoint que SÍ está desarrollado en tu ordenService
-    this.ordenService.procesarDevolucion(requestDevolucion).subscribe({
-      next: (devolucionGuardada) => {
-        this.uiService.mostrarToast(`✅ Devolución del ticket #${ticket.numeroTicket || ticket.id} procesada con éxito.`, 'success');
-        
-       // Preparamos las referencias en el TPV para sacar el PDF térmico del abono
-        this.idOperacionProcesada.set(devolucionGuardada.id);
-        this.numeroTicketActual.set(devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`);
-        this.horaTicketActual.set(new Date().toLocaleTimeString());
-
-        // Insertamos el abono generado en tu historial local en negativo para que cuadre visualmente
-        const ticketAbonoHistorial: TicketHistorial = {
-          id: devolucionGuardada.id,
-          numeroTicket: devolucionGuardada.numeroTicket || `ABONO-${devolucionGuardada.id}`, 
-          fecha: new Date(),
-          cliente: ticket.cliente ? { nombre: ticket.cliente.nombre } : null,
-          clienteNombre: ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General',
-          total: -Math.abs(ticket.total), // Lo pintamos en negativo en la parrilla inferior
-          estadoAeat: 'PENDIENTE',
-          estadoPago: 'DEVOLUCION',
-          tipo: 'VENTA_DIRECTA'
-        };
-
-        // Añadimos el nuevo ticket de abono arriba en la tabla del turno
-        this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
-
-        // Activamos el visor modal e inyectamos el PDF térmico de la devolución en el iframe
-        this.isTicketVisible.set(true);
-        this.generarYPrevisualizarTicket();
-
-        // Volvemos a pedir todas las órdenes al servidor para actualizar los badges del ticket original a 'DEVOLUCION' en caliente
-        this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
-          next: (ticketsActualizados) => this.historialTickets.set(ticketsActualizados),
-          error: (err) => console.error('Error al actualizar parrilla tras abono:', err)
-        });
-
-        // Limpiamos los estados de selección del mostrador por seguridad
-        this.limpiarCarrito();
-        this.deseleccionarCliente();
-        this.ticketParaDevolver = null;
-      },
-      error: (err) => {
-        console.error('Error en devolución automática:', err);
-        this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error?.message || err.error || 'Error en el servidor'), 'error');
-        this.ticketParaDevolver = null;
+  this.ordenService.buscarTicketParaDevolucion(this.numeroTicketBuscarInput.trim()).subscribe({
+    next: (ticketDTO) => {
+      if (ticketDTO.estadoPago === 'DEVUELTO') {
+        this.uiService.mostrarToast('⚠️ Este ticket ya figura como totalmente devuelto.', 'error');
+        return;
       }
-    });
+
+      this.ticketOrigenEncontrado = ticketDTO;
+      const lineas = ticketDTO.detalles || ticketDTO.lineas || [];
+      
+      // Inicializamos el Map de checkboxes y cantidades máximas
+      this.lineasSeleccionadasParaDevolver.clear();
+      lineas.forEach((linea: any) => {
+        // Usamos como clave el id del artículo o de la línea
+        const idClave = linea.articuloId || linea.articulo?.id || linea.id;
+        this.lineasSeleccionadasParaDevolver.set(idClave, {
+          checked: false,
+          cantidadADevolver: Math.abs(linea.cantidad) // Por defecto la cantidad máxima comprada
+        });
+      });
+
+      this.mostrarModalSeleccionDevolucion = true; // Abrimos la rejilla interactiva
+    },
+    error: (err) => {
+      console.error(err);
+      this.uiService.mostrarToast('No se encontró el ticket original o no es válido para abonar.', 'error');
+    }
+  });
+ }
+
+ ejecutarDevolucionSeleccionada(): void {
+  const ticket = this.ticketOrigenEncontrado;
+  if (!ticket) return;
+
+  const lineasTicketOriginal = ticket.detalles || ticket.lineas || [];
+  
+  // Filtrar solo las líneas que el zapatero ha marcado con el checkbox
+  const lineasFiltradasBody: any[] = [];
+
+  lineasTicketOriginal.forEach((linea: any) => {
+    const idClave = linea.articuloId || linea.articulo?.id || linea.id;
+    const estadoSeleccion = this.lineasSeleccionadasParaDevolver.get(idClave);
+
+    if (estadoSeleccion && estadoSeleccion.checked) {
+      lineasFiltradasBody.push({
+        articuloId: linea.articuloId || linea.articulo?.id,
+        cantidad: estadoSeleccion.cantidadADevolver // Cantidad parcial o total ajustada en pantalla
+      });
+    }
+  });
+
+  if (lineasFiltradasBody.length === 0) {
+    this.uiService.mostrarToast('⚠️ Debes seleccionar al menos un artículo para poder emitir el abono.', 'warning');
+    return;
   }
+
+  this.uiService.mostrarToast('🚀 Generando abono parcial enlazado (DEV-)...', 'success');
+
+  const requestDevolucion = {
+    ordenOrigenId: ticket.id,
+    metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO',
+    lineas: lineasFiltradasBody
+  };
+
+  this.ordenService.procesarDevolucion(requestDevolucion).subscribe({
+    next: (devolucionGuardada) => {
+      this.uiService.mostrarToast(`✅ Abono parcial ${devolucionGuardada.numeroTicket} emitido. ¡Abre el cajón!`, 'success');
+      
+      // Inyectamos las referencias para que el iframe imprima el PDF térmico del DEV-
+      this.idOperacionProcesada.set(devolucionGuardada.id);
+      this.numeroTicketActual.set(devolucionGuardada.numeroTicket);
+      this.horaTicketActual.set(new Date().toLocaleTimeString());
+
+      // Pintamos visualmente el abono generado en tu historial
+      const ticketAbonoHistorial: TicketHistorial = {
+        id: devolucionGuardada.id,
+        numeroTicket: devolucionGuardada.numeroTicket,
+        fecha: new Date(),
+        clienteNombre: ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General',
+        total: devolucionGuardada.total, // Ya viene en negativo calculado de forma nativa por tu back
+        estadoAeat: 'PENDIENTE',
+        estadoPago: 'DEVOLUCION',
+        tipo: 'VENTA_DIRECTA',
+        cliente: null
+      };
+
+      this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
+
+      // Abrimos visor térmico
+      this.isTicketVisible.set(true);
+      this.generarYPrevisualizarTicket();
+
+      // Resetear estados del flujo y limpiar mostrador
+      this.mostrarModalSeleccionDevolucion = false;
+      this.ticketOrigenEncontrado = null;
+      this.numeroTicketBuscarInput = '';
+      this.limpiarFormularioMostrador();
+    },
+    error: (err) => {
+      console.error(err);
+      this.uiService.mostrarToast('Error legal al registrar el abono: ' + (err.error?.message || 'Rechazado por el servidor'), 'error');
+    }
+  });
+ }
+
+ // Al pulsar el botón de la cabecera, abrimos el minimodal
+ pedirNumeroTicketDevolucion() {
+  this.numeroTicketBuscarInput = 'TCK-'; // Se lo dejamos preescrito para ahorrar clics
+  this.mostrarModalPedirTicket = true;
+ }
+
+// Al darle a "Buscar" o pulsar Enter, cerramos este paso y llamamos al buscador real
+confirmarTicketIntroducido() {
+  if (!this.numeroTicketBuscarInput.trim()) return;
+  
+  this.mostrarModalPedirTicket = false;
+  this.buscarTicketOriginal(); // El método que conecta con el GET de tu backend
+ }
 
 }

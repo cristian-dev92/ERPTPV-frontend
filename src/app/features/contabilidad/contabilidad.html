@@ -99,7 +99,7 @@
       </thead>
       <tbody>
         <tr *ngFor="let mov of movimientos()">
-          <td class="text-muted">{{ mov.fechaHora | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="text-muted">{{ mov.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>
             <span class="badge-id">{{ mov.numeroTicket }}</span>
             <small *ngIf="mov.id" class="text-muted" style="display:block; font-size:0.75rem;">ID Sistema: #{{ mov.id }}</small>
@@ -116,18 +116,11 @@
             'texto-ingreso': mov.estadoPago === 'PAGADO', 
             'texto-gasto': ['ANULADO', 'DEVUELTO'].includes(mov.estadoPago)
           }">
-            @if (mov.total < 0) {
-              {{ mov.total | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
+            @if (mov.total < 0 || mov.estadoPago === 'DEVUELTO') {
+              {{ (mov.total > 0 ? -mov.total : mov.total) | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
             } @else {
-              {{ ['ANULADO', 'DEVUELTO'].includes(mov.estadoPago) ? '-' : '+' }} {{ mov.total | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
+              + {{ mov.total | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
             }
-          </td>
-          <td class="text-right bold" [ngClass]="{
-            'texto-ingreso': mov.estadoPago === 'PAGADO', 
-            'texto-gasto': mov.estadoPago === 'ANULADO'
-          }">
-            {{ mov.estadoPago === 'ANULADO' ? '-' : '+' }}
-            {{ mov.total | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
           </td>
         </tr>
       </tbody>

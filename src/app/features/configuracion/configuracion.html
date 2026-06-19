@@ -65,6 +65,7 @@
 
       <div class="divider-config"></div>
 
+      @if (authService.getRolActual() === 'ROLE_ADMIN') {
       <div class="sub-section-form">
         <h4>Identidad Corporativa y Multimedia</h4>
         <p class="info-text-sec">Configura los elementos visuales que se estamparán en facturas y tickets térmicos de 80mm.</p>
@@ -87,8 +88,10 @@
           }
         </div>
       </div>
+    }
     </div>
 
+    @if (authService.getRolActual() === 'ROLE_ADMIN') {
     <div class="config-card">
       <div class="card-section-title card-title-flex">
         <div>
@@ -139,6 +142,7 @@
             <p class="info-text-sec">Selecciona una de las acciones administrativas para este usuario:</p>
             
             <div class="action-buttons-user panel-acciones-flex">
+              @if (!mostrandoConfirmacionBaja()) {
               <button class="btn-config btn-reset-pass" [disabled]="loading()" (click)="ejecutarResetPasswordEmpleado()">
                 🔄 Generar Nueva Clave
               </button>
@@ -148,9 +152,26 @@
                       (click)="darDeBajaEmpleado()">
                 🗑️ Dar de Baja
               </button>
+            }
+
+            @if (mostrandoConfirmacionBaja()) {
+                <div class="confirmacion-baja-box" style="background-color: #fef2f2; border: 1px solid #fca5a5; padding: 12px; border-radius: 8px; width: 100%; text-align: center;">
+                  <p style="color: #991b1b; font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;">
+                    ⚠️ ¿Seguro que quieres dar de baja a {{ usuarioSeleccionado().nombre }}?
+                  </p>
+                  <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button class="btn-config cancel" style="padding: 6px 16px;" (click)="mostrandoConfirmacionBaja.set(false)">
+                      No, cancelar
+                    </button>
+                    <button class="btn-config save" style="background-color: #dc2626; padding: 6px 16px;" (click)="ejecutarBajaReal()">
+                      Sí, dar de baja
+                    </button>
+                  </div>
+                </div>
+              }
             </div>
-          </div>
-        } @else {
+           </div>
+           } @else {
           <div class="no-user-selected-placeholder">
             <p>Selecciona un usuario de la lista superior para inspeccionar sus datos de acceso.</p>
           </div>
@@ -210,9 +231,8 @@
           </div>
         </div>
       }
-
     </div>
-
+  }
   </div>
 </div>
 

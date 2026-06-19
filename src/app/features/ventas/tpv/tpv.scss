@@ -125,8 +125,8 @@ $border-color: #cbd5e1;
           color: #1e293b;
           display: -webkit-box;
           -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
           line-clamp: 2; // Propiedad estándar oficia
+          -webkit-box-orient: vertical;
           overflow: hidden;
         }
 
@@ -213,19 +213,43 @@ $border-color: #cbd5e1;
     font-size: 1.25rem;
     font-weight: 700;
   }
+}
 
-  // =========================================================================
-  // 🔄 BOTÓN: DEVOLUCIÓN (CABECERA DEL TICKET ACTUAL)
-  // =========================================================================
+// =========================================================================
+// 🔄 GESTIÓN DE BÚSQUEDA DE DEVOLUCIONES (CABECERA TICKET)
+// =========================================================================
+
+.buscador-devolucion-directo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto; /* Empuja el buscador hacia la derecha de la cabecera */
+
+  .input-buscar-tck {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border: 1px solid #444444;
+    border-radius: 10px;
+    padding: 0 15px;
+    min-height: 55px; /* Altura idéntica al botón para que cuadren en paralelo */
+    font-size: 1.1rem;
+    width: 160px;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #00e676; /* Destello verde de éxito al hacer foco */
+    }
+  }
 
   .btn-toggle-devolucion {
     color: white;
-    background-color: #444444; // Color por defecto (Venta)
+    background-color: #444444; // Gris oscuro de base
     border: 1px solid #666666;
-    min-height: 55px;  /* Mucho más alto para la tablet */
-    padding: 0 20px;
-    font-size: 1.15rem;
-    border-radius: 10px;
+    min-height: 65px;          /* Altura generosa para el dedo en la tablet */
+    padding: 0 35px;
+    font-size: 1.3rem;
+    border-radius: 15px;
     font-weight: bold;
     cursor: pointer;
     display: inline-flex;
@@ -234,23 +258,24 @@ $border-color: #cbd5e1;
     gap: 8px;
     transition: all 0.15s ease;
     user-select: none;
-
-    &:active {
-      transform: scale(0.96);  /* Efecto físico de hundimiento */
+    &:hover {
+      background-color: #555555;
+      border-color: #888888;
     }
 
-    /* Cuando el modo devolución está activo (Estado de alerta/Abono) */
-    &.activo {
-      background-color: #dc2626; // Rojo de advertencia
-      border-color: #991b1b;
-      color:#ffffff;
-      box-shadow: 0 0 15px rgba(220, 38, 38, 0.4); /* Resalta el botón en modo devolución */
+    &:active {
+      transform: scale(0.96);  
+      background-color: #333333;
+      box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.4);  /* Feedback físico de pulsación */
     }
   }
 }
 
+// =========================================================================
+// 📋 REJILLA Y LÍNEAS DEL CARRITO STANDARD (MANTENER INTACTO)
+// =========================================================================
 .lineas-ticket {
-  display: block;                       // Rompe cualquier flexbox rígido heredado
+  display: block; 
   flex-grow: 1;
   overflow-y: visible;
   margin: 15px 0;
@@ -263,7 +288,6 @@ $border-color: #cbd5e1;
     padding: 12px 0;
     border-bottom: 1px solid #f0f0f0;
 
-    // Lado izquierdo: Nombre y Botones +/-
     .info-producto {
       display: flex;
       flex-direction: column;
@@ -273,6 +297,7 @@ $border-color: #cbd5e1;
         font-weight: 600;
         color: #333;
       }
+    }
 
       // =========================================================================
       // ➕➖ BOTONES DE CANTIDAD EN LÍNEA TÁCTILES (INCREMENTAR/DECREMENTAR)
@@ -312,40 +337,7 @@ $border-color: #cbd5e1;
           text-align: center;
         }
       }
-    }
 
-    
-// 🗑️ BOTÓN TÁCTIL DE ELIMINAR ARTÍCULO DEL CARRITO (.btn-remove)
-
-.btn-remove {
-  background-color: #fef2f2;  
-  border: 2px solid #fee2e2;  
-  color: #ef4444;             
-  font-size: 2rem;          /* Cubo de basura grande y visible */
-  width: 55px;                /* Tamaño perfecto para que acierte el dedo sin fallar */
-  height: 44px;               /* Centrado y equilibrado con la altura del input de descuento */
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-  transition: all 0.1s ease;
-
-  /* Al pasar el ratón (o mantener pulsado en PC de desarrollo) */
-  &:hover {
-    background-color: #fee2e2;
-    border-color: #fca5a5;
-  }
-
-  /* Efecto físico de hundimiento y alerta visual instantánea al tocar la pantalla */
-  &:active {
-    background-color: #ef4444;
-    border-color: #dc2626;
-    color: #ffffff;           /* El icono cambia a blanco al ser presionado */
-    transform: scale(0.92);
-  }
-}
     // Lado derecho: Precio y Basura
     /* 1. Ajuste del precio dentro de la línea del carrito */
   .precio-final {
@@ -390,9 +382,7 @@ $border-color: #cbd5e1;
       text-align: right;
    }
   }
- }
-}
-
+ 
 /* 2. Pantalla oscura de fondo (Overlay) */
 .modal-keypad-overlay {
   position: fixed;
@@ -407,6 +397,37 @@ $border-color: #cbd5e1;
   justify-content: center;
   z-index: 9999; /* Asegura que se pinte por encima de todo */
   animation: fadeInQuick 0.2s ease-out;
+}
+
+// 🗑️ BOTÓN TÁCTIL DE ELIMINAR ARTÍCULO DEL CARRITO (.btn-remove)
+.btn-remove {
+  background-color: #fef2f2;  
+  border: 2px solid #fee2e2;  
+  color: #ef4444;             
+  font-size: 2rem;          /* Cubo de basura grande y visible */
+  width: 55px;                /* Tamaño perfecto para que acierte el dedo sin fallar */
+  height: 44px;               /* Centrado y equilibrado con la altura del input de descuento */
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  transition: all 0.1s ease;
+
+  /* Al pasar el ratón (o mantener pulsado en PC de desarrollo) */
+  &:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+  }
+
+  /* Efecto físico de hundimiento y alerta visual instantánea al tocar la pantalla */
+  &:active {
+    background-color: #ef4444;
+    border-color: #dc2626;
+    color: #ffffff;           /* El icono cambia a blanco al ser presionado */
+    transform: scale(0.92);
+  }
 }
 
 /// =========================================================================
@@ -808,7 +829,6 @@ $border-color: #cbd5e1;
       cursor: not-allowed;
       opacity: 0.7;
     }
-  }
 
 
   /* Selectores estilo Switch/Botonera TPV */
@@ -846,7 +866,9 @@ $border-color: #cbd5e1;
         border-color: #007bff;
         box-shadow: 0 3px 6px rgba(0, 123, 255, 0.25);
       }
+     }
     }
+   }
   }
 
 /* Input extra para las notas dentro de cada línea de reparación */
@@ -1187,10 +1209,8 @@ app-clientes {
       border: 1px solid #dee2e6;
        &:hover { background: #e9ecef; } 
       }
-
-  }
-
-}
+     }
+   }
 
 @keyframes modalScaleUp { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -1446,6 +1466,7 @@ app-clientes {
       padding: 2.5rem;
       color: #94a3b8;
     }
+  }
 
 // =========================================================================
 // 📉 CONTROLES DE DESCUENTOS (TANTO EN LÍNEA COMO DESCUENTO GLOBAL)

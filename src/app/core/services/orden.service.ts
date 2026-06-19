@@ -101,7 +101,7 @@ export class OrdenService {
   }
 
   // 9. Editar notas de reparación o la fecha prometida de recogida
-  editarReparacion(id: number, nuevasNotas: string, nuevaFecha: string): Observable<any> {
+  editarReparacion(id: number, nuevasNotas: string, nuevaFecha: string, detallesEditados: any[]): Observable<any> {
     return this.http.put(`${this.API_URL}/${id}/reparacion`, null, {
       params: new HttpParams()
         .set('notasReparacion', nuevasNotas)
@@ -184,12 +184,27 @@ export class OrdenService {
     );
   }
 
-  // 15. Función extra para el panel de administración: Cambiar el precio total de una orden (Solo si no se ha cobrado nada o solo tiene un anticipo registrado)
-  cambiarPrecioOrden(id: number, nuevoPrecio: number): Observable<any> {
-  // Pasamos el nuevoPrecio como Query Param (?nuevoPrecio=XX.XX) tal como pide el back
-    return this.http.put(`/api/ordenes/${id}/precio`, null, {
-      params: { nuevoPrecio: nuevoPrecio.toString() }
+  // 15. Botón del pánico que soporta cambio de precio por línea/artículo específico
+  cambiarPrecioOrden(id: number, nuevoPrecio: number, lineaOArticuloId: number): Observable<any> {
+    // Enviamos 'nuevoPrecio' y el id de la línea afectada para que tu controlador de Spring Boot recalcule de forma exacta
+    return this.http.put(`${this.API_URL}/${id}/precio`, null, {
+      params: { 
+        nuevoPrecio: nuevoPrecio.toString(),
+        detalleId: lineaOArticuloId.toString() // Ajusta el nombre de este parámetro según reciba tu @RequestParam en Java (ej. articuloId, lineaId)
+      }
     });
   }
-  
+
+  // 16. Eliminar productos en la gestiond e tickets antes de pasarlo a entregado
+  eliminarLineaOrden(id: number, detalleId: number): Observable<any> {
+   return this.http.delete(`${this.API_URL}/${id}/lineas/${detalleId}`);
+  }
+
+  // 17. Para devolver un ticket en el tpv tenemos que poder elegir cual devolver
+  buscarTicketParaDevolucion(numeroTicket: string): Observable<any> {
+   return this.http.get(`${this.API_URL}/buscar-devolucion`, {
+     params: { numeroTicket }
+   });
+  }
+
 }

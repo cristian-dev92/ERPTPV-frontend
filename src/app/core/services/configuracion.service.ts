@@ -58,6 +58,10 @@ export class ConfiguracionService {
     );
   }
 
+  eliminarEmpleado(id: number): Observable<any> {
+  return this.http.delete<any>(`/api/admin/empleados/${id}`);
+}
+
   // =========================================================================
   // 3. ENDPOINTS DE MI PERFIL (UNIVERSAL) Y SUBIDA DE ARCHIVOS
   // =========================================================================

@@ -43,10 +43,8 @@ export class LoginComponent {
             this.router.navigate(['/superadmin']);
           } else if (rol === 'ROLE_ADMIN') {
             this.router.navigate(['/ventas']);
-          } else {
-            // 🟢 SI ES UN EMPLEADO: Lo redirigimos también al TPV de ventas
-            this.router.navigate(['/ventas']); 
-            // Nota: Si vuestra ruta del TPV para empleados es distinta (ej: '/tpv'), cámbiala aquí
+          } else if (rol === 'ROLE_EMPLEADO' || rol === 'EMPLEADO') {
+          this.router.navigate(['/ventas']);
           }
         },
         error: (err: any) => {

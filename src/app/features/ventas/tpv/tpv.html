@@ -99,110 +99,98 @@
   <!-- SECCIÓN DERECHA: TICKET ACTUAL -->
   <div class="columna-derecha-mostrador">
 
-  <div class="ticket-section" [class.modo-devolucion]="modoDevolucion()">
+  <div class="ticket-section">
 
    <div class="header-ticket-dinamico">
-    <h2>{{ modoDevolucion() ? '🔄 Abono / Devolución' : '📋 Ticket Actual' }}</h2>
-    <button type="button" class="btn-toggle-devolucion" [class.activo]="modoDevolucion()" (click)="toggleModoDevolucion()">
-        {{ modoDevolucion() ? '⚠️ Cancelar Abono' : '🔄 Devolución' }}
-    </button>
-   </div>
-
-  <!-- SECCIÓN CLIENTE -->
-  <div class="seccion-cliente-ticket">
-    @if (!clienteSeleccionado()) {
-      <!-- Buscador predictivo si es anónimo -->
-      <div class="buscador-cliente-wrapper">
-
-       <div class="buscador-fila-tactil">
-
-        <input type="text" 
-               [value]="busquedaCliente()" 
-               (input)="buscarClientes($any($event.target).value)"
-               (click)="abrirTecladoGeneral('CLIENTE')"
-               placeholder="👤 Buscar cliente por nombre o tel...">
-               
-        <button (click)="abrirModal()" class="btn-nuevo-cliente" type="button">
-            ➕ <span class="txt-btn">Registrar Cliente</span>
-        </button>
-       </div>
-       
-        @if (clientesEncontrados().length > 0) {
-          <ul class="dropdown-clientes">
-            @for (cliente of clientesEncontrados(); track cliente.id) {
-              <li (click)="seleccionarCliente(cliente)">
-                <span class="c-nombre">{{ cliente.nombre }}</span>
-                <span class="c-tel">📱 {{ cliente.telefono }}</span>
-              </li>
-            }
-          </ul>
-        }
-      </div>
-    } @else {
-      <!-- Tarjeta de cliente seleccionado -->
-      <div class="tarjeta-cliente-activo">
-        <div class="info-cliente">
-          <span class="avatar">👤</span>
-          <div>
-            <span class="nombre">{{ clienteSeleccionado()?.nombre }}</span>
-            <span class="telefono">Tel: {{ clienteSeleccionado()?.telefono }}</span>
-          </div>
-        </div>
-        <button type="button" class="btn-quitar-cliente" (click)="deseleccionarCliente()" title="Quitar cliente">
-          ✕
+      <h2>📋 Ticket Actual</h2>
+        <button type="button" class="btn-toggle-devolucion" (click)="pedirNumeroTicketDevolucion()">
+          🔄 Devolución
         </button>
       </div>
-    }
-  </div>
-    
-    <!-- SECCIÓN DE LÍNEAS DEL TICKET -->
-    <div class="lineas-ticket">
-     @for (item of carrito(); track $index) {
-      <div class="linea">
-        <!-- Izquierda: Nombre y Controles de cantidad -->
-        <div class="info-producto">
-          <span class="nombre">{{ item.nombre }}</span>
-          
-          <div class="controles-cantidad">
-            <button (click)="ajustarCantidad($index, -1)" class="btn-qty" type="button">-</button>
-            <span class="cantidad">{{ item.cantidad }}</span>
-            <button (click)="ajustarCantidad($index, 1)" class="btn-qty" type="button">+</button>
-          </div>
-        </div>
 
-        <!-- Entrada de descuento manual -->
-        <div class="descuento-linea-wrap">
-          <label>Dto %</label>
-          <input type="number" 
-            [value]="item.descuentoPorcentaje || 0" 
-            min="0" max="100"
-            (input)="actualizarDescuentoLinea($index, $event)"
-            (click)="abrirTecladoGeneral('DESCUENTO_MANUAL', $index)"
-            class="input-descuento-manual">
-        </div>
-
-        <!-- Derecha: Precio total de la línea y borrar -->
-        <div class="precio-final">
-          <div class="bloque-precio-tactil" (click)="abrirKeypadPrecio($index)" title="Cambiar precio">
-            <span class="precio-unidad-item">{{ item.precio | currency:'EUR' }}</span>
-            <span class="icono-editar-precio">✏️</span>
+    <div class="seccion-cliente-ticket">
+      @if (!clienteSeleccionado()) {
+        <div class="buscador-cliente-wrapper">
+          <div class="buscador-fila-tactil">
+            <input type="text" 
+                   [value]="busquedaCliente()" 
+                   (input)="buscarClientes($any($event.target).value)"
+                   (click)="abrirTecladoGeneral('CLIENTE')"
+                   placeholder="👤 Buscar cliente por nombre o tel...">
+                   
+            <button (click)="abrirModal()" class="btn-nuevo-cliente" type="button">
+                ➕ <span class="txt-btn">Registrar Cliente</span>
+            </button>
           </div>
-          <span class="total-linea-multiplicado">Total: {{ item.precio * item.cantidad | currency:'EUR' }}</span>
           
-          <button (click)="quitarDelCarrito($index)" class="btn-remove" title="Eliminar artículo">
-            🗑️
+          @if (clientesEncontrados().length > 0) {
+            <ul class="dropdown-clientes">
+              @for (cliente of clientesEncontrados(); track cliente.id) {
+                <li (click)="seleccionarCliente(cliente)">
+                  <span class="c-nombre">{{ cliente.nombre }}</span>
+                  <span class="c-tel">📱 {{ cliente.telefono }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      } @else {
+        <div class="tarjeta-cliente-activo">
+          <div class="info-cliente">
+            <span class="avatar">👤</span>
+            <div>
+              <span class="nombre">{{ clienteSeleccionado()?.nombre }}</span>
+              <span class="telefono">Tel: {{ clienteSeleccionado()?.telefono }}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-quitar-cliente" (click)="deseleccionarCliente()" title="Quitar cliente">
+            ✕
           </button>
         </div>
-      </div>
+      }
+    </div>
+      
+    <div class="lineas-ticket">
+      @for (item of carrito(); track $index) {
+        <div class="linea">
+          <div class="info-producto">
+            <span class="nombre">{{ item.nombre }}</span>
+            
+            <div class="controles-cantidad">
+              <button (click)="ajustarCantidad($index, -1)" class="btn-qty" type="button">-</button>
+              <span class="cantidad">{{ item.cantidad }}</span>
+              <button (click)="ajustarCantidad($index, 1)" class="btn-qty" type="button">+</button>
+            </div>
+          </div>
+
+          <div class="descuento-linea-wrap">
+            <label>Dto %</label>
+            <input type="number" 
+              [value]="item.descuentoPorcentaje || 0" 
+              min="0" max="100"
+              (input)="actualizarDescuentoLinea($index, $event)"
+              (click)="abrirTecladoGeneral('DESCUENTO_MANUAL', $index)"
+              class="input-descuento-manual">
+          </div>
+
+          <div class="precio-final">
+            <div class="bloque-precio-tactil" (click)="abrirKeypadPrecio($index)" title="Cambiar precio">
+              <span class="precio-unidad-item">{{ item.precio | currency:'EUR' }}</span>
+              <span class="icono-editar-precio">✏️</span>
+            </div>
+            <span class="total-linea-multiplicado">Total: {{ item.precio * item.cantidad | currency:'EUR' }}</span>
+            
+            <button (click)="quitarDelCarrito($index)" class="btn-remove" title="Eliminar artículo">
+              🗑️
+            </button>
+          </div>
+        </div>
       } @empty {
         <p class="empty-msg">El carrito está vacío</p>
       }
     </div>
 
-    <!-- CONFIGURACIÓN DEL PEDIDO Y PAGO -->
     <div class="configuracion-pedido">
-      
-      <!-- Selector de Tipo de Operación -->
       <div class="form-group">
         <label>Tipo de Operación:</label>
         <div class="selector-botones">
@@ -220,28 +208,24 @@
         </div>
       </div>
 
-    <!-- Entrada de fecha de recogida solo para reparaciones -->
       @if (tipoOrdenSeleccionada() === 'REPARACION') {
-      <div class="form-group animacion-input">
-        <div class="header-fecha-recogida">
-          <label>Fecha Estimada de Recogida</label>
-        
-        <button type="button" 
-                class="btn-toggle-sin-fecha" 
-                [class.activo]="sinFechaRecogida()"
-                (click)="toggleSinFechaRecogida()">
-          <span class="icono-toggle"></span> Sin fecha fija
-        </button>
-      </div>
+        <div class="form-group animacion-input">
+          <div class="header-fecha-recogida">
+            <label>Fecha Estimada de Recogida</label>
+            <button type="button" 
+                    class="btn-toggle-sin-fecha" 
+                    [class.activo]="sinFechaRecogida()"
+                    (click)="toggleSinFechaRecogida()">
+              <span class="icono-toggle"></span> Sin fecha fija
+            </button>
+          </div>
+          <input type="date" 
+                 [disabled]="sinFechaRecogida()"
+                 [value]="sinFechaRecogida() ? '' : fechaRecogida()"
+                 (change)="onFechaRecogidaChange($event)" />
+        </div>
+      }
 
-      <input type="date" 
-             [disabled]="sinFechaRecogida()"
-             [value]="sinFechaRecogida() ? '' : fechaRecogida()"
-             (change)="onFechaRecogidaChange($event)" />
-     </div>
-    }
-
-      <!-- Selector de Método de Pago -->
       <div class="form-group">
         <label>Método de Pago:</label>
         <div class="selector-botones">
@@ -269,7 +253,6 @@
       </div>
     </div>
 
-    <!-- RESUMEN FINAL Y BOTÓN DE COBRO -->
     <div class="footer-ticket">
       <div class="descuento-global-row">
         <label for="descGlobalManual"> Descuento Global (%):</label>
@@ -283,21 +266,22 @@
            class="input-descuento-global">
       </div>
       
-      <div class="total-row" [class.txt-danger]="modoDevolucion()">
-        <span>{{ modoDevolucion() ? 'TOTAL A DEVOLVER:' : 'TOTAL:' }}</span>
-        <span class="total-amount" [style.color]="modoDevolucion() ? '#ff4d4d' : ''">
-          {{ totalTicket() | currency:'EUR' }}</span>
+      <div class="total-row">
+        <span>TOTAL:</span>
+        <span class="total-amount">
+          {{ totalTicket() | currency:'EUR' }}
+        </span>
       </div>
       
       <button class="btn-cobrar" 
-              [class.btn-devolucion-activa]="modoDevolucion()"
               [disabled]="carrito().length === 0"
               (click)="finalizarVenta()">
-        {{ modoDevolucion() ? '🔄 CONFIRMAR Y DEVOLVER DINERO' : '💰 PROCESAR OPERACIÓN' }}
+        💰 PROCESAR OPERACIÓN
       </button>
     </div>
    
   </div> 
+
   <div class="panel-historial-wrapper">
     <div class="historial-header" (click)="toggleHistorial()">
       <div class="header-info">
@@ -307,90 +291,83 @@
           {{ historialTickets().length }} tickets
         </span>
       </div>
-      
       <button type="button" class="btn-toggle-flecha" [class.rotado]="mostrarHistorial()">
         ▼
       </button>
     </div>
 
-    <!-- CUERPO DEL HISTORIAL, SOLO VISIBLE SI mostrarHistorial() ES TRUE -->
     @if (mostrarHistorial()) {
-  <div class="historial-body">
-    <table class="tabla-historial">
-      <thead>
-        <tr>
-          <th>Nº Ticket</th>
-          <th>Hora</th>
-          <th>Cliente</th>
-          <th class="text-derecha">Total</th>
-          <th class="text-centro">Estado AEAT</th>
-          <th class="text-centro">Financiero</th>
-          <th class="text-centro">Taller</th>
-          <th class="text-centro">Acciones Táctiles</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (ticket of historialTickets(); track ticket.id) {
-          <tr>
-            <td class="txt-negrita">#{{ ticket.numeroTicket || ticket.id }}</td>
-            <td class="txt-mutado">
-              {{ (ticket.fechaCreacion || ticket.fecha || ticket['createdAt']) | date:'HH:mm' }}
-            </td>
-            <td>
-              {{ ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General' }}
-            </td>
-            <td class="text-derecha txt-precio">{{ ticket.total | currency:'EUR' }}</td>
-            <td class="text-centro">
-              <span class="badge-estado" [ngClass]="ticket.estadoAeat === 'ENVIADO' ? 'enviado' : 'pendiente'">
-                <span class="punto-indicador"></span>
-                {{ ticket.estadoAeat || 'PENDIENTE' }}
-              </span>
-            </td>
-            <td class="text-centro">
-              <span class="badge-financiero" [ngClass]="ticket.estadoPago || 'PENDIENTE'">
-                {{ ticket.estadoPago || 'PENDIENTE' }}
-              </span>
-            </td>
-            <td class="text-centro">
-              <span class="badge-taller" [ngClass]="ticket.tipo === 'VENTA_DIRECTA' ? 'vendido' : (ticket.estadoTaller || 'EN_TALLER')">
-                {{ ticket.tipo === 'VENTA_DIRECTA' ? 'Vendido' : (ticket.estadoTaller || 'VENTA') }}
-              </span>
-            </td>
-            <td class="text-centro celdas-botones-tactiles">
-              
-              @if (ticket.numeroTicket && !ticket.numeroTicket.includes('TEMP')) {
-                
-                <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
-                
-                @if (ticket.clienteNombre && ticket.clienteNombre !== 'Cliente General'|| (ticket.cliente && ticket.cliente.nombre !== 'Cliente General')) {
-                  <button type="button" (click)="reimprimirFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
-                }
-                
-                @if (ticket.estadoPago === 'PAGADO' && $any(ticket).estadoPago !== 'DEVOLUCION' && ticket.estadoTaller !== 'CANCELADO') {
-                  <button type="button" (click)="devolverTicketCompleto(ticket)" class="btn-accion-tvc devolucion" title="Devolver el ticket completo (todas las cosas)">🔄 Devolución</button>
-                }
-
-              } @else {
-                <span class="txt-mutado" style="font-size: 0.9rem;">Guardando en BD...</span>
-              }
-
-            </td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="8" class="tabla-vacia">
-              📭 No se han realizado ventas en este turno todavía.
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+      <div class="historial-body">
+        <table class="tabla-historial">
+          <thead>
+            <tr>
+              <th>Nº Ticket</th>
+              <th>Hora</th>
+              <th>Cliente</th>
+              <th class="text-derecha">Total</th>
+              <th class="text-centro">Estado AEAT</th>
+              <th class="text-centro">Financiero</th>
+              <th class="text-centro">Taller</th>
+              <th class="text-centro">Acciones Táctiles</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ticket of historialTickets(); track ticket.id) {
+              <tr>
+                <td class="txt-negrita">#{{ ticket.numeroTicket || ticket.id }}</td>
+                <td class="txt-mutado">
+                  {{ (ticket.fechaCreacion || ticket.fecha || ticket['createdAt']) | date:'HH:mm' }}
+                </td>
+                <td>
+                  {{ ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General' }}
+                </td>
+                <td class="text-derecha txt-precio">{{ ticket.total | currency:'EUR' }}</td>
+                <td class="text-centro">
+                  <span class="badge-estado" [ngClass]="ticket.estadoAeat === 'ENVIADO' ? 'enviado' : 'pendiente'">
+                    <span class="punto-indicador"></span>
+                    {{ ticket.estadoAeat || 'PENDIENTE' }}
+                  </span>
+                </td>
+                <td class="text-centro">
+                  <span class="badge-financiero" [ngClass]="ticket.estadoPago || 'PENDIENTE'">
+                    {{ ticket.estadoPago || 'PENDIENTE' }}
+                  </span>
+                </td>
+                <td class="text-centro">
+                  <span class="badge-taller" [ngClass]="ticket.tipo === 'VENTA_DIRECTA' ? 'vendido' : (ticket.estadoTaller || 'EN_TALLER')">
+                    {{ ticket.tipo === 'VENTA_DIRECTA' ? 'Vendido' : (ticket.estadoTaller || 'EN_TALLER') }}
+                  </span>
+                </td>
+                <td class="text-centro celdas-botones-tactiles">
+                  @if (ticket.numeroTicket && !ticket.numeroTicket.includes('TEMP')) {
+                    <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
+                    
+                    @if (ticket.clienteNombre && ticket.clienteNombre !== 'Cliente General'|| (ticket.cliente && ticket.cliente.nombre !== 'Cliente General')) {
+                      <button type="button" (click)="reimprimirFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
+                    }
+                    
+                    @if (ticket.estadoPago === 'PAGADO' && ticket.estadoTaller !== 'CANCELADO') {
+                      <button type="button" (click)="numeroTicketBuscarInput = ticket.numeroTicket; buscarTicketOriginal()" class="btn-accion-tvc devolucion" title="Iniciar Devolución Parcial Exclusiva">🔄 Devolución</button>
+                    }
+                  } @else {
+                    <span class="txt-mutado" style="font-size: 0.9rem;">Guardando en BD...</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="tabla-vacia">
+                  📭 No se han realizado ventas en este turno todavía.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   </div>
-  }
- </div>
 </div>
 
-<!-- MODAL FLOTANTE DEL KEYPAD TÁCTIL PARA MODIFICAR PRECIOS -->
 @if (indiceItemEditandoPrecio() !== null) {
   <div class="modal-keypad-overlay">
     <div class="modal-keypad-content">
@@ -398,32 +375,23 @@
       <p class="nombre-articulo-editar">
         {{ carrito()[indiceItemEditandoPrecio()!].nombre }}
       </p>
-      
-      <!-- Pantalla del precio modificado -->
       <div class="pantalla-keypad-precio">
         {{ precioEnConstruccion() || '0' }} €
       </div>
-
-      <!-- Rejilla de Botones Táctiles -->
       <div class="grid-keypad">
         <button type="button" (click)="pulsarTeclaPrecio('1')">1</button>
         <button type="button" (click)="pulsarTeclaPrecio('2')">2</button>
         <button type="button" (click)="pulsarTeclaPrecio('3')">3</button>
-        
         <button type="button" (click)="pulsarTeclaPrecio('4')">4</button>
         <button type="button" (click)="pulsarTeclaPrecio('5')">5</button>
         <button type="button" (click)="pulsarTeclaPrecio('6')">6</button>
-        
         <button type="button" (click)="pulsarTeclaPrecio('7')">7</button>
         <button type="button" (click)="pulsarTeclaPrecio('8')">8</button>
         <button type="button" (click)="pulsarTeclaPrecio('9')">9</button>
-        
         <button type="button" (click)="pulsarTeclaPrecio('.')">.</button>
         <button type="button" (click)="pulsarTeclaPrecio('0')">0</button>
         <button type="button" class="btn-keypad-backspace" (click)="borrarUltimoDigitoPrecio()">⌫</button>
       </div>
-
-      <!-- Acciones Inferiores -->
       <div class="acciones-keypad">
         <button type="button" class="btn-cancelar-keypad" (click)="cerrarKeypadPrecio()">Cancelar</button>
         <button type="button" class="btn-aceptar-keypad" (click)="guardarPrecioModificado()">Aplicar Precio</button>
@@ -433,7 +401,6 @@
 }
 
 @if (mostrarTecladoGeneral()) {
-
   @if (inputObjetivoTeclado() === 'PREGUNTA_ANTICIPO') {
     <div class="modal-pregunta-overlay">
       <div class="modal-pregunta-content">
@@ -441,7 +408,6 @@
           <span class="titulo-contexto">Gestión de Reparación</span>
           <button class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
         </div>
-        
         <div class="contenido-pregunta-tactil">
           <p class="texto-pregunta">¿El cliente va a dejar un anticipo o señal para la reparación?</p>
           <div class="wrapper-botones-decision">
@@ -451,11 +417,8 @@
         </div>
       </div>
     </div>
-  }
-
-  @else {
+  } @else {
     <div class="modal-teclado-general-container">
-      
       <div class="teclado-general-header">
         <span class="titulo-contexto">
           Teclado Táctil: 
@@ -473,9 +436,7 @@
           <span class="texto-construccion">{{ valorTecladoEnConstruccion() || '0.00' }} €</span>
           <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
         </div>
-        
         <p class="info-max-permitido">Total del ticket actual: <strong>{{ totalTicket() }}€</strong></p>
-
         <div class="teclado-general-wrapper-keys">
           <div class="grid-numerico-descuento">
             @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
@@ -483,19 +444,15 @@
             }
             <button class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ Borrar</button>
           </div>
-          
           <button class="btn-aceptar-teclado-general btn-cobrar-anticipo-accion" (click)="aplicarCantidadAnticipo()">
             💵 REGISTRAR COBRO DE SEÑAL
           </button>
         </div>
-      }
-
-      @else {
+      } @else {
         <div class="teclado-general-pantalla">
           <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
           <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
         </div>
-
         <div class="teclado-general-wrapper-keys">
           @if (inputObjetivoTeclado() === 'DESCUENTO' || inputObjetivoTeclado() === 'DESCUENTO_MANUAL') {
             <div class="grid-numerico-descuento">
@@ -527,7 +484,6 @@
               <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracterGeneral()">⌫</button>
             </div>
           }
-
           <div class="teclado-fila fila-especial">
             @if (!inputObjetivoTeclado()?.includes('DESCUENTO')) {
               <button type="button" class="btn-tecla-espacio" (click)="insertarEspacioGeneral()">ESPACIO</button>
@@ -538,46 +494,34 @@
           </div>
         </div>
       }
-
     </div>
   }
 }
 
-<!-- CONTENEDOR DE PREVISUALIZACIÓN DEL TICKET -->
 @if (isTicketVisible() ) {
   <div class="modal-ticket-overlay">
     <div class="modal-ticket-content">
-      
-      <!-- Cabecera idéntica a tus otros modales -->
       <div class="modal-header">
         <h3>🖨️ Recibo de Operación</h3>
         <button class="btn-cerrar" (click)="isTicketVisible.set(false)">&times;</button>
       </div>
-
-      <!-- Cuerpo del Modal: Datos del ticket e Iframe con el PDF -->
       <div class="modal-body">
         <div class="detalles-ticket-preview">
           <span><strong>Nº Ticket oficial:</strong> {{ numeroTicketActual() }}</span>
         </div>
-
-        <!-- Spinner por si el backend tarda un pelín en generar el chorro del PDF -->
         @if (cargandoPDF()) {
           <div class="loading-pdf-stream">
             ⏳ Generando vista de impresión...
           </div>
         }
-
-        <!-- Tu iframe seguro conectado al Signal -->
         @if (!cargandoPDF() && urlSeguraPdf()) {
-        <iframe id="iframeTicketPdf" [src]="urlSeguraPdf()" class="iframe-preview-pdf"></iframe>
+          <iframe id="iframeTicketPdf" [src]="urlSeguraPdf()" class="iframe-preview-pdf"></iframe>
         } @else if (!cargandoPDF() && !urlSeguraPdf()) {
           <div class="error-carga-pdf">
             ❌ No se pudo cargar la vista previa del ticket.
           </div>
         }
       </div>
-
-      <!-- Botonera inferior con acciones táctiles adaptadas a tu estilo -->
       <div class="acciones-ticket-preview">
         <button type="button" class="btn-imprimir-recibo" (click)="imprimirIframeTicket()">
           🖨️ IMPRIMIR TICKET (80mm)
@@ -586,31 +530,104 @@
           ➔ NUEVA OPERACIÓN / CONTINUAR
         </button>
       </div>
+    </div>
+  </div>
+}
+
+@if (mostrarModalSeleccionDevolucion) {
+  <div class="modal-overlay-tpv">
+    <div class="modal-card-tpv animate-fade-in" style="max-width: 650px;">
+      
+      <div class="modal-header-tpv">
+        <span class="modal-icon-tpv">🔄</span>
+        <h3>Emitir Abono Parcial: Ticket #{{ ticketOrigenEncontrado?.numeroTicket }}</h3>
+      </div>
+      
+      <div class="modal-body-tpv">
+        <p style="margin-bottom: 1rem; color: #b0b0b0;">
+          Selecciona las líneas que trae el cliente físicas a devolver y ajusta las unidades máximas compradas:
+        </p>
+
+        <div class="lista-devolucion-articulos" style="display: flex; flex-direction: column; gap: 0.8rem;">
+          @for (linea of (ticketOrigenEncontrado?.detalles || ticketOrigenEncontrado?.lineas); track $index) {
+            @let idClave = linea.articuloId || linea.articulo?.id || linea.id;
+            @let control = lineasSeleccionadasParaDevolver.get(idClave);
+
+            <div class="fila-devolucion-interactiva" 
+                 [style.opacity]="control?.checked ? '1' : '0.6'"
+                 style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem; background: #2a2a2a; border-radius: 6px;">
+              
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; flex: 1;">
+                <input type="checkbox" 
+                       [checked]="control?.checked || false"
+                       (change)="control ? control.checked = $any($event.target).checked : null"
+                       style="transform: scale(1.3); cursor: pointer;">
+                <span style="font-weight: bold; color: #ffffff;">{{ linea.articulo?.nombre || 'Artículo de Catálogo' }}</span>
+              </label>
+
+              <div class="precios-historicos" style="margin-right: 1.5rem; text-align: right; font-size: 0.95rem;">
+                <span style="color: #00e676;">{{ linea.precioUnitario | currency:'EUR' }}</span>
+              </div>
+
+              <div class="control-unidades-devolver" style="display: flex; align-items: center; gap: 0.4rem;">
+                <input type="number" 
+                       [min]="1" 
+                       [max]="Math.abs(linea.cantidad)"
+                       [ngModel]="control?.cantidadADevolver"
+                       [disabled]="!control?.checked"
+                       style="width: 60px; text-align: center; padding: 0.3rem; background: #1e1e1e; color: #fff; border: 1px solid #444; border-radius: 4px;">
+                <span style="font-size: 0.85rem; color: #888;">max ({{ Math.abs(linea.cantidad) }} ud.)</span>
+              </div>
+
+            </div>
+          }
+        </div>
+      </div>
+      
+      <div class="modal-actions-tpv" style="margin-top: 1.5rem;">
+        <button type="button" class="btn-tpv btn-cancelar" (click)="mostrarModalSeleccionDevolucion = false; ticketOrigenEncontrado = null">
+          ❌ Cancelar
+        </button>
+        <button type="button" class="btn-tpv btn-aceptar" (click)="ejecutarDevolucionSeleccionada()">
+          ✓ Emitir Factura Rectificativa (DEV-)
+        </button>
+      </div>
 
     </div>
   </div>
 }
 
-@if (mostrarModalDevolucion) {
+@if (mostrarModalPedirTicket) {
   <div class="modal-overlay-tpv">
-    <div class="modal-card-tpv animate-fade-in">
+    <div class="modal-card-tpv animate-fade-in" style="max-width: 450px;">
+      
       <div class="modal-header-tpv">
-        <span class="modal-icon-tpv">🔄</span>
-        <h3>Confirmar Devolución Completa</h3>
+        <span class="modal-icon-tpv">🎫</span>
+        <h3>Buscar Ticket para Devolución</h3>
       </div>
       
-      <div class="modal-body-tpv">
-        <p>{{ mensajeModalDevolucion }}</p>
+      <div class="modal-body-tpv" style="padding: 1.5rem 0;">
+        <p style="color: #b0b0b0; margin-bottom: 1rem;">
+          Introduce el número de ticket o factura simplificada (ej. TCK-2600004):
+        </p>
+        
+        <input type="text" 
+               [(ngModel)]="numeroTicketBuscarInput" 
+               placeholder="TCK-" 
+               (keyup.enter)="confirmarTicketIntroducido()"
+               style="width: 100%; padding: 0.8rem; font-size: 1.2rem; text-align: center; background: #1e1e1e; color: #fff; border: 1px solid #444; border-radius: 8px; font-weight: bold; text-transform: uppercase;"
+               class="input-modal-tck-busqueda">
       </div>
       
       <div class="modal-actions-tpv">
-        <button type="button" class="btn-tpv btn-cancelar" (click)="cancelarDevolucion()">
+        <button type="button" class="btn-tpv btn-cancelar" (click)="mostrarModalPedirTicket = false; numeroTicketBuscarInput = ''">
           ❌ Cancelar
         </button>
-        <button type="button" class="btn-tpv btn-aceptar" (click)="ejecutarDevolucionConfirmada()">
-          ✓ Confirmar Devolución
+        <button type="button" class="btn-tpv btn-aceptar" [disabled]="!numeroTicketBuscarInput.trim()" (click)="confirmarTicketIntroducido()">
+          🔍 Buscar Operación
         </button>
       </div>
+
     </div>
   </div>
 }

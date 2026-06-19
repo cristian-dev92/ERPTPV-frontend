@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiService } from '../../core/services/ui.service';
 import { ConfiguracionService } from '../../core/services/configuracion.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-configuracion',
@@ -14,10 +15,12 @@ import { ConfiguracionService } from '../../core/services/configuracion.service'
 export class ConfiguracionComponent implements OnInit {
   private configService = inject(ConfiguracionService);
   private uiService = inject(UiService);
+  public authService = inject(AuthService);
 
   // --- ESTADOS DE CARGA ---
   loading = signal<boolean>(false);
   mostrarFormularioNuevo = signal<boolean>(false);
+  mostrandoConfirmacionBaja = signal<boolean>(false);
 
   // --- VISIBILIDAD DE CONTRASEÑAS (Ojo para ver puntitos) ---
   verPassActual = signal<boolean>(false);
@@ -70,7 +73,10 @@ export class ConfiguracionComponent implements OnInit {
   textoNuevoEmpPassTmp = '';
 
   ngOnInit(): void {
-    this.obtenerPersonalAutorizado();
+    // 🟢 Solo llamamos si es Administrador
+    if (this.authService.getRolActual() === 'ROLE_ADMIN') {
+      this.obtenerPersonalAutorizado();
+    }
   }
 
   obtenerPersonalAutorizado(): void {
@@ -223,6 +229,7 @@ export class ConfiguracionComponent implements OnInit {
     this.usuarioSeleccionado.set(usuario);
     this.nuevoEmailUsuario = usuario.email;
     this.nuevaPassUsuario = '';
+    this.mostrandoConfirmacionBaja.set(false);
   }
 
   crearNuevoOperario() {
@@ -275,19 +282,40 @@ export class ConfiguracionComponent implements OnInit {
     });
   }
 
+  // Paso 1: Muestra el cuadro de confirmación en el HTML
   darDeBajaEmpleado() {
     const usr = this.usuarioSeleccionado();
     if (!usr) return;
 
-    // FIX: Impedir que el administrador en sesión se de de baja a sí mismo y rompa el tenant
-    if (usr.email === this.emailActual() || usr.rol === 'ADMIN' && this.usuariosEmpresa().filter(u => u.rol === 'ADMIN').length === 1) {
-      this.uiService.mostrarToast('Acción denegada: Un Administrador principal no puede darse de baja a sí mismo.', 'error');
+    if (usr.email === this.emailActual()) {
+      this.uiService.mostrarToast('Acción denegada: No puedes dar de baja tu propia cuenta.', 'error');
       return;
     }
 
-    this.uiService.mostrarToast(
-      `El backend no dispone de DELETE /api/admin/empleados/${usr.id}. Pídeselo a tu compañero para activar la baja real de ${usr.nombre}.`, 
-      'warning'
-    );
+    this.mostrandoConfirmacionBaja.set(true);
   }
+
+  // Paso 2: Ejecuta la llamada real al backend al presionar "Sí, dar de baja"
+  ejecutarBajaReal() {
+    const usr = this.usuarioSeleccionado();
+    if (!usr) return;
+
+    this.loading.set(true);
+    this.mostrandoConfirmacionBaja.set(false);
+
+    this.configService.eliminarEmpleado(usr.id).subscribe({
+      next: () => {
+        this.uiService.mostrarToast(`💥 ${usr.nombre} ha sido eliminado correctamente del sistema.`, 'success');
+        this.usuarioSeleccionado.set(null);
+        this.loading.set(false);
+        this.obtenerPersonalAutorizado();
+      },
+      error: (err) => {
+        this.uiService.mostrarToast(err.error?.mensaje || 'Error al procesar la baja.', 'error');
+        this.loading.set(false);
+      }
+    });
+  }
+  
 }
+  
