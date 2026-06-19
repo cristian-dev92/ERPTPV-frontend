@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ContabilidadService, ResumenContableDTO } from '../../core/services/contabilidad.service';
+import { ContabilidadService, OrdenDTO, ResumenContableDTO } from '../../core/services/contabilidad.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -19,9 +19,9 @@ export class ContabilidadComponent {
   trimestreSeleccionado = signal<string>('T1'); 
   tipoFiltroSeleccionado = signal<string>('TODOS'); // "TODOS" | "VENTAS" | "GASTOS" | "DEVOLUCIONES"
   
-  // Lista de movimientos en pantalla y estado de carga
+  // Lista de movimientos reales (OrdenDTO) y estado de carga
   resumenKpis = signal<ResumenContableDTO | null>(null);
-  listaMovimientosTabla = signal<any[]>([]);
+  listaMovimientosTabla = signal<OrdenDTO[]>([]); // Cambiado 'any[]' por el tipado estricto OrdenDTO
   cargando = signal<boolean>(false);
 
   // Mapeo reactivo de fechas basado en el trimestre seleccionado (Formato ISO para Spring Boot)
@@ -36,11 +36,27 @@ export class ContabilidadComponent {
     }
   });
 
-  // Signals Computados para las Tarjetas de KPI resumidas en la parte superior
-  totalIngresos = computed(() => this.resumenKpis()?.totalFacturado ?? 0);
+  // 🧮 Signals Computados adaptados 100% a las nuevas propiedades de Javi
+  totalIngresos = computed(() => this.resumenKpis()?.totalIngresos ?? 0);
   totalGastos = computed(() => this.resumenKpis()?.totalGastos ?? 0);
-  balanceTotal = computed(() => this.totalIngresos() - this.totalGastos());
-  movimientos = computed(() => this.listaMovimientosTabla());
+  balanceTotal = computed(() => this.resumenKpis()?.beneficioNeto ?? 0);
+  ivaLiquidacion = computed(() => this.resumenKpis()?.impuestosIva ?? 0); // 🌟 Extra para pintar el IVA real en la UI
+  // AQUÍ VA EL FILTRO REACTIVO: Mapea localmente el estado del OrdenDTO
+  movimientos = computed(() => {
+    const listaCompleta = this.listaMovimientosTabla();
+    const filtro = this.tipoFiltroSeleccionado();
+    
+    if (filtro === 'TODOS') {
+      return listaCompleta;
+    }
+
+    // Si seleccionan ANULADO en el desplegable, filtramos los que tengan 'DEVUELTO'
+    if (filtro === 'DEVOLUCIONES') {
+      return listaCompleta.filter(mov => mov.estadoPago === 'DEVUELTO' || mov.estadoPago === 'ANULADO');
+    }
+    
+    return listaCompleta.filter(mov => mov.estadoPago === filtro);
+  });
 
   constructor() {
     // Carga inicial automática al construir el componente
@@ -71,7 +87,7 @@ export class ContabilidadComponent {
 
   // Manejador del desplegable de formatos de exportación
   procesarExportacion(formato: string) {
-  const { inicio, fin } = this.rangoFechas();
+    const { inicio, fin } = this.rangoFechas();
     const filtro = this.tipoFiltroSeleccionado();
     
     const observableDownload = formato === 'PDF' 
@@ -90,5 +106,5 @@ export class ContabilidadComponent {
       error: (err) => console.error(`Error al descargar el archivo ${formato}:`, err)
     });
   }
- 
+  
 }

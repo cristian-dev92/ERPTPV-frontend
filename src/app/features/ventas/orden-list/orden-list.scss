@@ -195,6 +195,7 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
       color: $text-muted;
       display: -webkit-box;
       -webkit-line-clamp: 2;
+      line-clamp: 2; // Propiedad estándar oficia
       -webkit-box-orient: vertical;
       overflow: hidden;
     }

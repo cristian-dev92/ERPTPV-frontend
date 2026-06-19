@@ -91,18 +91,29 @@ export class AuthService {
       const payloadDecodificado: any = jwtDecode(token);
 
       // 👑 1. PARCHE PARA EL NUEVO SUPERADMIN REAL
-    if (payloadDecodificado.sub === 'superadmin@erp.com') {
-      return 'ROLE_SUPER_ADMIN';
-    }
-    
-    // 🏢 2. PARCHE PARA EL ADMINISTRADOR DE LA TIENDA (ERP/TPV)
-    // Usamos el email que tu compañero le ha puesto en el seeder
-    if (payloadDecodificado.sub === 'admin@empresaprueba.com') {
-      return 'ROLE_ADMIN'; // Pon aquí el string exacto que use vuestro RoleGuard para la tienda
-    }
-    
-      // Mapea según cómo lo mande tu compañero: 'role', 'roles' o 'authorities'
-      return payloadDecodificado.role || payloadDecodificado.authorities || null;
+      if (payloadDecodificado.sub === 'superadmin@erp.com') {
+        return 'ROLE_SUPER_ADMIN';
+      }
+      
+      // 🏢 2. PARCHE PARA EL ADMINISTRADOR DE LA TIENDA (ERP/TPV)
+      if (payloadDecodificado.sub === 'admin@empresaprueba.com') {
+        return 'ROLE_ADMIN';
+      }
+      
+      // 🟢 EXTRACCIÓN REAL PARA EL EMPLEADO (Soporta strings y arrays de Spring Security)
+      let extRol = payloadDecodificado.role || payloadDecodificado.roles || payloadDecodificado.authorities;
+
+      // Si Spring Boot lo devuelve dentro de un array (lo normal en authorities/roles), extraemos el primero
+      if (Array.isArray(extRol)) {
+        extRol = extRol[0];
+      }
+
+      // Si viene como un objeto de tipo GrantedAuthority (ej: {authority: 'ROLE_EMPLEADO'})
+      if (extRol && typeof extRol === 'object' && extRol.authority) {
+        extRol = extRol.authority;
+      }
+
+      return extRol || null;
     } catch (error) {
       console.error('Error al decodificar el token de la zapatería:', error);
       return null;

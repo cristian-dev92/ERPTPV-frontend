@@ -38,10 +38,15 @@ export class LoginComponent {
         this.uiService.mostrarToast(`¡Bienvenido de nuevo, ${this.authService.usuarioNombre()}!`, 'success');
         // Desviamos según el rol
         const rol = this.authService.getRolActual();
+
           if (rol === 'ROLE_SUPER_ADMIN') {
             this.router.navigate(['/superadmin']);
           } else if (rol === 'ROLE_ADMIN') {
             this.router.navigate(['/ventas']);
+          } else {
+            // 🟢 SI ES UN EMPLEADO: Lo redirigimos también al TPV de ventas
+            this.router.navigate(['/ventas']); 
+            // Nota: Si vuestra ruta del TPV para empleados es distinta (ej: '/tpv'), cámbiala aquí
           }
         },
         error: (err: any) => {

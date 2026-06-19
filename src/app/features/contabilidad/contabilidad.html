@@ -22,12 +22,20 @@
       <div class="kpi-icon">📉</div>
     </div>
 
+    <div class="kpi-card impuesto">
+      <div class="kpi-info">
+        <span class="label">IVA Devengado (Real)</span>
+        <h3 style="color: #b45309;">⚖️ {{ ivaLiquidacion() | currency:'EUR':'symbol':'1.2-2':'es-ES' }}</h3>
+      </div>
+      <div class="kpi-icon">🏛️</div>
+    </div>
+
     <div class="kpi-card balance" [ngClass]="{'positivo': balanceTotal() >= 0, 'negativo': balanceTotal() < 0}">
       <div class="kpi-info">
         <span class="label">Balance Neto</span>
         <h3>{{ balanceTotal() | currency:'EUR':'symbol':'1.2-2':'es-ES' }}</h3>
       </div>
-      <div class="kpi-icon">⚖️</div>
+      <div class="kpi-icon">💰</div>
     </div>
   </div>
 
@@ -45,12 +53,12 @@
       </div>
 
       <div class="select-wrapper">
-        <label>Tipo de Registro</label>
-        <select [ngModel]="tipoFiltroSeleccionado()" (ngModelChange)="tipoFiltroSeleccionado.set($event); cargarDatosContables()">
-          <option value="TODOS">Todos los movimientos</option>
-          <option value="VENTAS">Facturas y Ventas</option>
-          <option value="GASTOS">Gastos Directos</option>
-          <option value="DEVOLUCIONES">Devoluciones de Caja</option>
+        <label>Estado del ticket</label>
+        <select [ngModel]="tipoFiltroSeleccionado()" (ngModelChange)="tipoFiltroSeleccionado.set($event)">
+          <option value="TODOS">Todos los tickets</option>
+          <option value="PAGADO">Tickets Pagados</option>
+          <option value="PENDIENTE">Tickets Pendientes</option>
+          <option value="DEVOLUCIONES">Devoluciones</option>
         </select>
       </div>
     </div>
@@ -60,7 +68,6 @@
         <label>Acciones de Cierre</label>
         <select (change)="procesarExportacion($any($event.target).value); $any($event.target).value = ''">
           <option value="" disabled selected hidden>⬇️ Descargar informe...</option>
-          <option value="EXCEL">Exportar a EXCEL (.xlsx)</option>
           <option value="CSV">Exportar a CSV (Gestorías)</option>
           <option value="PDF">Descargar Libro Mayor (PDF)</option>
         </select>
@@ -84,37 +91,43 @@
       <thead>
         <tr>
           <th>Fecha / Hora</th>
-          <th>ID Operación</th>
-          <th>Tipo</th>
-          <th>Método</th>
-          <th>Concepto / Referencia</th>
+          <th>Nº Ticket / Operación</th>
+          <th>Cliente</th>
+          <th>Estado Pago</th>
           <th class="text-right">Importe</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let mov of movimientos()">
           <td class="text-muted">{{ mov.fechaHora | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td><span class="badge-id">#{{ mov.id }}</span></td>
           <td>
-            <span class="badge-tipo" [ngClass]="mov.tipoMovimiento.toLowerCase()">
-              {{ mov.tipoMovimiento }}
+            <span class="badge-id">{{ mov.numeroTicket }}</span>
+            <small *ngIf="mov.id" class="text-muted" style="display:block; font-size:0.75rem;">ID Sistema: #{{ mov.id }}</small>
+          </td>
+          <td>
+            <span class="descripcion">{{ mov.nombreCliente || 'Cliente Genérico (Venta TPV)' }}</span>
+          </td>
+          <td>
+            <span class="badge-tipo" [ngClass]="mov.estadoPago === 'DEVUELTO' ? 'anulado' : mov.estadoPago.toLowerCase()">
+              {{ mov.estadoPago }}
             </span>
           </td>
-          <td><span class="badge-metodo">{{ mov.metodoPago }}</span></td>
-          <td>
-            <div class="concepto-cell">
-              <span class="descripcion">{{ mov.descripcion }}</span>
-              <small *ngIf="mov.numeroTicketAsociado" class="ticket-ref">
-                Ref: {{ mov.numeroTicketAsociado }}
-              </small>
-            </div>
+          <td class="text-right bold" [ngClass]="{
+            'texto-ingreso': mov.estadoPago === 'PAGADO', 
+            'texto-gasto': ['ANULADO', 'DEVUELTO'].includes(mov.estadoPago)
+          }">
+            @if (mov.total < 0) {
+              {{ mov.total | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
+            } @else {
+              {{ ['ANULADO', 'DEVUELTO'].includes(mov.estadoPago) ? '-' : '+' }} {{ mov.total | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
+            }
           </td>
           <td class="text-right bold" [ngClass]="{
-            'texto-ingreso': ['VENTA','ANTICIPO','INGRESO_MANUAL'].includes(mov.tipoMovimiento), 
-            'texto-gasto': ['GASTO','DEVOLUCION'].includes(mov.tipoMovimiento)
+            'texto-ingreso': mov.estadoPago === 'PAGADO', 
+            'texto-gasto': mov.estadoPago === 'ANULADO'
           }">
-            {{ ['GASTO','DEVOLUCION'].includes(mov.tipoMovimiento) ? '-' : '+' }}
-            {{ mov.importe | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
+            {{ mov.estadoPago === 'ANULADO' ? '-' : '+' }}
+            {{ mov.total | currency:'EUR':'symbol':'1.2-2':'es-ES' }}
           </td>
         </tr>
       </tbody>

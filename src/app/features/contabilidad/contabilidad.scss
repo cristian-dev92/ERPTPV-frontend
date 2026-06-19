@@ -16,10 +16,10 @@ $warning: #f39c12;
     p { color: #7f8c8d; margin: 0.3rem 0 0 0; font-size: 0.95rem; }
   }
 
-  // Grid de Métricas (Tarjetas de totales)
+  // Grid de Métricas (Tarjetas de totales) - Forzamos 4 columnas balanceadas
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.25rem;
     margin-bottom: 2rem;
 
@@ -41,6 +41,7 @@ $warning: #f39c12;
 
       &.ingresos h3 { color: $success; }
       &.gastos h3 { color: $danger; }
+      &.impuesto h3 { color: #b45309; } // 🟢 Nuevo color corporativo para la tarjeta del IVA
       &.balance.positivo h3 { color: $success; }
       &.balance.negativo h3 { color: $danger; }
     }
@@ -134,28 +135,24 @@ $warning: #f39c12;
   .texto-gasto { color: $danger; }
 
   .badge-id { background: #e2e8f0; color: #475569; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500; }
-  .badge-metodo { background: #f1f5f9; border: 1px solid #cbd5e1; color: #64748b; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.8rem; }
   
+  // 🟢 Mapeo de estados de pago reales del OrdenDTO del backend
   .badge-tipo {
     display: inline-block;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 700;
+    text-transform: uppercase;
     
-    &.venta, &.anticipo, &.ingreso_manual { background-color: #e8f5e9; color: $success; }
-    &.gasto { background-color: #fde8e8; color: $danger; }
-    &.devolucion { background-color: #fff3cd; color: $warning; }
+    &.pagado { background-color: #e8f5e9; color: $success; }
+    &.pendiente { background-color: #fff3cd; color: $warning; }
+    &.anulado { background-color: #fde8e8; color: $danger; }
   }
 
-  .concepto-cell {
-    display: flex;
-    flex-direction: column;
-    .descripcion { color: #334155; }
-    .ticket-ref { color: #64748b; margin-top: 0.15rem; font-weight: 500; }
-  }
+  .descripcion { color: #334155; font-weight: 500; }
 
-  // Estados vacíos y cargando
+  // Estados vacíos y cargando (Con animación para el spinner)
   .table-loading, .table-empty {
     padding: 3rem;
     text-align: center;
@@ -163,16 +160,15 @@ $warning: #f39c12;
     p { margin: 0.5rem 0 0 0; font-size: 0.95rem; }
   }
   .table-empty span { font-size: 2.5rem; }
+  
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid #e2e8f0;
+    border-top-color: $primary-dark;
+    border-radius: 50%;
+    animation: spin 1s infinite linear;
+    margin: 0 auto 1rem;
+  }
 }
 
-.text-iva {
-  color: #7f8c8d;
-  font-size: 0.9rem;
-}
-.badge-reparaciones {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9999px;
-  font-weight: 600;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
