@@ -151,15 +151,16 @@
               <label>Importe (€)</label>
               <input type="text" 
                [value]="inputActivo() === 'monto' ? textoMontoTmp : (montoMovimiento || '')"
-               (click)="activarTeclado('monto')"
-               readonly>
+               (input)="sincronizarTecladoFisicoCaja('monto', textoMontoTmp)"
+               (click)="activarTeclado('monto')">
             </div>
 
             <div class="input-field-tactil">
               <label>Concepto / Motivo</label>
               <input type="text" 
+              [(ngModel)]="descripcionMovimiento"
               (click)="activarTeclado('descripcion')"
-              [(ngModel)]="descripcionMovimiento" readonly>
+              (input)="sincronizarTecladoFisicoCaja('monto', textoMontoTmp)">
             </div>
 
             <button class="btn-confirm-tactil-action success" (click)="guardarMovimientoManual()">
@@ -224,8 +225,9 @@
               <div class="input-field-tactil unique-huge">
                 <label>EFECTIVO TOTAL EN CAJA (€)</label>
                 <input type="text" 
-                 [value]="inputActivo() === 'saldoFinalRealContado' ? textoSaldoTmp : (saldoFinalRealContado || '')"
-                 (click)="activarTeclado('saldoFinalRealContado')" readonly>
+                [(ngModel)]="textoSaldoTmp"
+                 (input)="sincronizarTecladoFisicoCaja('saldoFinalRealContado', textoSaldoTmp)"
+                 (click)="activarTeclado('saldoFinalRealContado')">
               </div>
 
               <button class="btn-confirm-tactil-action danger" (click)="ejecutarCierreCaja()">
@@ -249,8 +251,9 @@
             <div class="input-field-tactil unique-huge">
               <label>FONDO DE CAJA INICIAL (€)</label>
               <input type="text" 
-                     [value]="inputActivo() === 'montoApertura' ? textoAperturaTmp : (montoApertura || '')"
-                     (click)="activarTeclado('montoApertura')" readonly>
+                     [(ngModel)]="textoAperturaTmp"
+                     (input)="sincronizarTecladoFisicoCaja('montoApertura', textoAperturaTmp)"
+                     (click)="activarTeclado('montoApertura')">
             </div>
             <button class="btn-confirm-tactil-action success" (click)="ejecutarAperturaCaja()">
               🔓 Confirmar Apertura de Caja

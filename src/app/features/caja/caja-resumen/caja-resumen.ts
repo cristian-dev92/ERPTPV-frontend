@@ -201,7 +201,7 @@ export class CajaResumenComponent implements OnInit {
 
 // Abre el teclado y registra sobre qué campo estamos trabajando
 activarTeclado(campo: string) {
-  this.inputActivo.set(campo);
+ this.inputActivo.set(campo);
   this.mostrarTeclado.set(true);
 
   // Al activar, cargamos lo que ya haya en los inputs para poder seguir editando
@@ -209,6 +209,9 @@ activarTeclado(campo: string) {
     this.textoMontoTmp = this.montoMovimiento ? this.montoMovimiento.toString() : '';
   } else if (campo === 'saldoFinalRealContado') {
     this.textoSaldoTmp = this.saldoFinalRealContado ? this.saldoFinalRealContado.toString() : '';
+  } else if (campo === 'montoApertura') {
+    /* 🆕 Añadido: Cargamos el fondo de caja inicial si ya se había tecleado algo */
+    this.textoAperturaTmp = this.montoApertura ? this.montoApertura.toString() : '';
   }
 }
 
@@ -275,6 +278,23 @@ insertarEspacio() {
     this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
   } else if (campo === 'descripcion') {
     this.descripcionMovimiento = (this.descripcionMovimiento || '') + ' ';
+  }
+ }
+
+ sincronizarTecladoFisicoCaja(campo: string, valor: string) {
+  // En lugar de un Signal global, sincronizamos los strings temporales correspondientes (los buffers de texto)
+  if (campo === 'monto') {
+    this.textoMontoTmp = valor;
+    this.montoMovimiento = parseFloat(valor) || 0;
+  } else if (campo === 'saldoFinalRealContado') {
+    this.textoSaldoTmp = valor;
+    this.saldoFinalRealContado = parseFloat(valor) || 0;
+  } else if (campo === 'montoApertura') {
+    this.textoAperturaTmp = valor;
+    this.montoApertura = parseFloat(valor) || 0;
+  } else if (campo === 'descripcion') {
+    // La descripción usa directamente la variable maestra sin temporales
+    this.descripcionMovimiento = valor;
   }
  }
  

@@ -11,6 +11,7 @@ export interface NuevaEmpresaRequest {
   cif: string;
   direccion: string;
   ciudad: string;
+  codigoPostal: string;
   telefono: string;
   nombreAdmin: string;
   emailAdmin: string;

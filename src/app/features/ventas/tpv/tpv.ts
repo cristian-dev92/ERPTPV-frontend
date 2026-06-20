@@ -119,7 +119,7 @@ export class TpvComponent implements OnInit {
 
   // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
   mostrarTecladoGeneral = signal<boolean>(false);
-  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' |  null>(null);
+  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | null>(null);
   valorTecladoEnConstruccion = signal<string>('');
 
   // Distribución de teclas idéntica a tu diseño favorito del TPV
@@ -137,6 +137,10 @@ export class TpvComponent implements OnInit {
   lineasSeleccionadasParaDevolver: Map<number, { checked: boolean, cantidadADevolver: number }> = new Map();
   numeroTicketBuscarInput = '';
   mostrarModalPedirTicket = false;
+
+  // Variables de control añadidas a tu componente para rastrear qué línea de devolución editamos
+  idLineaDevolucionActual: any = null;
+  maxUnidadesLineaActual: number = 1;
  
   // Totales automáticos
   totalTicket = computed(() => {
@@ -814,7 +818,10 @@ toggleSinFechaRecogida(): void {
 
 // === GESTIÓN DEL TECLADO GENERAL (MOSTRADOR, DESCUENTOS Y ANTICIPOS) ===
 
-abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_MANUAL' | 'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA', index: number | null = null) {
+abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_MANUAL' | 'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD', 
+ index: any = null,
+ maxCantidad: number = 1 
+ ) {
   this.inputObjetivoTeclado.set(objetivo);
 
   if (objetivo === 'PREGUNTA_ANTICIPO' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA') {
@@ -830,6 +837,16 @@ abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_M
     if (objetivo === 'ARTICULO') this.valorTecladoEnConstruccion.set(this.busquedaArticulo());
     if (objetivo === 'CLIENTE') this.valorTecladoEnConstruccion.set(this.busquedaCliente());
     if (objetivo === 'DESCUENTO') this.valorTecladoEnConstruccion.set(this.descuentoGlobal().toString());
+
+    if (objetivo === 'NUMERO_TICKET') { this.valorTecladoEnConstruccion.set(this.numeroTicketBuscarInput || '');
+    }
+
+  if (objetivo === 'NUMERO_CANTIDAD') {
+      this.idLineaDevolucionActual = index; // Guardamos la clave de la línea (idClave)
+      this.maxUnidadesLineaActual = maxCantidad; // Guardamos el tope máximo permitido
+      const control = this.lineasSeleccionadasParaDevolver.get(index);
+      this.valorTecladoEnConstruccion.set(control ? control.cantidadADevolver.toString() : '1');
+    }
   }
   
   this.mostrarTecladoGeneral.set(true);
@@ -839,8 +856,12 @@ pulsarTeclaGeneral(tecla: string) {
   const actual = this.valorTecladoEnConstruccion();
   const objetivo = this.inputObjetivoTeclado();
 
+  if ((objetivo === 'NUMERO_TICKET' || objetivo === 'NUMERO_CANTIDAD') && tecla === '.') {
+    return;
+  }
+
   // Filtro estricto para campos de dinero o porcentajes
-  if (objetivo === 'DESCUENTO' || objetivo === 'DESCUENTO_MANUAL' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA') {
+  if (objetivo === 'DESCUENTO' || objetivo === 'DESCUENTO_MANUAL' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA' || objetivo === 'NUMERO_TICKET' || objetivo === 'NUMERO_CANTIDAD') {
     if (tecla === '.' && actual.includes('.')) return;
     if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
     if (tecla !== '.' && isNaN(Number(tecla))) return;
@@ -903,7 +924,29 @@ private aplicarValorEnTiempoReal() {
     }
   }
   // CANTIDAD_ANTICIPO no se ejecuta aquí para evitar llamadas a la API o validaciones a medio escribir.
-}
+
+  // Teclado para el numero de ticket en devoluciones
+  if (objetivo === 'NUMERO_TICKET') {
+    this.numeroTicketBuscarInput = valor;
+  }
+
+  /* Volcado en tiempo real de la cantidad del artículo */
+  if (objetivo === 'NUMERO_CANTIDAD' && this.idLineaDevolucionActual !== null) {
+    let num = parseInt(valor, 10) || 0;
+    
+    // Controlamos que no se pase del máximo disponible en el ticket original
+    if (num > this.maxUnidadesLineaActual) {
+      num = this.maxUnidadesLineaActual;
+      this.valorTecladoEnConstruccion.set(num.toString()); // Reajustamos el buffer del teclado
+    }
+
+    const control = this.lineasSeleccionadasParaDevolver.get(this.idLineaDevolucionActual);
+    if (control) {
+      control.cantidadADevolver = num;
+    }
+  }
+
+ }
 
 aplicarAccionTeclado() {
   const objetivo = this.inputObjetivoTeclado();
@@ -922,6 +965,24 @@ aplicarAccionTeclado() {
   if (objetivo === 'APERTURA_CAJA') {
     this.saldoInicialInput = parseFloat(resultado) || 0;
     this.ejecutarAperturaCaja();
+  }
+  if (objetivo === 'NUMERO_TICKET') {
+    this.numeroTicketBuscarInput = resultado;
+    // Opcional: Cometa o Descomenta si quieres que lance la búsqueda directa tras darle a Aceptar en tu teclado virtual
+    this.confirmarTicketIntroducido();
+  }
+  /* Confirmación de la cantidad del artículo */
+  if (objetivo === 'NUMERO_CANTIDAD' && this.idLineaDevolucionActual !== null) {
+    let num = parseInt(resultado, 10) || 1;
+    if (num < 1) num = 1;
+    if (num > this.maxUnidadesLineaActual) num = this.maxUnidadesLineaActual;
+
+    const control = this.lineasSeleccionadasParaDevolver.get(this.idLineaDevolucionActual);
+    if (control) {
+      control.cantidadADevolver = num;
+    }
+    // Reseteamos el puntero de control de línea
+    this.idLineaDevolucionActual = null;
   }
 
   this.cerrarTecladoGeneral();
@@ -1104,16 +1165,41 @@ abrirModal() {
 
  // Al pulsar el botón de la cabecera, abrimos el minimodal
  pedirNumeroTicketDevolucion() {
-  this.numeroTicketBuscarInput = 'TCK-'; // Se lo dejamos preescrito para ahorrar clics
+  this.numeroTicketBuscarInput = ''; // Se lo dejamos preescrito para ahorrar clics
   this.mostrarModalPedirTicket = true;
+ }
+
+ // Nueva función puente para cuando el zapatero pincha directamente en un ticket de la lista
+seleccionarTicketDirecto(ticket: any) {
+  if (!ticket.numeroTicket) return;
+  
+  // 1. Seteamos el input con el número del ticket seleccionado
+  this.numeroTicketBuscarInput = ticket.numeroTicket;
+  
+  // 2. Cerramos este modal de selección intermedia
+  this.mostrarModalPedirTicket = false;
+  
+  // 3. Ejecutamos tu método nativo de búsqueda para que valide y abra el modal de abono parcial
+  this.buscarTicketOriginal();
  }
 
 // Al darle a "Buscar" o pulsar Enter, cerramos este paso y llamamos al buscador real
 confirmarTicketIntroducido() {
-  if (!this.numeroTicketBuscarInput.trim()) return;
-  
-  this.mostrarModalPedirTicket = false;
-  this.buscarTicketOriginal(); // El método que conecta con el GET de tu backend
+ let valorInput = this.numeroTicketBuscarInput.trim();
+
+  if (valorInput) {
+    // Si el zapatero NO ha escrito "TCK-", se lo añadimos nosotros automáticamente por código
+    if (!valorInput.toUpperCase().startsWith('TCK-')) {
+      valorInput = `TCK-${valorInput}`;
+    }
+
+    // Guardamos el valor completo con el prefijo en la variable para que tu backend lo entienda
+    this.numeroTicketBuscarInput = valorInput.toUpperCase();
+
+    // Cerramos el modal y lanzamos tu buscador original nativo del TPV
+    this.mostrarModalPedirTicket = false;
+    this.buscarTicketOriginal();
+  }
  }
 
 }
