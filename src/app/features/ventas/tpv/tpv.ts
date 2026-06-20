@@ -324,12 +324,18 @@ export class TpvComponent implements OnInit {
       clienteId: this.clienteSeleccionadoId(),
       tipo: this.tipoOrdenSeleccionada(),
       fechaPrometidaRecogida: this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() ? this.fechaRecogida() : null,
-      lineas: this.carrito().map(item => ({
+      lineas: this.carrito().map(item => {
+        // Calculamos el precio modificado real si el artículo tiene descuento aplicado
+        const descLinea = item.descuentoPorcentaje || 0;
+        const precioUnidadConDescuento = item.precio * (1 - descLinea / 100);
+
+        return {
           articuloId: item.articuloId,
           cantidad: item.cantidad,
-          precioModificado: item.precio,
+          precioModificado: precioUnidadConDescuento, 
           notasReparacion: item.notasReparacion || null
-        }))
+        };
+      })
     };
 
     this.ordenService.crearOrden(request).subscribe({
@@ -390,6 +396,8 @@ export class TpvComponent implements OnInit {
         this.isTicketVisible.set(true);
         // Lanzamos la generación del PDF ahora que tenemos ID y datos cargados
         this.generarYPrevisualizarTicket();
+        // REFRESCAR STOCK: Añadido aquí para ventas directas
+        this.cargarCatalogo();
       },
       error: (err) => this.uiService.mostrarToast('Error al procesar el pago: ' + (err.error || err.message), 'error')
     });
@@ -421,6 +429,8 @@ export class TpvComponent implements OnInit {
     // Disparamos la generación del PDF. Tu backend recibirá el ID de la orden 
     // y verá que al no tener anticipos asociados, debe pintar el "Resguardo de Taller" estándar.
     this.generarYPrevisualizarTicket();
+    // REFRESCAR STOCK: Añadido aquí para reparaciones sin señal
+    this.cargarCatalogo();
     return; // Cortamos la ejecución aquí para que NO llame al servicio del backend erróneo
   }
     this.ordenService.registrarAnticipo(id, importe, metodoPago).subscribe({
@@ -440,6 +450,8 @@ export class TpvComponent implements OnInit {
         this.isTicketVisible.set(true);
         // Después de registrar el anticipo, previsualizamos el ticket con el importe del anticipo y dejamos la orden abierta para que el cajero pueda cobrar el resto más tarde.
         this.generarYPrevisualizarTicket();
+        // REFRESCAR STOCK: Añadido aquí para reparaciones con señal
+        this.cargarCatalogo();
       },
       error: (err) => this.uiService.mostrarToast('Error al registrar el anticipo: ' + (err.error || err.message), 'error')
     });
