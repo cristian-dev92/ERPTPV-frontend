@@ -101,13 +101,18 @@ export class OrdenService {
   }
 
   // 9. Editar notas de reparación o la fecha prometida de recogida
-  editarReparacion(id: number, nuevasNotas: string, nuevaFecha: string, detallesEditados: any[]): Observable<any> {
-    return this.http.put(`${this.API_URL}/${id}/reparacion`, null, {
-      params: new HttpParams()
-        .set('notasReparacion', nuevasNotas)
-        .set('nuevaFecha', nuevaFecha) // Formato YYYY-MM-DD
-    });
+  editarReparacion(id: number, nuevasNotas: string, nuevaFecha: string, detalleId: number): Observable<any> {
+   let params = new HttpParams()
+    .set('notasReparacion', nuevasNotas)
+    .set('nuevaFecha', nuevaFecha); // Formato YYYY-MM-DD
+
+  // Si la línea tiene un ID válido de base de datos, se lo mandamos a 'detalleId'
+  if (detalleId !== null && detalleId !== undefined) {
+    params = params.set('detalleId', detalleId.toString());
   }
+
+  return this.http.put(`${this.API_URL}/${id}/reparacion`, null, { params });
+ }
 
   // 10.Descargar PDF del ticket
   getTicketPdf(ordenId: number): Observable<Blob> {

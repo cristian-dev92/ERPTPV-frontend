@@ -52,7 +52,7 @@
     @for (orden of ordenesAMostrar(); track orden.id) {
       <div class="ticket-card" (click)="verDetalle(orden)">
         <div class="card-header">
-          <span class="ticket-id">#{{ orden.id }}</span>
+          <span class="ticket-id">#{{ orden.numeroTicket || orden.id }}</span>
           <span class="badge" [ngClass]="getBadgeClass(orden)"> 
                {{ orden.total < 0 ? 'DEVOLUCION' : 
                   ((orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') ? 'PAGADO' : 
@@ -62,15 +62,15 @@
         <div class="card-body">
           <p class="cliente"><strong>👤 {{ orden.clienteNombre || orden.cliente?.nombre || 'Cliente General' }}</strong></p>
           <p class="servicio">👞 {{ orden.descripcionCorto || (orden.tipo === 'VENTA_DIRECTA' ? 'VENTA' : (orden.tipo === 'REPARACION' ? 'REPARACIÓN' : (orden.tipo === 'DEVOLUCION' ? 'DEVOLUCIÓN' : 'Trabajo del taller'))) }}</p>
+          
           @if (orden.tipo === 'REPARACION') {
             <p class="fecha-limite" [ngClass]="{'retrasado': orden.estadoTaller !== 'LISTO' && orden.estadoTaller !== 'ENTREGADO'}">
               📅 Fecha Recogida: {{ orden.fechaPrometidaRecogida | date:'dd/MM/yyyy' }}
             </p>
-          } @else {
+          }
             <p class="fecha-limite">
               💰 Total: {{ orden.total | currency:'EUR' }}
             </p>
-          }
         </div>
         
         <div class="card-quick-actions" (click)="$event.stopPropagation()">
@@ -147,16 +147,19 @@
                           <div class="form-group-tpv-inline">
                             <label>📝 Nota específica del trabajo:</label>
                             <textarea 
-                              [(ngModel)]="item.notas" 
+                              [(ngModel)]="item.notasReparacion" 
                               (click)="activarTeclado('notas-linea', idx)">
                             </textarea>
                           </div>
                           <div class="form-group-tpv-inline-date">
                             <label>📅 Fecha de recogida prometida:</label>
+                            <div class="input-date-wrapper">
                             <input type="date" 
                                    inputmode="numeric"
-                                   [(ngModel)]="item.fechaEntrega">
+                                   [(ngModel)]="item.fechaEntrega"
+                                   (click)="$any($event.target).showPicker()">
                           </div>
+                         </div>
                         }
 
                         @if (orden.estadoTaller === 'EN_TALLER' || orden.estadoTaller === 'LISTO' || orden.tipo === 'VENTA_DIRECTA') {
@@ -183,8 +186,8 @@
               </div> </div> <hr class="separator-ticket">
 
             <div class="totales-ticket-box">
-              <div class="total-row"><span class="lbl">TOTAL TICKET:</span> <span class="val-total">{{ orden.total | currency:'EUR' }}</span></div>
-              <div class="total-row pendiente"><span class="lbl">PENDIENTE DE CAJA:</span> <span class="val-pendiente">{{ orden.importePendiente | currency:'EUR' }}</span></div>
+              <div class="total-row"><span class="lbl">TOTAL TICKET: </span> <span class="val-total">{{ orden.total | currency:'EUR' }}</span></div>
+              <div class="total-row pendiente"><span class="lbl">PENDIENTE DE CAJA: </span> <span class="val-pendiente">{{ orden.importePendiente | currency:'EUR' }}</span></div>
             </div>
 
             @if (orden.tipo === 'REPARACION' || orden.tipoOrden === 'REPARACION') {
@@ -232,7 +235,12 @@
                   </button>
                 </div>
               }
-            </div> </div> </div> </div> </div> }
+            </div> 
+          </div> 
+        </div> 
+      </div> 
+    </div> 
+  }
 
   @if (mostrarModalCobro()) {
     <div class="modal-backdrop keypad-backdrop">

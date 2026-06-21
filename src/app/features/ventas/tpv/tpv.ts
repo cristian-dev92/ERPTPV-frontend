@@ -366,24 +366,11 @@ export class TpvComponent implements OnInit {
         this.horaTicketActual.set(new Date().toLocaleTimeString());
 
         // === NUEVO: INSERTAR EL TICKET EN EL HISTORIAL INFERIOR ===
-        const nuevoTicket: TicketHistorial = {
-          id: id,
-          numeroTicket: res.numeroTicket, 
-          fecha: new Date(),
-          cliente: this.clienteSeleccionado() ? { nombre: this.clienteSeleccionado()!.nombre } : null,
-          clienteNombre: this.clienteSeleccionado()?.nombre || 'Cliente General',
-          clienteTelefono: this.clienteSeleccionado()?.telefono || '',
-          clienteId: this.clienteSeleccionado()?.id || null,
-          total: this.totalTicket(),
-          // Como la AEAT está pausada en el back, lo marcamos como PENDIENTE de envío por ahora
-          estadoAeat: res.estadoAeat || 'PENDIENTE',
-          estadoPago: 'PAGADO',
-          tipo: this.tipoOrdenSeleccionada() === 'VENTA_DIRECTA' ? 'VENTA_DIRECTA' : 'REPARACION',
-          estadoTaller: this.tipoOrdenSeleccionada() === 'REPARACION' ? 'EN_TALLER' : 'CANCELADO'
-        };
-
-        // Lo metemos al principio de la lista usando .update() para que sea reactivo
-        this.historialTickets.update(tickets => [nuevoTicket, ...tickets]);
+        this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+          next: (ticketsActualizados) => {
+            this.historialTickets.set(ticketsActualizados);
+          }
+        });
 
           // Módulo Veri*Factu
           this.datosFacturaAeat.set({

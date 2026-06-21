@@ -1,1 +1,97 @@
-/* You can add global styles to this file, and also import other style files */
+// ==========================================
+// MÓDULOS DE SASS
+// ==========================================
+@use "sass:color";
+
+// ==========================================
+// VARIABLES DE COLOR (Tema Oscuro / TPV Taller)
+// ==========================================
+$bg-main: #12141c;
+$bg-card: #1a1d29;
+$bg-modal: #1e2235;
+$text-main: #ffffff;
+$text-muted: #a0aec0;
+
+// COLOR DE LAS PESTAÑAS
+$color-accent: #353535;
+// COLORES PARA LOS BADGES DE LOS TICKETS
+$color-taller: #d69e2e;    // En taller
+$color-success: #38a169;   // Pagado / Listo
+$color-entregado: #3182ce; // Entregado
+$color-warning: #dd6b20;   // Pendiente
+$color-danger: #e53e3e;    // Devolucion / Cancelado
+$color-secondary: #6e7270; // Gris secundario
+$color-pdf: #6b46c1;
+
+/* =========================================================================
+   FIX ENMASCARAMIENTO Y TAMAÑO: INPUT DATE EN TPV (GLOBAL)
+   ========================================================================= */
+.form-group-tpv-inline-date {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label { 
+    font-size: 1.1rem !important; 
+    font-weight: bold; 
+    color: $text-muted !important; 
+  }
+
+  .input-date-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  input[type="date"] {
+    width: 100%;
+    background-color: $bg-main !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border-radius: 8px;
+    padding: 0 40px 0 14px !important; // 40px a la derecha para que el texto no pise el emoji
+    font-size: 1.25rem !important; 
+    height: 52px !important;
+    cursor: pointer;
+    color-scheme: dark; // Mantiene el cuadro flotante del calendario en modo oscuro
+
+    -webkit-appearance: none; 
+    -moz-appearance: none;    
+    appearance: none;         
+
+    // EL INDICADOR NATIVO: Se queda oculto a la derecha de forma invisible
+    // Recorta su ancho a 40px para que encaje con el showPicker() del HTML sin conflicto
+    &::-webkit-calendar-picker-indicator {
+      position: absolute !important;
+      top: 0 !important;
+      right: 0 !important;
+      width: 40px !important; 
+      height: 100% !important;
+      opacity: 0 !important; // Totalmente invisible, adiós icono gigante
+      cursor: pointer !important;
+      z-index: 2; 
+    }
+
+    // APAGÓN EXCLUSIVO PARA EL ICONO FANTASMA DE FIREFOX
+      &::-moz-calendar-picker-indicator {
+        display: none !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+    
+    &:focus { border-color: $color-taller !important; outline: none; }
+  }
+
+  // ✨ EL SUSTITUTO: Tu propio icono controlado, nítido y con tamaño perfecto
+  .input-date-wrapper::after {
+    content: "📅"; 
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.3rem;
+    pointer-events: none; // Permite que el click pase al input invisible de abajo
+    z-index: 1;
+    filter: grayscale(1) brightness(1.5); 
+  }
+}

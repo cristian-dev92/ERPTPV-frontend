@@ -152,6 +152,7 @@ export class OrdenListComponent implements OnInit {
     
     // 2. Aseguramos el subtotal de la línea
     const subtotalLinea = linea.subtotal || linea.total || (cantidad * precioUnitario);
+    const notaExistente = linea.notas || linea.notasReparacion || '';
 
     return {
       id: linea.id || index, 
@@ -161,7 +162,8 @@ export class OrdenListComponent implements OnInit {
       precio: precioUnitario, // <-- Ahora sí tendrá el valor real
       subtotal: subtotalLinea, // <-- Ahora sí tendrá el valor real
       esServicio: linea.esServicio || linea.articulo?.tipo === 'SERVICIO' || orden.tipo === 'REPARACION',
-      notes: linea.notas || linea.notasReparacion || '',
+      notas: notaExistente,
+      notasReparacion: notaExistente,
       fechaEntrega: fechaFormateada,
       nuevoPrecioInput: '' 
     };
@@ -240,32 +242,46 @@ export class OrdenListComponent implements OnInit {
   }
 
   private guardarCambiosFlujoServidor(ordenId: number, callbackSuccess: () => void) {
-  const primerServicio = this.detallesEditados.find(d => d.esServicio) || this.detallesEditados[0];
-  const notasGlobales = primerServicio ? primerServicio.notas : '';
-  const fechaGlobal = primerServicio ? primerServicio.fechaEntrega : '';
+  // 1. Filtramos las líneas que son servicios/reparaciones
+  const serviciosAActualizar = this.detallesEditados.filter(d => d.esServicio);
 
-  // 🚀 LIMPIEZA CLAVE: Re-mapeamos el array para enviarle al backend solo lo que entiende
-  const lineasParaEnviar = this.detallesEditados.map((linea, index) => {
-    return {
-      // Si el id es igual al index (temporal), le mandamos null o id original para que el backend sepa qué hacer
-      id: typeof linea.id === 'number' && linea.id === index ? null : linea.id,
-      articuloId: linea.articuloId,
-      cantidad: linea.cantidad,
-      precioUnidad: linea.precio, // Volvemos al nombre original que mapeaba tu backend
-      total: linea.subtotal,      // Volvemos al nombre original que mapeaba tu backend
-      notasReparacion: linea.notas
-    };
-  });
+  if (serviciosAActualizar.length === 0) {
+    callbackSuccess();
+    return;
+  }
 
-  // Enviamos 'lineasParaEnviar' en lugar del array crudo de la vista
-  this.ordenService.editarReparacion(ordenId, notasGlobales, fechaGlobal, lineasParaEnviar).subscribe({
-    next: () => callbackSuccess(),
-    error: (err) => {
-      console.error("Error al guardar en servidor:", err);
-      this.uiService.mostrarToast('Error al actualizar cambios en el desglose.', 'error');
+  this.uiService.mostrarToast('Guardando líneas una a una de forma segura...', 'warning');
+
+  // 2. Función recursiva para ejecutar las peticiones en orden SECUENCIAL
+  const guardarLineaSecuencial = (indice: number) => {
+    // Si ya hemos procesado todos los artículos, disparamos el éxito general
+    if (indice >= serviciosAActualizar.length) {
+      callbackSuccess();
+      return;
     }
-  });
-}
+
+    const linea = serviciosAActualizar[indice];
+    const notaFinal = linea.notasReparacion || linea.notas || '';
+    
+    // Si el id es igual a la posición en el array (temporal), mandamos null
+    const idLineaCorrecto = (typeof linea.id === 'number' && linea.id === indice) ? null : linea.id;
+
+    // Ejecutamos la petición para ESTA línea
+    this.ordenService.editarReparacion(ordenId, notaFinal, linea.fechaEntrega, idLineaCorrecto).subscribe({
+      next: () => {
+        // 🚀 ÉXITO: Cuando termina de guardar una línea, llamamos a la siguiente
+        guardarLineaSecuencial(indice + 1);
+      },
+      error: (err) => {
+        console.error(`Error al guardar la línea con ID ${idLineaCorrecto}:`, err);
+        this.uiService.mostrarToast('Error al actualizar las notas de uno de los artículos.', 'error');
+      }
+    });
+  };
+
+  // 3. Arrancamos el bucle secuencial desde la primera línea (índice 0)
+  guardarLineaSecuencial(0);
+ }
 
   cambiarPrecioLineaEspecifica(item: any) {
   const precioLimpio = item.nuevoPrecioInput.toString().replace(',', '.');
@@ -478,54 +494,68 @@ export class OrdenListComponent implements OnInit {
     this.mayusculas.set(!this.mayusculas());
   }
 
-  escribirTeclado(caracter: string) {
-    const campo = this.inputActivo();
-    const idx = this.indiceLineaActiva;
+ escribirTeclado(caracter: string) {
+  const campo = this.inputActivo();
+  const idx = this.indiceLineaActiva;
 
-    // Procesar el valor del carácter respetando mayúsculas/minúsculas y el token especial .com
-    let caracterProcesado = caracter;
-    if (caracter === 'com') {
-      caracterProcesado = '.com';
-    } else if (isNaN(Number(caracter))) {
-      // Si es una letra, aplicamos el estado del signal
-      caracterProcesado = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
-    }
-    
-    if (campo === 'busqueda') {
-      this.terminoBusqueda.set(this.terminoBusqueda() + caracterProcesado);
-    } else if (campo === 'notas-linea' && idx !== null) {
-      this.detallesEditados[idx].notas += caracterProcesado;
-    } else if (campo === 'precio-linea' && idx !== null) {  
-      this.detallesEditados[idx].nuevoPrecioInput += caracterProcesado;
-    }
+  let caracterProcesado = caracter;
+  if (caracter === 'com') {
+    caracterProcesado = '.com';
+  } else if (isNaN(Number(caracter))) {
+    caracterProcesado = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
   }
+  
+  if (campo === 'busqueda') {
+    this.terminoBusqueda.set(this.terminoBusqueda() + caracterProcesado);
+  } else if (campo === 'notas-linea' && idx !== null) {
+    // Inicializamos con string vacío tanto 'notas' como 'notasReparacion' para curarnos en salud
+    if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
+    if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
 
-  borrarUltimoCaracter() {
-    const campo = this.inputActivo();
-    const idx = this.indiceLineaActiva;
-    
-    if (campo === 'busqueda') {
-      const actual = this.terminoBusqueda();
-      this.terminoBusqueda.set(actual.slice(0, -1));
-    } else if (campo === 'notas-linea' && idx !== null) {
-      const actual = this.detallesEditados[idx].notas;
-      this.detallesEditados[idx].notas = actual.slice(0, -1);
-    } else if (campo === 'precio-linea' && idx !== null) {
-      const actual = this.detallesEditados[idx].nuevoPrecioInput;
-      this.detallesEditados[idx].nuevoPrecioInput = actual.slice(0, -1);  
-    }
+    this.detallesEditados[idx].notasReparacion += caracterProcesado;
+    this.detallesEditados[idx].notas += caracterProcesado; // Mantenemos ambos actualizados
+  } else if (campo === 'precio-linea' && idx !== null) {  
+    if (!this.detallesEditados[idx].nuevoPrecioInput) this.detallesEditados[idx].nuevoPrecioInput = '';
+    this.detallesEditados[idx].nuevoPrecioInput += caracterProcesado;
   }
+}
 
-  insertarEspacio() {
-    const campo = this.inputActivo();
-    const idx = this.indiceLineaActiva;
+borrarUltimoCaracter() {
+  const campo = this.inputActivo();
+  const idx = this.indiceLineaActiva;
+  
+  if (campo === 'busqueda') {
+    const actual = this.terminoBusqueda();
+    this.terminoBusqueda.set(actual.slice(0, -1));
+  } else if (campo === 'notas-linea' && idx !== null) {
+    const actualRep = this.detallesEditados[idx].notasReparacion || '';
+    this.detallesEditados[idx].notasReparacion = actualRep.slice(0, -1);
     
-    if (campo === 'busqueda') {
-      this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
-    } else if (campo === 'notas-linea' && idx !== null) {
-      this.detallesEditados[idx].notas += ' ';
-    } else if (campo === 'precio-linea' && idx !== null) {
-      this.detallesEditados[idx].nuevoPrecioInput += ' ';
-    }
+    const actualNot = this.detallesEditados[idx].notas || '';
+    this.detallesEditados[idx].notas = actualNot.slice(0, -1);
+  } else if (campo === 'precio-linea' && idx !== null) {
+    const actual = this.detallesEditados[idx].nuevoPrecioInput || '';
+    this.detallesEditados[idx].nuevoPrecioInput = actual.slice(0, -1);  
   }
+}
+
+insertarEspacio() {
+  const campo = this.inputActivo();
+  const idx = this.indiceLineaActiva;
+  
+  if (campo === 'busqueda') {
+    this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
+  } else if (campo === 'notas-linea' && idx !== null) {
+    // 🚀 CORREGIDO: Arreglada la 'e' intrusa que rompía el método
+    if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
+    if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
+
+    this.detallesEditados[idx].notasReparacion += ' ';
+    this.detallesEditados[idx].notas += ' ';
+  } else if (campo === 'precio-linea' && idx !== null) {
+    if (!this.detallesEditados[idx].nuevoPrecioInput) this.detallesEditados[idx].nuevoPrecioInput = '';
+    this.detallesEditados[idx].nuevoPrecioInput += ' ';
+  }
+ } 
+
 }
