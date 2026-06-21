@@ -57,14 +57,18 @@
               </td>
               <td>
                 <div class="status-pill-container">
-                  @if (emp.verifactuOk) {
-                    <span class="pill-fiscal state-ok">
-                      <span class="pulse-dot"></span> 🟢 ENVIANDO CORRECTAMENTE
-                    </span>
+                  @if (emp.verifactuOk && emp.integracionVerifactuOk) {
+                   <span class="pill-fiscal state-ok">
+                    <span class="pulse-dot"></span> 🟢 ENVIANDO CORRECTAMENTE
+                   </span>
+                  } @else if (emp.verifactuOk && !emp.integracionVerifactuOk) {
+                   <span class="pill-fiscal state-warning">
+                    <span class="pulse-dot-warning"></span> 🟡 EN ESPERA (MODO SIMULACIÓN)
+                   </span>
                   } @else {
-                    <span class="pill-fiscal state-error">
+                   <span class="pill-fiscal state-error">
                       ❌ CONEXIÓN INTERRUMPIDA / CERTIFICADO INCORRECTO
-                    </span>
+                   </span>
                   }
                 </div>
               </td>

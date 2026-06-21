@@ -23,7 +23,8 @@ export interface EmpresaEstadoDTO {
   nombre: string;
   nif: string;
   activa: boolean;
-  verifactuOk: boolean; // 🟢 Semáforo fiscal
+  verifactuOk: boolean; // Semáforo fiscal
+  integracionVerifactuOk: boolean; // Estado Real Hacienda
 }
 
 export interface JefeAdminDTO {
