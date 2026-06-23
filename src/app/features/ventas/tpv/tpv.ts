@@ -122,6 +122,8 @@ export class TpvComponent implements OnInit {
   mostrarTecladoGeneral = signal<boolean>(false);
   inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | null>(null);
   valorTecladoEnConstruccion = signal<string>('');
+  filtroBusqueda = signal<string>('');
+  mayusculasGeneral = signal<boolean>(true);
 
   // Distribución de teclas idéntica a tu diseño favorito del TPV
   lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -831,6 +833,7 @@ abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_M
   if (objetivo !== 'PREGUNTA_ANTICIPO' && isMobileOrTablet()) {
     return;
   }
+  this.mayusculasGeneral.set(false);
   this.inputObjetivoTeclado.set(objetivo);
 
   if (objetivo === 'PREGUNTA_ANTICIPO' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA') {
@@ -863,6 +866,11 @@ abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_M
   this.mostrarTecladoGeneral.set(true);
 }
 
+// NUEVO MÉTODO PUENTE PARA EL CLIC DEL BOTÓN EN EL HTML
+alternarMayusculasGeneral() {
+  this.mayusculasGeneral.update(estado => !estado);
+}
+
 pulsarTeclaGeneral(tecla: string) {
   const actual = this.valorTecladoEnConstruccion();
   const objetivo = this.inputObjetivoTeclado();
@@ -876,6 +884,13 @@ pulsarTeclaGeneral(tecla: string) {
     if (tecla === '.' && actual.includes('.')) return;
     if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
     if (tecla !== '.' && isNaN(Number(tecla))) return;
+  }
+
+  // LÓGICA DE TRATAMIENTO DE CARACTERES SEGÚN SEÑAL DE MAYÚSCULAS
+  // Si no es un número ni un punto, aplicamos la transformación de caja de texto
+  let teclaProcesada = tecla;
+  if (tecla !== '.' && isNaN(Number(tecla))) {
+    teclaProcesada = this.mayusculasGeneral() ? tecla.toUpperCase() : tecla.toLowerCase();
   }
 
   this.valorTecladoEnConstruccion.set(actual + tecla);
@@ -904,6 +919,7 @@ cerrarTecladoGeneral() {
   this.inputObjetivoTeclado.set(null);
   this.valorTecladoEnConstruccion.set('');
   this.indiceLineaDescuentoActual.set(null);
+  this.mayusculasGeneral.set(false);
 }
 
 private aplicarValorEnTiempoReal() {

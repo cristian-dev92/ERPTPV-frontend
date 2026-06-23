@@ -249,15 +249,15 @@
           }
         </div>
         <div class="fila-qwerty">
-          <button type="button" class="btn-tecla-alpha btn-mayus" 
+          <button type="button" class="btn-mayus" 
                   [style.background-color]="mayusculasGeneral() ? '#4caf50' : '#ccc'" 
                   [style.color]="mayusculasGeneral() ? 'white' : 'black'"
                   (click)="alternarMayusculasGeneral()">
             ↑ {{ mayusculasGeneral() ? 'MAYÚS' : 'minús' }}
           </button>
 
-          <button type="button" class="btn-tecla-alpha btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
-          <button type="button" class="btn-tecla-alpha btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
+          <button type="button" class="btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+          <button type="button" class="btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
         </div>
       } <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarTextoAlFormulario()">
         ✔ ACEPTAR Y APLICAR

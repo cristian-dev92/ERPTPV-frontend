@@ -8,16 +8,104 @@
 
     <div class="field">
       <label>Email</label>
-      <input type="email" formControlName="email">
+      <input type="email" 
+      formControlName="email"
+      (click)="abrirTecladoGeneralForm('EMAIL', loginForm.controls.email.value)">
     </div>
 
     <div class="field">
       <label>Contraseña</label>
-      <input type="password" formControlName="password">
+      <input 
+      type="password" 
+      formControlName="password"
+      (click)="abrirTecladoGeneralForm('PASSWORD', loginForm.controls.password.value)">
     </div>
 
-    <button type="submit" [disabled]="loginForm.invalid">
+    <div class="dispositivo-selector-wrapper">
+      <span class="selector-label">Modo de entrada en este terminal:</span>
+      <div class="tabs-container">
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="!tecladoNativoForzado()" 
+          (click)="cambiarModoTeclado(false)">
+          🖥️ Mostrador Táctil
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="tecladoNativoForzado()" 
+          (click)="cambiarModoTeclado(true)">
+          📱 Tablet / Móvil
+        </button>
+      </div>
+    </div>
+
+    <button 
+    type="submit"
+    class="submit-btn" 
+    [disabled]="loginForm.invalid">
       Entrar al Sistema
     </button>
   </form>
+
+  @if (mostrarTecladoGeneral()) {
+    <div class="modal-teclado-general-container">
+      
+      <div class="teclado-general-header">
+        <span class="titulo-contexto">
+          Teclado Táctil: {{ inputObjetivoTeclado() === 'EMAIL' ? 'Correo Electrónico' : 'Contraseña de Acceso' }}
+        </span>
+        <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
+      </div>
+
+      <div class="teclado-general-pantalla">
+        <span class="texto-construccion">
+          {{ inputObjetivoTeclado() === 'PASSWORD' && valorTecladoEnConstruccion() ? ('•'.repeat(valorTecladoEnConstruccion().length)) : (valorTecladoEnConstruccion() || 'Escriba aquí...') }}
+        </span>
+        <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
+      </div>
+
+      <div class="teclado-general-wrapper-keys">
+        <div class="fila-qwerty">
+          @for (letra of ['0','1','2','3','4','5','6','7','8','9']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
+              {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
+            </button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['A','S','D','F','G','H','J','K','L', 'Ñ']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
+              {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
+            </button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          @for (letra of ['Z','X','C','V','B','N','M','@','.', '-', '_']; track letra) {
+            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
+              {{ letra.match(/[A-ZÑ]/) ? (mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase()) : letra }}
+            </button>
+          }
+        </div>
+        <div class="fila-qwerty">
+          <button type="button" class="btn-mayus" [class.shift-active]="mayusculasGeneral()" (click)="alternarMayusculasGeneral()">
+            ↑ {{ mayusculasGeneral() ? 'MAYÚS' : 'minús' }}
+          </button>
+
+          <button type="button" class="btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+          <button type="button" class="btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
+        </div>
+
+        <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarTextoAlFormulario()">
+          ✔ ACEPTAR Y APLICAR
+        </button>
+      </div> 
+    </div> 
+  }
 </div>

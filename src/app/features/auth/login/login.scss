@@ -1,18 +1,17 @@
-// Contenedor principal que centra el login en toda la pantalla
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
   width: 100%;
-  background-color: #f0f2f5; // Un gris muy suave para no cansar la vista
+  background-color: #f0f2f5; 
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
   form {
     background: white;
     padding: 2.5rem;
     border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); // Sombra suave para dar relieve
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); 
     width: 100%;
     max-width: 400px;
     display: flex;
@@ -59,7 +58,7 @@
 
         &:focus {
           outline: none;
-          border-color: #3498db; // Azul profesional al hacer clic
+          border-color: #3498db; 
           box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
 
@@ -69,7 +68,53 @@
       }
     }
 
-    button {
+    // Estilos premium para el selector de teclado
+    .dispositivo-selector-wrapper {
+      margin: 0.5rem 0 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .selector-label {
+        font-size: 0.8rem;
+        color: #7f8c8d;
+        margin-bottom: 0.4rem;
+        font-weight: 500;
+      }
+
+      .tabs-container {
+        display: inline-flex;
+        background-color: #e9ecef;
+        padding: 4px;
+        border-radius: 6px; // Cuadrado sutil
+        width: 100%;
+
+        .tab-btn {
+          flex: 1;
+          border: none;
+          background: transparent;
+          padding: 8px 12px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #7f8c8d;
+          cursor: pointer;
+          border-radius: 6px; // Cuadrados con bordes ligeramente redondeados
+          transition: all 0.2s ease-in-out;
+
+          &:hover {
+            color: #2c3e50;
+          }
+
+          &.active {
+            background-color: #ffffff;
+            color: #3498db;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+          }
+        }
+      }
+    }
+
+    .submit-btn {
       background-color: #3498db;
       color: white;
       padding: 1rem;
@@ -79,14 +124,14 @@
       font-weight: bold;
       cursor: pointer;
       transition: background 0.3s, transform 0.1s;
-      margin-top: 1rem;
+      margin-top: 1rem; 
 
       &:hover:not(:disabled) {
         background-color: #2980b9;
       }
 
       &:active:not(:disabled) {
-        transform: scale(0.98); // Efecto de pulsado
+        transform: scale(0.98); 
       }
 
       &:disabled {
@@ -96,4 +141,189 @@
       }
     }
   }
+}
+
+// =========================================================================
+// ⌨️ TECLADO TÁCTIL GENERAL (ESTILO MOSTRADOR CLIENTES)
+// =========================================================================
+.modal-teclado-general-container {
+  position: fixed; 
+  top: 50%;
+  right: 20px; /* ➡️ Pegado a la derecha del Login */
+  transform: translateY(-50%); 
+  width: 740px; /* Ancho idóneo para mostrador compacto */
+  height: auto;
+  z-index: 999999 !important;
+  background: #1e293b;          
+  padding: 20px; 
+  border-radius: 16px; 
+  box-shadow: -10px 20px 30px rgba(0, 0, 0, 0.4);               
+  border: 1px solid #334155;
+  box-sizing: border-box;
+  font-family: inherit;
+  animation: fadeInQuick 0.15s ease-out;
+
+  .teclado-general-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 12px; 
+    color: #ffffff;
+
+    .titulo-contexto {
+      font-weight: 700; 
+      font-size: 1.1rem; 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;           
+    }
+
+    .btn-cerrar-teclado {
+      background: #ef4444; 
+      border: none; 
+      color: white; 
+      border-radius: 6px; 
+      width: 38px; 
+      height: 38px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:active {
+        background: #b91c1c;
+      }
+    }
+  }
+
+  .teclado-general-pantalla {
+    background: #0f172a;        
+    color: #38bdf8;             
+    font-family: 'Courier New', Courier, monospace; 
+    padding: 12px 16px; 
+    font-size: 1.6rem; 
+    font-weight: 700;
+    border-radius: 8px; 
+    margin-bottom: 15px; 
+    min-height: 55px; 
+    border: 1px solid #1e293b;
+    word-break: break-all; 
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+
+    .btn-vaciar-pantalla {
+      color: #64748b; 
+      font-size: 0.85rem; 
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      background: #1e293b;
+      padding: 8px 12px;
+      border-radius: 6px;
+
+      &:active {
+        background: #334155;
+        color: #f1f5f9;
+      }
+    }
+  }
+
+  .teclado-general-wrapper-keys {
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+
+    button {
+      border: 1px solid #475569;
+      border-bottom: 4px solid #334155; /* Efecto relieve original */
+      border-radius: 6px; 
+      font-weight: 700; 
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.05s ease;
+
+      &:active {
+        transform: translateY(2px);
+        border-bottom-width: 1px;
+        filter: brightness(0.85);
+      }
+    }
+
+    .fila-qwerty {
+      display: flex; 
+      gap: 10px; 
+      justify-content: center;
+      width: 100%;
+
+      /* 🔤 Letras normales */
+      .btn-tecla-alpha {
+        flex: 1;
+        max-width: 60px;
+        height: 60px;
+        background: #334155; 
+        color: #ffffff; 
+        font-size: 1.5rem; 
+        padding: 0;
+      }
+
+      // TECLA MAYÚS MODIFICADA: Ancho forzado sin heredar flexión
+      .btn-mayus {
+        width: 130px; 
+        height: 60px;
+        background-color: #475569;
+        color: #ffffff;
+        font-size: 1rem;
+        
+        &.shift-active {
+          background-color: #10b981 !important; 
+          border-color: #059669 !important;
+          border-bottom-color: #047857 !important;
+        }
+      }
+
+      // TECLA ESPACIO MODIFICADA: Larga pero equilibrada para no romper la estética
+      .btn-espacio {
+        width: 340px; 
+        height: 60px;           
+        background: #475569;    
+        color: #ffffff;
+        font-size: 1rem;
+      }
+
+      // TECLA BORRAR MODIFICADA: Consistente y con ancho extendido de acción rápida
+      .btn-borrar-atras {
+        width: 170px; 
+        height: 60px;
+        background: #ef4444 !important; 
+        border-color: #dc2626 !important;
+        border-bottom-color: #991b1b !important;
+        color: #ffffff !important;
+        font-size: 1.1rem;
+      }
+    }
+
+    .btn-aceptar-teclado-general {
+      margin-top: 4px; 
+      padding: 15px; 
+      background: #10b981;      
+      border-color: #059669;
+      border-bottom-color: #047857;
+      color: white; 
+      font-size: 1.3rem; 
+      width: 100%;
+      height: 55px; 
+    }
+  }
+}
+
+@keyframes fadeInQuick {
+  from { opacity: 0; transform: translateY(-48%); }
+  to { opacity: 1; transform: translateY(-50%); }
 }

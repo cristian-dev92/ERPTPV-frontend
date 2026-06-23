@@ -459,46 +459,54 @@
           @if (inputObjetivoTeclado() === 'DESCUENTO' || inputObjetivoTeclado() === 'DESCUENTO_MANUAL' || inputObjetivoTeclado() === 'NUMERO_TICKET' || inputObjetivoTeclado() === 'NUMERO_CANTIDAD') {
             <div class="grid-numerico-descuento">
               @for (num of ['1','2','3','4','5','6','7','8','9','0','.']; track num) {
-                <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
+               <button class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
               }
               <button class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫</button>
             </div>
           } @else {
             <div class="teclado-fila">
-              @for (num of lineaNumeros; track num) {
+             @for (num of lineaNumeros; track num) {
                 <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(num)">{{ num }}</button>
-              }
+             }
             </div>
             <div class="teclado-fila">
               @for (letra of lineaLetras1; track letra) {
-                <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(letra)">{{ letra }}</button>
-              }
+               <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(letra)">{{ letra }}</button>
+             }
             </div>
             <div class="teclado-fila">
               @for (letra of lineaLetras2; track letra) {
-                <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(letra)">{{ letra }}</button>
-              }
+               <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(letra)">{{ letra }}</button>
+             }
             </div>
             <div class="teclado-fila">
               @for (letra of lineaLetras3; track letra) {
                 <button type="button" class="btn-tecla-key" (click)="pulsarTeclaGeneral(letra)">{{ letra }}</button>
-              }
-              <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracterGeneral()">⌫</button>
-            </div>
-          }
-          <div class="teclado-fila fila-especial">
-            @if (!inputObjetivoTeclado()?.includes('DESCUENTO')) {
-              <button type="button" class="btn-tecla-espacio" (click)="insertarEspacioGeneral()">ESPACIO</button>
-            }
-            <button class="btn-aceptar-teclado-general" (click)="aplicarAccionTeclado()">
-              ✔ ACEPTAR Y APLICAR
+             }
+             </div>
+
+             <div class="teclado-fila">
+              <button type="button" class="btn-mayus" [class.shift-active]="mayusculasGeneral()" (click)="alternarMayusculasGeneral()">
+                ↑ {{ mayusculasGeneral() ? 'MAYÚS' : 'minús' }}
+             </button>
+
+               @if (!inputObjetivoTeclado()?.includes('DESCUENTO')) {
+                <button type="button" class="btn-tecla-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+               }
+
+                <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
+             </div>
+
+             <div class="teclado-fila fila-especial"></div>
+             <button class="btn-aceptar-teclado-general" (click)="aplicarAccionTeclado()">
+                ✔ ACEPTAR Y APLICAR
             </button>
-          </div>
-        </div>
-      }
-    </div>
-  }
-}
+           }
+         </div>
+        } 
+       </div> 
+     } 
+   }
 
 @if (isTicketVisible() ) {
   <div class="modal-ticket-overlay">

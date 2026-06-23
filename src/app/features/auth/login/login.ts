@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { Router } from '@angular/router';
 import { UiService } from '../../../core/services/ui.service';
+import { isMobileOrTablet } from '../../../core/utils/device-utils';
 
 @Component({
   selector: 'app-login',
@@ -20,11 +21,88 @@ export class LoginComponent {
   // Signal para gestionar mensajes de error de forma reactiva (Angular 21 style)
   errorMessage = signal<string | null>(null);
 
+  // Estado reactivo del teclado guardado en el dispositivo
+  tecladoNativoForzado = signal<boolean>(false);
+
+  // ⌨️ Signals del Teclado Virtual Integrado
+  mostrarTecladoGeneral = signal<boolean>(false);
+  inputObjetivoTeclado = signal<'EMAIL' | 'PASSWORD'>('EMAIL');
+  valorTecladoEnConstruccion = signal<string>('');
+  mayusculasGeneral = signal<boolean>(false);
+
   // Definición del formulario con validaciones básicas
   loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(4)]]
   });
+
+  ngOnInit(): void {
+    // Leemos la persistencia del navegador nada más arrancar la pantalla
+    this.tecladoNativoForzado.set(localStorage.getItem('FORZAR_TECLADO_NATIVO') === 'true');
+  }
+
+  /**
+   * Cambia el modo del buffer de entrada según el dispositivo
+   */
+  cambiarModoTeclado(forzarNativo: boolean): void {
+    this.tecladoNativoForzado.set(forzarNativo);
+    if (forzarNativo) {
+      localStorage.setItem('FORZAR_TECLADO_NATIVO', 'true');
+    } else {
+      localStorage.removeItem('FORZAR_TECLADO_NATIVO');
+    }
+  }
+
+  // ⌨️ Métodos del Teclado Táctil
+  abrirTecladoGeneralForm(objetivo: 'EMAIL' | 'PASSWORD', valorActualForm: string = ''): void {
+    // Si está forzado el nativo por botón O el detector nativo dice que es móvil/tablet, no abrir nunca
+    if (this.tecladoNativoForzado() || isMobileOrTablet()) {
+      return;
+    }
+    this.inputObjetivoTeclado.set(objetivo);
+    this.valorTecladoEnConstruccion.set(valorActualForm || '');
+    this.mostrarTecladoGeneral.set(true);
+  }
+
+  pulsarTeclaGeneral(caracter: string): void {
+    let valorAInsertar = caracter;
+    const esLetra = /^[a-zA-ZÑñ]$/.test(caracter);
+    
+    if (esLetra) {
+      valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
+    }
+
+    this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + valorAInsertar);
+  }
+
+  alternarMayusculasGeneral(): void {
+    this.mayusculasGeneral.set(!this.mayusculasGeneral());
+  }
+
+  borrarUltimoCaracterGeneral(): void {
+    this.valorTecladoEnConstruccion.update(val => val.slice(0, -1));
+  }
+
+  limpiarTecladoGeneral(): void {
+    this.valorTecladoEnConstruccion.set('');
+  }
+
+  cerrarTecladoGeneral(): void {
+    this.mostrarTecladoGeneral.set(false);
+  }
+
+  aplicarTextoAlFormulario(): void {
+    const objetivo = this.inputObjetivoTeclado();
+    const valor = this.valorTecladoEnConstruccion();
+
+    if (objetivo === 'EMAIL') {
+      this.loginForm.controls.email.setValue(valor);
+    } else if (objetivo === 'PASSWORD') {
+      this.loginForm.controls.password.setValue(valor);
+    }
+
+    this.cerrarTecladoGeneral();
+  }
 
   /**
    * Se ejecuta al pulsar el botón de Entrar.
