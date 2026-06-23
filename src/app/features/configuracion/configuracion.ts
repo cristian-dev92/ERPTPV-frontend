@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { UiService } from '../../core/services/ui.service';
 import { ConfiguracionService } from '../../core/services/configuracion.service';
 import { AuthService } from '../../core/services/auth.service';
+import { isMobileOrTablet } from '../../core/utils/device-utils';
 
 @Component({
   selector: 'app-configuracion',
@@ -88,6 +89,9 @@ export class ConfiguracionComponent implements OnInit {
 
   // --- MÉTODOS TECLADO TÁCTIL (CORREGIDO PARA MEMORIZAR Y SINCRONIZAR FÍSICO) ---
   activarTeclado(campo: string) {
+    if (isMobileOrTablet()) {
+      return;
+    }
     this.inputActivo.set(campo);
     this.mostrarTeclado.set(true);
 
@@ -103,7 +107,7 @@ export class ConfiguracionComponent implements OnInit {
     if (campo === 'nuevoEmpPass') this.textoNuevoEmpPassTmp = this.nuevoEmpleado.password;
   }
 
-  // 🚀 NUEVO: Sincroniza lo que el usuario escribe físicamente con los buffers internos del teclado virtual
+  // NUEVO: Sincroniza lo que el usuario escribe físicamente con los buffers internos del teclado virtual
   sincronizarTecladoFisico(campo: string, valorActual: string) {
     if (campo === 'inputEmail') { this.inputEmail = valorActual; this.textoEmailTmp = valorActual; }
     if (campo === 'passActual') { this.passActual = valorActual; this.textoPassActualTmp = valorActual; }

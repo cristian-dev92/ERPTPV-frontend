@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService, ClienteDTO, NuevoClienteRequest } from '../../core/services/cliente.service';
 import { UiService } from '../../core/services/ui.service';
+import { isMobileOrTablet } from '../../core/utils/device-utils';
 
 @Component({
   selector: 'app-clientes',
@@ -77,6 +78,9 @@ export class ClientesComponent implements OnInit {
   index?: number | null | undefined,
   valorActualForm: string = '') 
   {
+    if (isMobileOrTablet()) {
+    return;
+  }
     this.inputObjetivoTeclado.set(objetivo);
     this.valorTecladoEnConstruccion.set(valorActualForm || '');
     this.mostrarTecladoGeneral.set(true);

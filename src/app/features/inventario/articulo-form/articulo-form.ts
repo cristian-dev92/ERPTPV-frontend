@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { UiService } from '../../../core/services/ui.service';
 import { CommonModule } from "@angular/common";
 import { ProveedorDTO, ProveedorService } from '../../../core/services/proveedor.service';
+import { isMobileOrTablet } from '../../../core/utils/device-utils';
 
 @Component({
   selector: 'app-articulo-form',
@@ -98,6 +99,10 @@ export class ArticuloFormComponent implements OnInit {
     objetivo: 'NOMBRE' | 'PRECIO' | 'IVA' | 'STOCK_INICIAL' | 'STOCK_MINIMO' | 'NOTAS' | 'BUSCAR_PROVEEDOR', 
     valorActual: string = ''
   ) {
+    // Si están con la tablet en el taller, frenamos vuestro teclado virtual
+    if (isMobileOrTablet()) {
+      return;
+    }
     this.inputObjetivoTeclado.set(objetivo);
     this.valorTecladoEnConstruccion.set(valorActual);
     this.mostrarTecladoGeneral.set(true);

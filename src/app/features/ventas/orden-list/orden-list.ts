@@ -3,6 +3,7 @@ import { OrdenService } from '../../../core/services/orden.service';
 import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiService } from '../../../core/services/ui.service';
+import { isMobileOrTablet } from '../../../core/utils/device-utils';
 
 type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO';
 
@@ -480,6 +481,9 @@ export class OrdenListComponent implements OnInit {
   // LOGICA DEL NUEVO TECLADO VIRTUAL TÁCTIL
   // =========================================================================
   activarTeclado(campo: string, indexLinea?: number | null) {
+    if (isMobileOrTablet()) {
+      return;
+    }
     this.inputActivo.set(campo);
     this.indiceLineaActiva = indexLinea !== undefined ? indexLinea : null;
     this.mostrarTeclado.set(true);

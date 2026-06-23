@@ -2,7 +2,8 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProveedorService, ProveedorDTO, NuevoProveedorRequest } from '../../core/services/proveedor.service';
-import { UiService } from '../../core/services/ui.service'; // Ajusta la ruta a tu servicio de notificaciones
+import { UiService } from '../../core/services/ui.service';
+import { isMobileOrTablet } from '../../core/utils/device-utils';
 
 @Component({
   selector: 'app-proveedores',
@@ -78,6 +79,9 @@ export class ProveedoresComponent implements OnInit {
     index?: number | null, 
     valorActualForm: string = ''
   ) {
+    if (isMobileOrTablet()) {
+    return;
+  }
     this.inputObjetivoTeclado.set(objetivo);
     this.valorTecladoEnConstruccion.set(valorActualForm || '');
     this.mostrarTecladoGeneral.set(true);

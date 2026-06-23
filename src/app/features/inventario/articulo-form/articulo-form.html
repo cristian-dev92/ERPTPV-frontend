@@ -44,6 +44,7 @@
         <label for="stockInicial">Stock Inicial</label>
         <input type="number" id="stockInicial" 
         [value]="stockInicial()" 
+        inputmode="numeric"
         (click)="abrirTecladoGeneralForm('STOCK_INICIAL', stockInicial()?.toString() || '')"
         (input)="stockInicial.set(+$any($event.target).value)" min="0" />
       </div>
@@ -64,6 +65,7 @@
         <div class="input-dinero">
           <input type="number" id="precioFinal" step="0.01" 
           [value]="precioFinal()" 
+          inputmode="decimal"
           (click)="abrirTecladoGeneralForm('PRECIO', precioFinal()?.toString() || '')"
           (input)="precioFinal.set(+$any($event.target).value)" required />
           <span class="addon">€</span>

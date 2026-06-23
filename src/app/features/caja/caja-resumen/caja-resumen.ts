@@ -3,6 +3,7 @@ import { CurrencyPipe, DatePipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CajaService, TurnoCajaResponseDTO } from '../../../core/services/caja.service';
 import { UiService } from '../../../core/services/ui.service';
+import { isMobileOrTablet } from '../../../core/utils/device-utils';
 
 @Component({
   selector: 'app-caja-resumen',
@@ -201,6 +202,10 @@ export class CajaResumenComponent implements OnInit {
 
 // Abre el teclado y registra sobre qué campo estamos trabajando
 activarTeclado(campo: string) {
+  // Si el zapatero gestiona la caja desde la tablet, anulamos vuestro teclado virtual
+  if (isMobileOrTablet()) {
+    return;
+  }
  this.inputActivo.set(campo);
   this.mostrarTeclado.set(true);
 

@@ -3,7 +3,8 @@ import { ArticuloService } from '../../../core/services/articulo.service';
 import { Articulo } from '../../../core/models/articulo.model';
 import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from "@angular/router";
-import {UiService} from "../../../core/services/ui.service";
+import { UiService } from "../../../core/services/ui.service";
+import { isMobileOrTablet } from '../../../core/utils/device-utils';
 
 @Component({
   selector: 'app-inventario-list',
@@ -66,6 +67,10 @@ export class InventarioListComponent implements OnInit {
 
   // === MÉTODOS DEL TECLADO TÁCTIL PARA LA BÚSQUEDA ===
   abrirTecladoBusqueda() {
+    // Si están con la tablet en el taller, frenamos vuestro teclado virtual
+    if (isMobileOrTablet()) {
+      return;
+    }
     this.valorTecladoEnConstruccion.set(this.terminoBusqueda());
     this.mostrarTecladoGeneral.set(true);
   }

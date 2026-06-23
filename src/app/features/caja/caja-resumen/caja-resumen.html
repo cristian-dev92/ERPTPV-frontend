@@ -151,6 +151,7 @@
               <label>Importe (€)</label>
               <input type="text" 
                [value]="inputActivo() === 'monto' ? textoMontoTmp : (montoMovimiento || '')"
+               inputmode="decimal"
                (input)="sincronizarTecladoFisicoCaja('monto', textoMontoTmp)"
                (click)="activarTeclado('monto')">
             </div>
@@ -159,6 +160,7 @@
               <label>Concepto / Motivo</label>
               <input type="text" 
               [(ngModel)]="descripcionMovimiento"
+              inputmode="decimal"
               (click)="activarTeclado('descripcion')"
               (input)="sincronizarTecladoFisicoCaja('monto', textoMontoTmp)">
             </div>
@@ -252,6 +254,7 @@
               <label>FONDO DE CAJA INICIAL (€)</label>
               <input type="text" 
                      [(ngModel)]="textoAperturaTmp"
+                     inputmode="decimal"
                      (input)="sincronizarTecladoFisicoCaja('montoApertura', textoAperturaTmp)"
                      (click)="activarTeclado('montoApertura')">
             </div>

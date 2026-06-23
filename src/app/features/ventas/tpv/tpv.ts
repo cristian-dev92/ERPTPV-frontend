@@ -11,6 +11,7 @@ import { HttpClient } from "@angular/common/http";
 import { ClientesComponent } from '../../clientes/clientes';
 import { Router } from "@angular/router";
 import { DomSanitizer } from '@angular/platform-browser';
+import { isMobileOrTablet } from '../../../core/utils/device-utils';
 
 // Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
 export interface Cliente {
@@ -754,6 +755,10 @@ export class TpvComponent implements OnInit {
 }
 
 abrirKeypadPrecio(index: number) {
+  // Si se usa una tablet Android
+  if (isMobileOrTablet()) {
+    return;
+  }
   this.indiceItemEditandoPrecio.set(index);
   this.precioEnConstruccion.set(this.carrito()[index].precio.toFixed(2));
 }
@@ -821,6 +826,11 @@ abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_M
  index: any = null,
  maxCantidad: number = 1 
  ) {
+  // Si es la pregunta de sí/no del anticipo, permitimos que pase siempre.
+  // Para todo lo demás (que requiere escribir texto o números), cortamos si es tablet.
+  if (objetivo !== 'PREGUNTA_ANTICIPO' && isMobileOrTablet()) {
+    return;
+  }
   this.inputObjetivoTeclado.set(objetivo);
 
   if (objetivo === 'PREGUNTA_ANTICIPO' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA') {
@@ -837,7 +847,9 @@ abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_M
     if (objetivo === 'CLIENTE') this.valorTecladoEnConstruccion.set(this.busquedaCliente());
     if (objetivo === 'DESCUENTO') this.valorTecladoEnConstruccion.set(this.descuentoGlobal().toString());
 
-    if (objetivo === 'NUMERO_TICKET') { this.valorTecladoEnConstruccion.set(this.numeroTicketBuscarInput || '');
+    if (objetivo === 'NUMERO_TICKET') { 
+      this.numeroTicketBuscarInput = ''; // O el valor que corresponda
+      this.valorTecladoEnConstruccion.set(this.numeroTicketBuscarInput || '');
     }
 
   if (objetivo === 'NUMERO_CANTIDAD') {
