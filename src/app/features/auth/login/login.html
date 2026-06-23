@@ -15,10 +15,19 @@
 
     <div class="field">
       <label>Contraseña</label>
+      <div class="input-password-container" style="position: relative; display: flex; align-items: center;">
       <input 
-      type="password" 
-      formControlName="password"
-      (click)="abrirTecladoGeneralForm('PASSWORD', loginForm.controls.password.value)">
+        [type]="mostrarPassword() ? 'text' : 'password'" 
+        formControlName="password"
+        (click)="abrirTecladoGeneralForm('PASSWORD', loginForm.controls.password.value)"
+        style="width: 100%; padding-right: 40px;"> <button 
+        type="button" 
+        (click)="alternarVisibilidadPassword(); $event.stopPropagation();" 
+        class="btn-toggle-password"
+        style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 1.2rem;">
+          {{ mostrarPassword() ? '👁️' : '👁️‍🗨️' }}>
+      </button>
+     </div>
     </div>
 
     <div class="dispositivo-selector-wrapper">

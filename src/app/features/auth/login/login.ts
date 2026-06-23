@@ -30,6 +30,9 @@ export class LoginComponent {
   valorTecladoEnConstruccion = signal<string>('');
   mayusculasGeneral = signal<boolean>(false);
 
+  // Define la señal al inicio del componente
+  mostrarPassword = signal<boolean>(false);
+
   // Definición del formulario con validaciones básicas
   loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -102,6 +105,11 @@ export class LoginComponent {
     }
 
     this.cerrarTecladoGeneral();
+  }
+
+  // Método para alternar el estado
+  alternarVisibilidadPassword() {
+    this.mostrarPassword.update(visible => !visible);
   }
 
   /**
