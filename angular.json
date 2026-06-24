@@ -60,15 +60,15 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": {
-            "proxyConfig": "proxy.conf.json"
-          },
+          "options": {},
           "configurations": {
             "production": {
-              "buildTarget": "ERPTPV-frontend:build:production"
+              "buildTarget": "ERPTPV-frontend:build:production",
+              "proxyConfig": "proxy.conf.json"
             },
             "development": {
-              "buildTarget": "ERPTPV-frontend:build:development"
+              "buildTarget": "ERPTPV-frontend:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
