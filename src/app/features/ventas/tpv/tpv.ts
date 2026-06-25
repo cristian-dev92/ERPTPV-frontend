@@ -1018,7 +1018,15 @@ aplicarAccionTeclado() {
 // === FLUJO DE ANTICIPOS (MODAL CENTRADO INTERACTIVO) ===
 
 responderSiAnticipo() {
-  // Pasamos directamente a pedir la cantidad numérica
+  // 1. Buscamos el input que ya está renderizado en la pantalla actual
+  const inputCebo = document.querySelector('.cebo-tactil-fijo') as HTMLInputElement;
+  
+  if (inputCebo) {
+    inputCebo.focus();
+    inputCebo.click();
+  }
+
+  // 2. Cambiamos inmediatamente el estado para mutar la interfaz al teclado numérico
   this.abrirTecladoGeneral('CANTIDAD_ANTICIPO');
 }
 
@@ -1049,6 +1057,21 @@ aplicarCantidadAnticipo() {
   } else {
     this.uiService.mostrarToast(`Importe no válido. El máximo permitido es ${this.totalTicket()}€.`, 'warning');
   }
+}
+
+ejecutarCobroDesdeTablet(event: Event) {
+  // Evitamos que el formulario haga cosas raras por defecto
+  event.preventDefault();
+
+  // 1. Ocultamos el teclado nativo quitando el foco del input
+  const inputCebo = document.querySelector('.cebo-tactil-fijo') as HTMLInputElement;
+  if (inputCebo) {
+    inputCebo.blur();
+  }
+
+  // 2. Llamamos exactamente a la misma función que tiene tu botón verde/azul
+  // Viendo tu HTML anterior, la función es 'aplicarCantidadAnticipo()'
+  this.aplicarCantidadAnticipo();
 }
 
 // === COMPONENTES EXTERNOS ===

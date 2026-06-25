@@ -306,7 +306,7 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
     .close-btn {
       background: none;
       border: none;
-      color: $text-muted;
+      color: $color-danger;
       font-size: 1.5rem;
       cursor: pointer;
       &:hover { color: $text-main; }
@@ -561,29 +561,57 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
 // ==========================================
 // 💰 KEYPAD NUMÉRICO (Panel de cobro)
 // ==========================================
-.keypad-backdrop { z-index: 1100; }
+.keypad-backdrop { 
+  z-index: 1100; 
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+ }
 .keypad-modal {
   background-color: $bg-modal;
-  border-radius: 18px;
-  width: 100%;
-  max-width: 440px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px; /* Le damos un pelín más de ancho para tablets */
+  padding: 0.85rem 1rem;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.12);
   animation: modalFadeIn 0.15s ease-out;
+  // SALVAVIDAS PARA TABLETS: Si el teclado o la pantalla se comen el espacio, permite scroll interno
+  max-height: 92vh;            
+  overflow-y: auto;            
+  display: flex;
+  flex-direction: column;
 
   .keypad-header {
-    display: flex; z-index: 1100; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;
-    h3 { margin: 0; font-size: 1.15rem; color: #e2e8f0; }
-    .close-btn { background: none; border: none; color: $text-muted; font-size: 1.3rem; cursor: pointer; }
+    display: flex; 
+    z-index: 1100; 
+    justify-content: space-between; 
+    align-items: center;
+    margin-bottom: 0.85rem;
+
+    h3 { margin: 0; font-size: 1rem; color: #ffffff; }
+
+    .close-btn { background: none; border: none; color: $color-danger; font-size: 1.3rem; cursor: pointer; }
   }
 }
 
 .payment-methods {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;
+  display: grid; 
+  grid-template-columns: repeat(4, 1fr); 
+  gap: 8px; 
+  margin-bottom: 10px;
+
   button {
-    padding: 1rem; font-size: 1.1rem; font-weight: 700; border: 2px solid rgba(255, 255, 255, 0.1);
-    background-color: rgba(0, 0, 0, 0.2); color: $text-muted; border-radius: 10px; cursor: pointer;
+    padding: 8px 4px;
+    font-size: 1rem; 
+    font-weight: 700; 
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.2); 
+    color: $text-muted; 
+    border-radius: 10px; 
+    cursor: pointer;
+
     &.selected {
       color: white; background-color: $bg-card; border-color: $color-success; box-shadow: 0 0 10px rgba($color-success, 0.2);
     }
@@ -591,9 +619,19 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
 }
 
 .screen-display {
-  background-color: #0b0c10; padding: 0.85rem 1.2rem; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: #0b0c10; 
+  padding: 6px 10px; 
+  border-radius: 10px; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 4px; 
+  border: 1px solid rgba(255, 255, 255, 0.05);
+
   .label { color: $text-muted; font-size: 0.95rem; }
+
   .value { font-size: 1.4rem; font-weight: 700; font-family: monospace; }
+
   &.change-display {
     background-color: #0d1b14; border-color: rgba($color-success, 0.2); margin-bottom: 1.25rem;
     .value { color: #4ade80; font-size: 1.6rem; }
@@ -601,22 +639,76 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
 }
 
 .grid-keypad {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-bottom: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 6px !important;                   
+  margin-bottom: 0.75rem !important;     
+  width: 100%;                          
+  max-width: 520px;                   
+  margin-left: auto;                     
+  margin-right: auto;
+
   button {
-    background-color: $bg-card; color: white; border: 1px solid rgba(255, 255, 255, 0.05); padding: 1.1rem; font-size: 1.4rem; font-weight: 600; border-radius: 10px; cursor: pointer; user-select: none;
+    background-color: $bg-card; 
+    color: white; 
+    border: 1px solid rgba(255, 255, 255, 0.05); 
+    padding: 0 !important;               
+    font-size: 1.25rem !important;       
+    font-weight: 600;
+    height: 50px !important;            
+    border-radius: 10px !important; 
+    cursor: pointer; 
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     &:active { background-color: color.adjust($bg-card, $lightness: 10%); }
-    &.btn-clear { color: $color-danger; background-color: rgba($color-danger, 0.1); &:active { background-color: rgba($color-danger, 0.2); } }
-    &.btn-backspace { color: $color-warning; background-color: rgba($color-warning, 0.1); &:active { background-color: rgba($color-warning, 0.2); } }
+    
+    &.btn-clear { 
+      color: $color-danger; 
+      background-color: rgba($color-danger, 0.1); 
+      &:active { background-color: rgba($color-danger, 0.2); } 
+    }
+    &.btn-backspace { 
+      color: $color-warning; 
+      background-color: rgba($color-warning, 0.1); 
+      &:active { background-color: rgba($color-warning, 0.2); } 
+    }
   }
 }
 
 .btn-submit-pay {
-  width: 100%; background-color: $color-success; color: white; border: none; padding: 1.2rem; font-size: 1.2rem; font-weight: 700; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba($color-success, 0.3);
+  width: 100%; 
+  background-color: $color-success; 
+  color: white; 
+  border: none; 
+  padding: 0.85rem 1rem !important;      
+  font-size: 1.15rem; 
+  font-weight: 700; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  box-shadow: 0 4px 12px rgba($color-success, 0.3);
+  
   &:hover { background-color: color.adjust($color-success, $lightness: -5%); }
 }
 
 .btn-ir-cobrar {
-  width: 100%; padding: 1.2rem; font-size: 1.15rem; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; color: white; background-color: $color-success; border-bottom: 4px solid color.adjust($color-success, $lightness: -12%); transition: all 0.1s ease; text-align: center; user-select: none; box-shadow: 0 4px 12px rgba($color-success, 0.2);
+  width: 100%; 
+  padding: 0.85rem 1rem !important;     
+  font-size: 1.15rem; 
+  font-weight: 700; 
+  border: none; 
+  border-radius: 10px; 
+  cursor: pointer; 
+  color: white; 
+  background-color: $color-success; 
+  border-bottom: 4px solid color.adjust($color-success, $lightness: -12%); 
+  transition: all 0.1s ease; 
+  text-align: center; 
+  user-select: none; 
+  box-shadow: 0 4px 12px rgba($color-success, 0.2);
+
   &:hover { background-color: color.adjust($color-success, $lightness: 4%); }
   &:active { transform: translateY(2px); border-bottom-width: 1px; box-shadow: 0 2px 6px rgba($color-success, 0.1); filter: brightness(0.9); }
 }

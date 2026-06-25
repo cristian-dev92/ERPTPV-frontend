@@ -271,8 +271,14 @@ $accent-blue: #3498db;
       margin-top: 1.5rem;
       
       .btn-guardar-alta {
-        background-color: #27ae60;
+        background-color: $success;
         &:hover { background-color: #219653; }
+      }
+      
+      .btn-cancel {
+        background-color: $danger;
+        color: white;
+        &:hover { background-color: #b36868; }
       }
     }
   }

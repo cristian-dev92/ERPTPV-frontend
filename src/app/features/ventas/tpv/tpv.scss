@@ -1217,17 +1217,11 @@ app-clientes {
 .panel-historial-wrapper {
   display: block !important;
   position: relative !important;
-  width: 370% !important; 
-  max-width: 1600px !important;
-  left: 20px !important;   
-  right: 20px !important;
-  transform: translateX(-73%) !important;
   clear: both !important;
   float: none !important;
   box-sizing: border-box !important;
   margin-top: 2rem !important;
   margin-bottom: 3rem;
-  margin-left: 0 !important;
   margin-right: 0 !important;
   flex-shrink: 0;
   background-color: #ffffff;
@@ -1235,6 +1229,27 @@ app-clientes {
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+
+  position: absolute !important;
+  bottom: 0 !important;     
+  left: 0 !important;      
+  width: 100% !important;   
+  max-width: 100% !important;
+  transform: none !important;
+  margin: 0 !important;
+
+
+  // SÓLO PARA PC (Pantallas grandes)
+  @media (min-width: 1200px) {
+    position: relative !important;
+    width: 370% !important; 
+    max-width: 1600px !important;
+    left: 20px !important;   
+    right: 20px !important;
+    transform: translateX(-73%) !important;
+    margin-top: 2rem !important;
+    margin-bottom: 3rem; 
+  }
 
   .historial-header {
     padding: 1.25rem 1.5rem;
@@ -1307,6 +1322,7 @@ app-clientes {
     width: 100%;
     height: 220px;
     max-height: 220px;
+    white-space: nowrap;
     border-collapse: collapse;
     text-align: left;
     font-size: 1rem;
@@ -1447,7 +1463,7 @@ app-clientes {
     padding: 2.5rem;
     color: #94a3b8;
   }
-} // Aquí es donde se cierra correctamente el bloque del historial
+}
 
 // =========================================================================
 // 📉 CONTROLES DE DESCUENTOS (TANTO EN LÍNEA COMO DESCUENTO GLOBAL)
@@ -2335,7 +2351,7 @@ app-clientes {
     gap: 10px;
     align-items: center;
 
-    /* 🆕 Cierre corregido del wrapper para que no rompa la cascada */
+   
     .input-prefijo-wrapper {
       position: relative;
       flex: 1;
@@ -2351,7 +2367,7 @@ app-clientes {
         user-select: none;
         pointer-events: none; 
       }
-    } /* <-- Aquí cerramos correctamente el wrapper */
+    } 
 
     .input-busqueda-manual {
       flex: 1;
@@ -2475,5 +2491,146 @@ app-clientes {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 1rem;
     margin: 0;
+  }
+}
+
+//---------------------------
+// CONTENEDOR PARA ANTICIPOS
+//---------------------------
+.modal-pregunta-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.65); // Fondo oscuro semitransparente moderno
+  backdrop-filter: blur(4px);               // Ligero desenfoque para centrar la atención
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;                             // Asegurar que flote por encima de todo el TPV
+  animation: fadeInTpv 0.2s ease-out;
+}
+
+// El cuadrado bonito (Card del Modal)
+.modal-pregunta-content {
+  background: #ffffff;
+  width: 90%;
+  max-width: 500px;                         // Tamaño ideal para que luzca compacto pero legible
+  border-radius: 16px;                      // Esquinas suavizadas táctiles
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+
+  // Cabecera del modal
+  .teclado-general-header {
+    background: #f8fafc;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+
+    .titulo-contexto {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: -0.025em;
+    }
+
+    .btn-cerrar-teclado {
+      background: #b5b7b9;
+      border: none;
+      color: #ee1818;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+
+      &:hover, &:active {
+        background: #e2e8f0;
+        color: #0f172a;
+      }
+    }
+  }
+
+  // Cuerpo interior del mensaje y botones
+  .contenido-pregunta-tactil {
+    padding: 30px 24px;
+    text-align: center;
+
+    .texto-pregunta {
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: #334155;
+      margin: 0 0 28px 0;
+      font-weight: 500;
+    }
+
+    // Contenedor de la botonera dual
+    .wrapper-botones-decision {
+      display: grid;
+      grid-template-columns: 1fr 1fr;     
+      gap: 16px;
+
+      // Estilo base para ambos botones grandes
+      .btn-decision {
+        padding: 18px 12px;                
+        font-size: 1.05rem;
+        font-weight: 700;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: transform 0.1s ease, box-shadow 0.15s ease;
+
+        // Efecto visual al pulsar en pantallas táctiles
+        &:active {
+          transform: scale(0.97);
+        }
+      }
+
+      // Botón NO DEJA
+      .btn-no {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+
+        &:hover, &:active {
+          background-color: #fca5a5;
+        }
+      }
+
+      // Botón SÍ, DEJA ANTICIPO
+      .btn-si {
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+
+        &:hover, &:active {
+          background-color: #86efac;
+        }
+      }
+    }
+  }
+}
+
+// Animación de entrada suave
+@keyframes fadeInTpv {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

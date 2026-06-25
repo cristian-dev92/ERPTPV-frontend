@@ -165,7 +165,8 @@
 
           <div class="descuento-linea-wrap">
             <label>Dto %</label>
-            <input type="number" 
+            <input 
+              type="number" 
               [value]="item.descuentoPorcentaje || 0" 
               min="0" max="100"
               (input)="actualizarDescuentoLinea($index, $event)"
@@ -301,10 +302,10 @@
         <table class="tabla-historial">
           <thead>
             <tr>
-              <th>Nº Ticket</th>
-              <th>Hora</th>
-              <th>Cliente</th>
-              <th class="text-derecha">Total</th>
+              <th class="text-centro">Nº Ticket</th>
+              <th class="text-centro">Hora</th>
+              <th class="text-centro">Cliente</th>
+              <th class="text-centro">Total</th>
               <th class="text-centro">Estado AEAT</th>
               <th class="text-centro">Financiero</th>
               <th class="text-centro">Taller</th>
@@ -318,7 +319,7 @@
                 <td class="txt-mutado">
                   {{ (ticket.fechaCreacion || ticket.fecha || ticket['createdAt']) | date:'HH:mm' }}
                 </td>
-                <td>
+                <td class="text-centro">
                   {{ ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General' }}
                 </td>
                 <td class="text-derecha txt-precio">{{ ticket.total | currency:'EUR' }}</td>
@@ -412,6 +413,15 @@
           <p class="texto-pregunta">¿El cliente va a dejar un anticipo o señal para la reparación?</p>
           <div class="wrapper-botones-decision">
             <button type="button" class="btn-decision btn-no" (click)="responderNoAnticipo()">❌ NO DEJA</button>
+            <input 
+              type="number" 
+              class="cebo-tactil-fijo"
+              inputmode="decimal"
+              style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;"
+              [value]="valorTecladoEnConstruccion()"
+              (input)="valorTecladoEnConstruccion.set($event.target.value)"
+              (keydown.enter)="ejecutarCobroDesdeTablet($event)">
+              
             <button type="button" class="btn-decision btn-si" (click)="responderSiAnticipo()">💰 SÍ, DEJA ANTICIPO</button>
           </div>
         </div>
@@ -434,6 +444,16 @@
       </div>
 
       @if (inputObjetivoTeclado() === 'CANTIDAD_ANTICIPO') {
+        <input 
+          #inputOculto
+          type="number" 
+          class="cebo-tactil"
+          pattern="[0-9]*"
+          inputmode="decimal"
+          style="position: absolute; opacity: 0; top: -9999px; left: -9999px;"
+          [value]="valorTecladoEnConstruccion()"
+          (input)="valorTecladoEnConstruccion.set($event.target.value)">
+          
         <div class="teclado-general-pantalla">
           <span class="texto-construccion">{{ valorTecladoEnConstruccion() || '0.00' }} €</span>
           <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>

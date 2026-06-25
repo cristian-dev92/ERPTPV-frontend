@@ -219,10 +219,32 @@ $warning: #f59e0b;
   }
 
   .modal-footer {
-    display: flex; gap: 12px; margin-top: 1.75rem;
-    button { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
-    .btn-cancelar { background: #f1f5f9; color: #475569; &:hover { background: #e2e8f0; } }
-    .btn-guardar { background: $primary; color: white; &:hover { background: #000; } }
+    display: flex; 
+    gap: 12px; 
+    margin-top: 1.75rem;
+
+    button { 
+      flex: 1; 
+      padding: 12px; 
+      border-radius: 8px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      border: none; 
+    }
+    .btn-cancelar { 
+      background: $danger; 
+      color: #fffdfd; 
+      &:hover { 
+        background: #886066; 
+      } 
+    }
+    .btn-guardar { 
+      background: $secondary; 
+      color: white; 
+      &:hover { 
+        background: #50799e; 
+      } 
+    }
   }
 }
 

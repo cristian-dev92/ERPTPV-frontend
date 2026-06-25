@@ -52,6 +52,8 @@
   padding: 2rem;
   background: #f9f9f9;
   overflow-y: auto;
+  position: relative !important;
+  padding-bottom: 320px !important;
 }
 
 .btn-logout {
