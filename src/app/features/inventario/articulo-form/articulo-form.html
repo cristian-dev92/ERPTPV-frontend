@@ -70,7 +70,6 @@
           (input)="precioFinal.set(+$any($event.target).value)" required />
           <span class="addon">€</span>
         </div>
-        <button type="button" class="btn-teclado-form" (click)="abrirTecladoGeneralForm('PRECIO', precioFinal()?.toString() || '')">⌨️</button>
       </div>
     </div>
 
@@ -84,8 +83,6 @@
              (input)="porcentajeIva.set(+$any($event.target).value)" placeholder="21" required />
             <span class="addon">%</span>
         </div>
-        <button type="button" class="btn-teclado-form" 
-        (click)="abrirTecladoGeneralForm('IVA', porcentajeIva().toString() || '')">⌨️</button>
       </div>
     </div>
 

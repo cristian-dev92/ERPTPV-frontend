@@ -443,6 +443,30 @@
       }
     }
 
+    /* SECCIÓN NUMÉRICA (Va suelta, al mismo nivel que las filas) */
+    .grid-numerico-descuento {
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 10px;
+
+      .btn-tecla-accion {
+        padding: 18px; 
+        font-size: 1.5rem; 
+        background: #334155; 
+        color: #ffffff;
+      }
+
+      .btn-borrar-atras {
+        flex: unset;
+        width: 100%;
+        background: #ef4444 !important; 
+        border-color: #dc2626 !important;
+        border-bottom-color: #991b1b !important;
+        color: #ffffff !important;
+        font-size: 1.3rem;
+      }
+    }
+
     .fila-qwerty {
       display: flex; 
       gap: 10px; 
