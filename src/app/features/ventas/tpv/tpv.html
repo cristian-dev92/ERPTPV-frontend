@@ -72,29 +72,40 @@
           type="button" 
           class="articulo-card"
           [class.card-servicio]="articulo.tipo === 'SERVICIO'"
+          [class.card-rebajado]="(articulo.porcentajeDescuento ?? 0) > 0"
           (click)="agregarAlCarrito(articulo)">
           
           <div class="info-producto">
             <span class="nombre">{{ articulo.nombre }}</span>
-            <span class="precio">{{ (articulo.precioFinal | currency:'EUR') }}</span>
+
+            <div class="contenedor-precios-catalogo">
+             @if (((articulo.porcentajeDescuento ?? 0) > 0)) {
+              <span class="precio precio-original-tachado">{{ articulo.precioFinal | currency:'EUR' }}</span>
+              <span class="precio precio-rebajado-vivo">
+               {{ (articulo.precioFinal * (1 - (articulo.porcentajeDescuento ?? 0) / 100)) | currency:'EUR' }}
+             </span>
+             <span class="badge-descuento-rojo">-{{ (articulo.porcentajeDescuento ?? 0) }}%</span>
+             } @else {
+             <span class="precio">{{ (articulo.precioFinal | currency:'EUR') }}</span>
+            }
           </div>
-          
-          @if (articulo.tipo === 'PRODUCTO') {
-            <!-- Usamos un operador de aserción (?? 0) por si stock o stockMinimo vienen null/undefined -->
-            <span class="stock-badge" [class.low-stock]="(articulo.stock ?? 0) <= (articulo.stockMinimo ?? 0)">
-              Stock: {{ articulo.stock }}
-            </span>
-          } @else {
-            <span class="stock-badge servicio-badge">Mano de Obra</span>
-          }
-        </button>
+        </div>
+      
+         @if (articulo.tipo === 'PRODUCTO') {
+          <span class="stock-badge" [class.low-stock]="(articulo.stock ?? 0) <= (articulo.stockMinimo ?? 0)">
+            Stock: {{ articulo.stock }}
+          </span>
+        } @else {
+         <span class="stock-badge servicio-badge">Mano de Obra</span>
+        }
+       </button>
       } @empty {
         <div class="no-results">
-          📭 No hay artículos en esta categoría que coincidan con la búsqueda.
+         📭 No hay artículos en esta categoría que coincidan con la búsqueda.
         </div>
       }
+     </div>
     </div>
-  </div>
 
   <!-- SECCIÓN DERECHA: TICKET ACTUAL -->
   <div class="columna-derecha-mostrador">
@@ -156,6 +167,7 @@
           <div class="info-producto">
             <span class="nombre">{{ item.nombre }}</span>
             
+            <div class="bloque-controles-taller">
             <div class="controles-cantidad">
               <button (click)="ajustarCantidad($index, -1)" class="btn-qty" type="button">-</button>
               <span class="cantidad">{{ item.cantidad }}</span>
@@ -163,11 +175,34 @@
             </div>
           </div>
 
+          <div class="notas-reparacion-linea">
+          <button type="button" 
+                  class="btn-linea-nota" 
+                  [class.con-nota]="item.notasReparacion"
+                  (click)="item.mostrarBocadilloNota = !item.mostrarBocadilloNota"
+                  title="Añadir nota de taller">
+              📝 {{ item.mostrarBocadilloNota ? 'Cerrar Nota' : (item.notasReparacion ? 'Ver Nota' : 'Añadir Nota') }}
+          </button>
+          </div>
+
+          @if (item.mostrarBocadilloNota) {
+            <div class="bocadillo-nota-linea animate-fade-in">
+              <textarea 
+                [value]="item.notasReparacion || ''"
+                (input)="actualizarNotaLinea($index, $any($event.target).value); valorTecladoEnConstruccion.set($any($event.target).value)"
+                (click)="abrirTecladoGeneral('NOTAS_REPARACION', $index)"
+                rows="2">
+              </textarea>
+            <div class="bocadillo-flecha"></div>
+          </div>
+          }
+        </div>
+
           <div class="descuento-linea-wrap">
             <label>Dto %</label>
             <input 
               type="number" 
-              [value]="item.descuentoPorcentaje || 0" 
+              [value]="item.porcentajeDescuento || 0" 
               min="0" max="100"
               (input)="actualizarDescuentoLinea($index, $event)"
               (click)="abrirTecladoGeneral('DESCUENTO_MANUAL', $index)"
@@ -185,10 +220,10 @@
               🗑️
             </button>
           </div>
-        </div>
-      } @empty {
-        <p class="empty-msg">El carrito está vacío</p>
-      }
+         </div>
+        } @empty {
+          <p class="empty-msg">El carrito está vacío</p>
+        }
     </div>
 
     <div class="configuracion-pedido">
@@ -351,7 +386,7 @@
                       <button type="button" (click)="numeroTicketBuscarInput = ticket.numeroTicket; buscarTicketOriginal()" class="btn-accion-tvc devolucion" title="Iniciar Devolución Parcial Exclusiva">🔄 Devolución</button>
                     }
                   } @else {
-                    <span class="txt-mutado" style="font-size: 0.9rem;">Guardando en BD...</span>
+                    <span class="txt-mutado txt-pequeno">Guardando en BD...</span>
                   }
                 </td>
               </tr>
@@ -579,8 +614,8 @@
         </p>
 
         <div class="lista-devolucion-articulos">
-          @for (linea of (ticketOrigenEncontrado?.detalles || ticketOrigenEncontrado?.lineas); track linea.id || $index) {
-            @let idClave = linea.articuloId || linea.articulo?.id || linea.id;
+          @for (linea of (ticketOrigenEncontrado?.detalles || []); track linea.id) {
+            @let idClave = linea.id;
             @let control = lineasSeleccionadasParaDevolver.get(idClave);
 
             <div class="fila-devolucion-interactiva" [style.opacity]="control?.checked ? '1' : '0.6'">
@@ -592,7 +627,7 @@
                        class="checkbox-tactil">
                 
                 <span class="nombre-articulo">
-                  {{ linea.articulo?.nombre || linea.articuloNombre || linea.nombreArticulo || linea.nombre || linea.descripcion || 'Artículo de Catálogo' }}
+                 {{ linea.articuloNombre || 'Artículo de Catálogo' }}
                 </span>
               </label>
 

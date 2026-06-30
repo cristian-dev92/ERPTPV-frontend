@@ -7,10 +7,49 @@ export type TipoOrden = 'VENTA_DIRECTA' | 'REPARACION' | 'DEVOLUCION';
 
 export type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO';
 
+export interface DetalleOrdenDTO {
+  id: number;
+  articuloId: number;
+  articuloNombre: string;
+  cantidad: number;
+  precioUnitario: number;
+  porcentajeIva: number;
+  notasReparacion?: string;
+  subtotal: number;
+  baseImponible: number;
+  cuotaIva: number;
+  porcentajeDescuento: number;
+}
+
+// Interfaz para representar la Orden/Ticket completo que viene de la BD
+export interface OrdenDTO {
+  id: number;
+  numeroTicket: string;
+  fechaCreacion: string;
+  total: number;
+  totalBaseImponible: number;
+  totalIva: number;
+  importePagado: number;      
+  importePendiente: number;  
+  tipo: TipoOrden;
+  estadoPago: string;         
+  estadoTaller: string;       
+  ordenOrigenId?: number;     
+  clienteId?: number;        
+  clienteNombre?: string;
+  clienteTelefono?: string;   
+  empleadoNombre: string;     
+  notasReparacion?: string;   
+  fechaPrometidaRecogida?: string; 
+  fechaEntregaReal?: string;       
+  detalles: DetalleOrdenDTO[]; 
+}
+
 export interface NuevaLineaDTO {
   articuloId: number;
   cantidad: number;
-  notasReparacion?: string | null; // Opcional ("Tapas rojas", etc.)
+  notasReparacion?: string | null;
+  porcentajeDescuento?: number;
 }
 
 export interface NuevaOrdenDTO {
@@ -20,6 +59,7 @@ export interface NuevaOrdenDTO {
   lineas: NuevaLineaDTO[];   // El carrito de la compra
   tipo?: TipoOrden;          // Opcional, por defecto VENTA_DIRECTA
   fechaPrometidaRecogida?: string | null; // Mapea el LocalDate (YYYY-MM-DD)
+  descuentoGlobal: number;
 }
 
 export interface LineaDevolucionDTO {
@@ -76,28 +116,27 @@ export class OrdenService {
   }
 
   // 7. Consulta por estado (PAGADO, PENDIENTE, EN_TALLER)
-  getOrdenesPorEstado(estado: string): Observable<any[]> {
+  getOrdenesPorEstado(estado: string): Observable<OrdenDTO[]> {
   if (estado === 'TODAS' || estado === 'TODOS') {
-    // Lanzamos peticiones en paralelo a los estados reales que expone tu Enum en Java
-    // Cambia o añade estados si tu Enum 'EstadoTaller' usa otros nombres (ej. PENDIENTE, EN_TALLER, LISTO, ENTREGADO)
+    // Lanzamos peticiones en paralelo a los estados reales que expone tu Enum en Java. Cambia o añade estados si tu Enum 'EstadoTaller' usa otros nombres (ej. PENDIENTE, EN_TALLER, LISTO, ENTREGADO)
     return forkJoin([
-      this.http.get<any[]>(`${this.API_URL}/estado/EN_TALLER`), // Solo las que están en taller
-      this.http.get<any[]>(`${this.API_URL}/estado/LISTO`),     // Solo las que ya están listas
-      this.http.get<any[]>(`${this.API_URL}/estado/ENTREGADO`),
-      this.http.get<any[]>(`${this.API_URL}/estado/NO_APLICA`) // Si tienes un estado específico para ventas directas sin taller, etc.
+      this.http.get<OrdenDTO[]>(`${this.API_URL}/estado/EN_TALLER`), // Solo las que están en taller
+      this.http.get<OrdenDTO[]>(`${this.API_URL}/estado/LISTO`),     // Solo las que ya están listas
+      this.http.get<OrdenDTO[]>(`${this.API_URL}/estado/ENTREGADO`),
+      this.http.get<OrdenDTO[]>(`${this.API_URL}/estado/NO_APLICA`) // Si tienes un estado específico para ventas directas sin taller, etc.
     ]).pipe(
       // Juntamos todos los arrays devueltos en un único listado plano para el historial
-      map(([enTaller, listos, entregados]) => [...enTaller, ...listos, ...entregados])
+      map(([enTaller, listos, entregados, noAplica]) => [...enTaller, ...listos, ...entregados, ...noAplica])
     );
   }
 
   // Si pide un estado concreto, hacemos la llamada normal a Java
-  return this.http.get<any[]>(`${this.API_URL}/estado/${estado}`);
+  return this.http.get<OrdenDTO[]>(`${this.API_URL}/estado/${estado}`);
 }
 
   // 8. Para el panel del zapatero: muestra las órdenes que están operativas en "EN_TALLER" 
-  getOrdenesTaller(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.API_URL}/estado/EN_TALLER`);
+  getOrdenesTaller(): Observable<OrdenDTO[]> {
+    return this.http.get<OrdenDTO[]>(`${this.API_URL}/estado/EN_TALLER`);
   }
 
   // 9. Editar notas de reparación o la fecha prometida de recogida
@@ -206,8 +245,8 @@ export class OrdenService {
   }
 
   // 17. Para devolver un ticket en el tpv tenemos que poder elegir cual devolver
-  buscarTicketParaDevolucion(numeroTicket: string): Observable<any> {
-   return this.http.get(`${this.API_URL}/buscar-devolucion`, {
+  buscarTicketParaDevolucion(numeroTicket: string): Observable<OrdenDTO> {
+   return this.http.get<OrdenDTO>(`${this.API_URL}/buscar-devolucion`, {
      params: { numeroTicket }
    });
   }

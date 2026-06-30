@@ -24,22 +24,24 @@ export interface Articulo {
    */
   stock?: number | null;
   stockMinimo?: number | null;
-
   /** Descripción ampliada de los materiales o el trabajo a realizar */
   descripcion?: string;
 
   // --- NÚCLEO FINANCIERO (B2C Top-Down) ---
-
   /** Precio Final de venta al público (PVP con IVA incluido) */
   precioFinal: number;      
-
   /** Porcentaje de IVA aplicado al artículo (Ej: 21, 10, 4, 0) */
   porcentajeIva: number; 
+  /** Campo imprescindible para las chapitas del catálogo */
+  porcentajeDescuento?: number;
 
   // --- DATOS DE CONTROL INTERNO ---
   activo?: boolean;
   empresaId?: number;
 
   // --- CAMPOS ADICIONALES PARA REPARACIONES ---
-  notas: any;
+  notasReparacion?: string | null;
+
+  // --- NOTAS INTERNAS DE INVENTARIO/ALMACÉN ---
+  notas?: string | null;
 }

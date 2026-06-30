@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal, computed, ViewChild, HostListener } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
-import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO } from '../../../core/services/orden.service';
+import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO, DetalleOrdenDTO } from '../../../core/services/orden.service';
 import { Articulo } from '../../../core/models/articulo.model';
 import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,8 +27,9 @@ export interface ItemCarrito extends NuevaLineaDTO {
   nombre: string;
   cantidad: number;
   precio: number;
-  descuentoPorcentaje?: number;
+  porcentajeDescuento: number;
   notasReparacion?: string | null;
+  mostrarBocadilloNota?: boolean;
 }
 
 // Interfaz para representar la información que devuelve el back al cerrar un recibo con AEAT, que luego se muestra en el TPV para que el cajero pueda verificarlo
@@ -39,21 +40,38 @@ export interface InfoVerifaktu {
   fecha: string;
 }
 
-export interface TicketHistorial {
+export interface OrdenDTO {
   id: number;
   numeroTicket: string;
-  fecha: Date;
-  createdAt?: string | Date;       // 🌟 Añadido como opcional para soportar el backend
-  fechaCreacion?: string | Date; // 🌟 Añadido como opcional para soportar el backend
-  cliente: { nombre: string } | null;
+  total: number;
+  tipo?: 'VENTA_DIRECTA' | 'REPARACION' | 'DEVOLUCION';
+  
+  // === Campos de compatibilidad Front / Fechas ===
+  fecha?: Date | string;
+  createdAt?: string | Date;       
+  fechaCreacion?: string | Date; // LocalDateTime de Java
+
+  // === Campos de Cliente e Historial ===
+  cliente?: { nombre: string } | null;
   clienteNombre?: string;     
   clienteTelefono?: string;   
   clienteId?: number | null;
-  total: number;
-  estadoAeat: 'ENVIADO' | 'PENDIENTE';
-  estadoPago?: 'PAGADO' | 'PARCIAL' | 'PENDIENTE' | 'CANCELADO' | 'DEVOLUCION';
-  estadoTaller?: 'EN_TALLER' | 'LISTO' | 'ENTREGADO' | 'CANCELADO';
-  tipo?: 'VENTA_DIRECTA' | 'REPARACION' | 'DEVOLUCION';
+  empleadoNombre?: string;       
+
+  // === Desgloses Económicos y de Caja (Fundamentales de Java) ===
+  totalBaseImponible?: number;   // Suma de bases sin IVA
+  totalIva?: number;             // Suma de cuotas de IVA
+  importePagado?: number;        // Lo que ya ha dejado en caja el cliente
+  importePendiente?: number;     // Lo que le queda por pagar (Total - Pagado)
+
+  // === Estados de Negocio ===
+  estadoAeat?: 'ENVIADO' | 'PENDIENTE' | string; // Añadimos string por flexibilidad con VeriFactu
+  estadoPago?: 'PAGADO' | 'PARCIAL' | 'PENDIENTE' | 'CANCELADO' | 'DEVOLUCION' | string;
+  estadoTaller?: 'NO_APLICA' | 'EN_TALLER' | 'LISTO' | 'ENTREGADO' | 'CANCELADO' | string; 
+
+  // === Líneas e Información Taller ===
+  notasReparacion?: string;      // Nota rápida para las tarjetas del TPV
+  detalles?: DetalleOrdenDTO[];  // La lista de artículos reales del ticket
 }
 
 @Component({
@@ -85,7 +103,7 @@ export class TpvComponent implements OnInit {
 
   // === ESTADOS DEL PANEL DE HISTORIAL INFERIOR ===
   mostrarHistorial = signal<boolean>(false); // Empieza cerrado por defecto
-  historialTickets = signal<TicketHistorial[]>([]); // Aquí guardaremos los tickets del día para mostrar en el historial inferior
+  historialTickets = signal<OrdenDTO[]>([]); // Aquí guardaremos los tickets del día para mostrar en el historial inferior
 
   // --- ESTADO PARA MODIFICAR PRECIOS CON EL KEYPAD ---
   indiceItemEditandoPrecio = signal<number | null>(null);
@@ -120,7 +138,7 @@ export class TpvComponent implements OnInit {
 
   // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
   mostrarTecladoGeneral = signal<boolean>(false);
-  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | null>(null);
+  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'NOTAS_REPARACION' | null>(null);
   valorTecladoEnConstruccion = signal<string>('');
   filtroBusqueda = signal<string>('');
   mayusculasGeneral = signal<boolean>(true);
@@ -136,32 +154,32 @@ export class TpvComponent implements OnInit {
 
   // Estados para el nuevo modal interactivo de devolución parcial
   mostrarModalSeleccionDevolucion = false;
-  ticketOrigenEncontrado: any = null;
+  ticketOrigenEncontrado: OrdenDTO | null = null;
   lineasSeleccionadasParaDevolver: Map<number, { checked: boolean, cantidadADevolver: number }> = new Map();
   numeroTicketBuscarInput = '';
   mostrarModalPedirTicket = false;
 
   // Variables de control añadidas a tu componente para rastrear qué línea de devolución editamos
-  idLineaDevolucionActual: any = null;
+  idLineaDevolucionActual: number | null = null;;
   maxUnidadesLineaActual: number = 1;
  
-  // Totales automáticos
   totalTicket = computed(() => {
-    // 1. Calculamos la suma de todas las líneas aplicando sus respectivos descuentos individuales
-    const totalLineasConDescuento = this.carrito().reduce((acc, item) => {
-      const descLinea = item.descuentoPorcentaje || 0;
-      const precioConDescuento = item.precio * (1 - descLinea / 100);
-      return acc + (precioConDescuento * item.cantidad);
-    }, 0);
-
-    // 2. Aplicamos el descuento global sobre la suma total de las líneas
-    const descGlobal = this.descuentoGlobal();
-    const totalFinal = totalLineasConDescuento * (1 - descGlobal / 100);
-    const totalSeguro = totalFinal > 0 ? totalFinal : 0;
-
-  // Si está activo el modo devolución, el total pasa a ser negativo para restar de caja
-  return totalSeguro;
-  });
+  // 1. Calculamos la suma de todas las líneas aplicando sus respectivos descuentos individuales
+  const totalLineasConDescuento = this.carrito().reduce((acc, item) => {
+    const descLinea = item.porcentajeDescuento || 0; 
+    const precioConDescuento = item.precio * (1 - descLinea / 100);
+    return acc + (precioConDescuento * item.cantidad);
+  }, 0);
+  // 2. Aplicamos el descuento global sobre la suma total de las líneas
+  const descGlobal = this.descuentoGlobal();
+  const totalFinal = totalLineasConDescuento * (1 - descGlobal / 100);
+  // SI ES DEVOLUCIÓN: Retornamos el valor en negativo para restar de caja
+  if (this.tipoOrdenSeleccionada() === 'DEVOLUCION') {
+    return totalFinal > 0 ? -totalFinal : totalFinal;
+  }
+  // Para ventas normales, aseguramos que nunca baje de 0
+  return totalFinal > 0 ? totalFinal : 0;
+ });
 
   tieneServicioEnCarrito = computed(() => {
     return this.carrito().some(item => {
@@ -194,7 +212,7 @@ export class TpvComponent implements OnInit {
   // Estados para controlar el proceso de devolución manual sin ticket, que se activa al hacer clic en el botón rojo de "Devolución Manual"
   mostrarModalDevolucion = false;
   mensajeModalDevolucion = '';
-  ticketParaDevolver: any = null;
+  ticketParaDevolver: OrdenDTO | null = null;;
 
   // Variable para guardar la ID de la operación que se acaba de procesar (venta o devolución) y que se usará para generar el PDF del ticket correspondiente
   idOperacionProcesada = signal<number | string | null>(null); 
@@ -258,7 +276,7 @@ export class TpvComponent implements OnInit {
         nombre: articulo.nombre,
         cantidad: 1,
         precio: articulo.precioFinal, // Usamos el precio final del artículo como precio base en el carrito
-        descuentoPorcentaje: 0, // Por defecto sin descuento
+        porcentajeDescuento: 0, // Por defecto sin descuento
         notasReparacion: null // Usamos null para que machee perfecto con el DTO
       };
     
@@ -298,6 +316,9 @@ export class TpvComponent implements OnInit {
     }
   }
 
+  // ==================================================
+  // 💰 FLUJO ORDINARIO: VENTAS DIRECTAS Y REPARACIONES
+  // ==================================================
   // Método para finalizar la venta, que se ejecuta al hacer clic en el botón "Finalizar Venta" del HTML
   finalizarVenta() {
     //1. Validacion de caja abierta antes de permitir finalizar la venta
@@ -311,15 +332,11 @@ export class TpvComponent implements OnInit {
       this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
       return;
    }
-    // ==================================================
-    // 💰 FLUJO ORDINARIO: VENTAS DIRECTAS Y REPARACIONES
-    // ==================================================
     // Si es reparación, obligamos a que pongan una fecha de recogida
     if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
       this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
       return;
     }
-
     // Construimos la petición cumpliendo con la interfaz estricta NuevaOrdenDTO
     const request: NuevaOrdenDTO = {
       empresaId: 1,  // Reemplazar por el ID real de tu sesión si cambia
@@ -327,19 +344,17 @@ export class TpvComponent implements OnInit {
       clienteId: this.clienteSeleccionadoId(),
       tipo: this.tipoOrdenSeleccionada(),
       fechaPrometidaRecogida: this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() ? this.fechaRecogida() : null,
-      lineas: this.carrito().map(item => {
-        // Calculamos el precio modificado real si el artículo tiene descuento aplicado
-        const descLinea = item.descuentoPorcentaje || 0;
-        const precioUnidadConDescuento = item.precio * (1 - descLinea / 100);
-
-        return {
-          articuloId: item.articuloId,
-          cantidad: item.cantidad,
-          precioModificado: precioUnidadConDescuento, 
-          notasReparacion: item.notasReparacion || null
-        };
-      })
-    };
+      // 1. Añadido en la raíz el Descuento Global que te pide Javi
+      descuentoGlobal: this.descuentoGlobal() || 0,
+      // 2. Mapeado de líneas limpio: sin hacer matemáticas de precios en el front
+      lineas: this.carrito().map(item => ({
+      articuloId: item.articuloId,
+      cantidad: item.cantidad,
+      precioUnitario: item.precio, // Mandamos el precio original bruto
+      porcentajeDescuento: item.porcentajeDescuento || 0, // Pasamos el % de descuento de esta línea
+      notasReparacion: item.notasReparacion || null // Pasamos las notas de reparación (ej: "Zapatilla izq...")
+     }))
+   };
 
     this.ordenService.crearOrden(request).subscribe({
       next: (ordenGuardada) => {
@@ -395,7 +410,7 @@ export class TpvComponent implements OnInit {
 
   // Método para registrar un anticipo en una reparación
   private cobrarAnticipoTicket(id: number, importe: number, metodoPago: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO') {
-    // 🚀 CAMINO A: SI EL IMPORTE ES ZERO (No deja señal)
+    // CAMINO A: SI EL IMPORTE ES ZERO (No deja señal)
   if (importe === 0) {
     this.uiService.mostrarToast(`📋 Resguardo de depósito generado con éxito (Sin anticipo).`, 'success');
 
@@ -413,9 +428,13 @@ export class TpvComponent implements OnInit {
       fecha: new Date().toLocaleTimeString()
     });
 
+    // Refrescar el historial inferior para reparaciones sin anticipo
+    this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+      next: (ticketsActualizados) => this.historialTickets.set(ticketsActualizados)
+    });
+
     // Abrimos tu nueva ventana modal SCSS de previsualización
     this.isTicketVisible.set(true);
-    
     // Disparamos la generación del PDF. Tu backend recibirá el ID de la orden 
     // y verá que al no tener anticipos asociados, debe pintar el "Resguardo de Taller" estándar.
     this.generarYPrevisualizarTicket();
@@ -423,6 +442,7 @@ export class TpvComponent implements OnInit {
     this.cargarCatalogo();
     return; // Cortamos la ejecución aquí para que NO llame al servicio del backend erróneo
   }
+    // CAMINO B: CON ANTICIPO
     this.ordenService.registrarAnticipo(id, importe, metodoPago).subscribe({
       next: (res: any) => {
         this.uiService.mostrarToast(`📉 ¡Anticipo de ${importe}€ registrado con éxito! El ticket queda pendiente del resto.`, 'success');
@@ -435,6 +455,10 @@ export class TpvComponent implements OnInit {
           ref: res.numeroTicket,
           total: importe,
           fecha: new Date().toLocaleTimeString()
+        });
+        // Refrescar el historial inferior para reparaciones con anticipo
+        this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+          next: (ticketsActualizados) => this.historialTickets.set(ticketsActualizados)
         });
         // Mostramos el ticket de anticipo con el PDF previsualizado para que el cajero pueda imprimirlo o revisarlo antes de cerrar el recibo
         this.isTicketVisible.set(true);
@@ -476,7 +500,7 @@ export class TpvComponent implements OnInit {
   }
 
   /* Acción del historial inferior para descargar el PDF oficial A4 regulado */
-  previsualizarFacturaA4(ticket: TicketHistorial): void {
+  previsualizarFacturaA4(ticket: OrdenDTO): void {
     // 🚀 1. Extraemos el nombre del cliente EXACTAMENTE igual que lo haces en tu HTML
     const nombreCliente = ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General';
     // 2. Verificación obligatoria de cliente (idéntica a tu lógica)
@@ -528,7 +552,7 @@ export class TpvComponent implements OnInit {
   }
 
   /* Acción rápida del historial inferior para cambiar de estado una reparación de taller */
-  entregarReparacionHistorial(ticket: TicketHistorial): void {
+  entregarReparacionHistorial(ticket: OrdenDTO): void {
     this.ordenService.entregarOrden(ticket.id).subscribe({
       next: () => {
         this.uiService.mostrarToast('✅ Reparación entregada y saldo liquidado correctamente.', 'success');
@@ -540,7 +564,7 @@ export class TpvComponent implements OnInit {
   }
 
   /* Acción rápida para anular por completo un ticket erróneo desde el mostrador */
-  anularOrdenHistorial(ticket: TicketHistorial): void {
+  anularOrdenHistorial(ticket: OrdenDTO): void {
     this.ordenService.cancelarOrden(ticket.id).subscribe({
       next: () => {
         this.uiService.mostrarToast('🚫 Ticket anulado por completo. Caja y stock restaurados.', 'success');
@@ -551,7 +575,7 @@ export class TpvComponent implements OnInit {
   }
 
   /* Botón de cobro rápido de saldo pendiente directo desde la rejilla del historial */
-  liquidarOrdenHistorial(ticket: TicketHistorial): void {
+  liquidarOrdenHistorial(ticket: OrdenDTO): void {
     // Calculamos el saldo restante que le queda por pagar al cliente usando el método de pago activo en el TPV
     const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
     
@@ -670,7 +694,7 @@ export class TpvComponent implements OnInit {
   }
 
   // Lógica para lanzar la reimpresión del ticket seleccionado
-  reimprimirTicket(ticket: TicketHistorial) {
+  reimprimirTicket(ticket: OrdenDTO) {
     this.uiService.mostrarToast(`🖨️ Reenviando a impresora ticket #${ticket.numeroTicket}...`, 'success');
     
     // Llamamos a tu servicio pasándole la ID del ticket
@@ -686,7 +710,7 @@ export class TpvComponent implements OnInit {
   }
 
   // Lógica para lanzar la reimpresión de la factura A4 oficial del ticket seleccionado
-  reimprimirFacturaA4(ticket: TicketHistorial) {
+  reimprimirFacturaA4(ticket: OrdenDTO) {
     //VALIDACIÓN OBLIGATORIA: Evitamos facturas A4 a clientes anónimos
     const nombreCliente = ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General';
     if (nombreCliente === 'Cliente General') {
@@ -705,6 +729,20 @@ export class TpvComponent implements OnInit {
     });
   }
 
+  // Método para actualziar las notas del ticket
+  actualizarNotaLinea(index: number, nuevoTexto: string) {
+  this.carrito.update(items => {
+    // Clonamos el array para cambiar la referencia
+    const nuevosItems = [...items];
+    // Clonamos el objeto de la línea para actualizar su propiedad
+    nuevosItems[index] = {
+      ...nuevosItems[index],
+      notasReparacion: nuevoTexto
+    };
+    return nuevosItems;
+  });
+ }
+
   // Método para actualizar el descuento de una línea específica desde el input del HTML, que se aplica solo a esa línea
   actualizarDescuentoLinea(index: number, evento: any) {
     const input = evento.target as HTMLInputElement;
@@ -715,7 +753,7 @@ export class TpvComponent implements OnInit {
     if (valor > 100) valor = 100;
 
     this.carrito.update(items => 
-      items.map((item, i) => i === index ? { ...item, descuentoPorcentaje: valor } : item)
+      items.map((item, i) => i === index ? { ...item, porcentajeDescuento: valor } : item)
     );
   }
 
@@ -824,7 +862,7 @@ toggleSinFechaRecogida(): void {
 
 // === GESTIÓN DEL TECLADO GENERAL (MOSTRADOR, DESCUENTOS Y ANTICIPOS) ===
 
-abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_MANUAL' | 'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD', 
+abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_MANUAL' | 'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'NOTAS_REPARACION' , 
  index: any = null,
  maxCantidad: number = 1 
  ) {
@@ -841,8 +879,13 @@ abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_M
   } else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
     this.indiceLineaDescuentoActual.set(index);
     const item = this.carrito()[index];
-    const descuentoActual = item ? (item.descuentoPorcentaje || 0) : 0;
+    const descuentoActual = item ? (item.porcentajeDescuento || 0) : 0;
     this.valorTecladoEnConstruccion.set(descuentoActual > 0 ? descuentoActual.toString() : '');
+  } else if (objetivo === 'NOTAS_REPARACION' && index !== null) {
+    // Recuperamos la nota existente al abrir el teclado en el mostrador
+    this.indiceLineaDescuentoActual.set(index); // Reutilizamos el índice temporalmente
+    const item = this.carrito()[index];
+    this.valorTecladoEnConstruccion.set(item?.notasReparacion || '');
   } else {
     this.indiceLineaDescuentoActual.set(null);
     
@@ -944,7 +987,20 @@ private aplicarValorEnTiempoReal() {
       if (listaCarrito[index]) {
         listaCarrito[index] = {
           ...listaCarrito[index],
-          descuentoPorcentaje: num
+          porcentajeDescuento: num
+        };
+        this.carrito.set(listaCarrito);
+      }
+    }
+  } else if (objetivo === 'NOTAS_REPARACION') {
+    // Mapeamos los caracteres que escribe el zapatero directamente al carrito
+    const index = this.indiceLineaDescuentoActual();
+    if (index !== null) {
+      const listaCarrito = [...this.carrito()];
+      if (listaCarrito[index]) {
+        listaCarrito[index] = {
+          ...listaCarrito[index],
+          notasReparacion: valor
         };
         this.carrito.set(listaCarrito);
       }
@@ -997,6 +1053,17 @@ aplicarAccionTeclado() {
     this.numeroTicketBuscarInput = resultado;
     // Opcional: Cometa o Descomenta si quieres que lance la búsqueda directa tras darle a Aceptar en tu teclado virtual
     this.confirmarTicketIntroducido();
+  }
+  if (objetivo === 'NOTAS_REPARACION') {
+    // 3. SITIO CORREGIDO: Aseguramos el guardado de la nota al pulsar "Aceptar"
+    const index = this.indiceLineaDescuentoActual();
+    if (index !== null) {
+      const listaCarrito = [...this.carrito()];
+      if (listaCarrito[index]) {
+        listaCarrito[index].notasReparacion = resultado;
+        this.carrito.set(listaCarrito);
+      }
+    }
   }
   /* Confirmación de la cantidad del artículo */
   if (objetivo === 'NUMERO_CANTIDAD' && this.idLineaDevolucionActual !== null) {
@@ -1116,13 +1183,13 @@ abrirModal() {
       }
 
       this.ticketOrigenEncontrado = ticketDTO;
-      const lineas = ticketDTO.detalles || ticketDTO.lineas || [];
+      const lineas = ticketDTO.detalles || [];
       
       // Inicializamos el Map de checkboxes y cantidades máximas
       this.lineasSeleccionadasParaDevolver.clear();
       lineas.forEach((linea: any) => {
         // Usamos como clave el id del artículo o de la línea
-        const idClave = linea.articuloId || linea.articulo?.id || linea.id;
+        const idClave = linea.id;
         this.lineasSeleccionadasParaDevolver.set(idClave, {
           checked: false,
           cantidadADevolver: Math.abs(linea.cantidad) // Por defecto la cantidad máxima comprada
@@ -1142,18 +1209,18 @@ abrirModal() {
   const ticket = this.ticketOrigenEncontrado;
   if (!ticket) return;
 
-  const lineasTicketOriginal = ticket.detalles || ticket.lineas || [];
+  const lineasTicketOriginal = ticket.detalles || [];
   
   // Filtrar solo las líneas que el zapatero ha marcado con el checkbox
   const lineasFiltradasBody: any[] = [];
 
   lineasTicketOriginal.forEach((linea: any) => {
-    const idClave = linea.articuloId || linea.articulo?.id || linea.id;
+    const idClave = linea.id;
     const estadoSeleccion = this.lineasSeleccionadasParaDevolver.get(idClave);
 
     if (estadoSeleccion && estadoSeleccion.checked) {
       lineasFiltradasBody.push({
-        articuloId: linea.articuloId || linea.articulo?.id,
+        articuloId: linea.articuloId,
         cantidad: estadoSeleccion.cantidadADevolver // Cantidad parcial o total ajustada en pantalla
       });
     }
@@ -1182,7 +1249,7 @@ abrirModal() {
       this.horaTicketActual.set(new Date().toLocaleTimeString());
 
       // Pintamos visualmente el abono generado en tu historial
-      const ticketAbonoHistorial: TicketHistorial = {
+      const ticketAbonoHistorial: OrdenDTO = {
         id: devolucionGuardada.id,
         numeroTicket: devolucionGuardada.numeroTicket,
         fecha: new Date(),
