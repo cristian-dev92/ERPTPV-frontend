@@ -26,17 +26,25 @@ export class InventarioListComponent implements OnInit {
   // Estado para el término de búsqueda
   terminoBusqueda = signal<string>('');
 
-  // === MAQUINARIA DEL TECLADO TÁCTIL MASTER ===
-  mostrarTecladoGeneral = signal<boolean>(false);
+  // ESTADOS PARA EL TECLADO TÁCTIL EN EL BUSCADOR
+  mostrarTeclado = signal<boolean>(false);
+  inputActivo = signal<string>('');
+  mayusculas = signal<boolean>(true);
   valorTecladoEnConstruccion = signal<string>('');
-  mayusculasGeneral = signal<boolean>(true);
 
+  // Listas de caracteres fijas para el renderizado consistente del teclado
+  lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+  lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+  lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
+  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
+  lineaAcentos = ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü'];
+  lineaEspecialDinamica = ['@', ',', '.', '_', '/', '-'];
 
   // Estado para mostrar el modal de confirmación de anticipar stock
   mostrarModalConfirmar = signal<boolean>(false);
   articuloAAnticipar = signal<{ id: number, nombre: string } | null>(null);
 
-  // 🎯 FILTRADO EN TIEMPO REAL CON COMPUTED
+  // FILTRADO EN TIEMPO REAL CON COMPUTED
   articulosFiltrados = computed(() => {
     const buscar = this.terminoBusqueda().toLowerCase().trim();
     if (!buscar) return this.articulos();
@@ -66,46 +74,48 @@ export class InventarioListComponent implements OnInit {
   }
 
   // === MÉTODOS DEL TECLADO TÁCTIL PARA LA BÚSQUEDA ===
-  abrirTecladoBusqueda() {
-    // Si están con la tablet en el taller, frenamos vuestro teclado virtual
+  abrirTecladoBusqueda(objetivo: string) {
     if (isMobileOrTablet()) {
       return;
     }
-    this.valorTecladoEnConstruccion.set(this.terminoBusqueda());
-    this.mostrarTecladoGeneral.set(true);
+    this.inputActivo.set(objetivo);
+    this.mostrarTeclado.set(true);
   }
 
-  pulsarTeclaGeneral(caracter: string) {
-    // Procesamos si el carácter es una letra para respetar el estado del Shift
-    let valorAInsertar = caracter;
-    const esLetra = /^[a-zA-ZÑñ]$/.test(caracter);
-    
-    if (esLetra) {
-      valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
+  sincronizarTecladoFisico(valor: string) {
+    this.terminoBusqueda.set(valor);
+  }
+
+  escribirTeclado(caracter: string) {
+    let letraFormateada = caracter;
+    if (/^[a-zA-ZÑñÁÉÍÓÚÜáéíóúü]$/.test(caracter)) {
+      letraFormateada = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
     }
-
-    this.valorTecladoEnConstruccion.update(val => val + valorAInsertar);
+    this.terminoBusqueda.update(actual => actual + letraFormateada);
   }
 
-  alternarMayusculasGeneral() {
-    this.mayusculasGeneral.set(!this.mayusculasGeneral());
+  insertarEspacio() {
+    this.terminoBusqueda.update(actual => actual + ' ');
   }
 
-  borrarUltimoCaracterGeneral() {
-    this.valorTecladoEnConstruccion.update(val => val.slice(0, -1));
+  borrarUltimoCaracter() {
+    this.terminoBusqueda.update(actual => actual.slice(0, -1));
   }
 
-  limpiarTecladoGeneral() {
-    this.valorTecladoEnConstruccion.set('');
+  limpiarTeclado() {
+    this.terminoBusqueda.set('');
   }
 
-  cerrarTecladoGeneral() {
-    this.mostrarTecladoGeneral.set(false);
+  alternarMayusculas() {
+    this.mayusculas.set(!this.mayusculas());
+  }
+
+  cerrarTeclado() {
+    this.mostrarTeclado.set(false);
   }
 
   aplicarBusqueda() {
     this.terminoBusqueda.set(this.valorTecladoEnConstruccion());
-    this.mostrarTecladoGeneral.set(false);
   }
 
   buscarArticulos() {

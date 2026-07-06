@@ -87,8 +87,9 @@ export class ProveedoresComponent implements OnInit {
     this.mostrarTecladoGeneral.set(true);
   }
 
-  cerrarTecladoGeneral() {
-    this.mostrarTecladoGeneral.set(false);
+  sincronizarTecladoFisico(objetivo: string, valor: string) {
+    this.valorTecladoEnConstruccion.set(valor);
+    this.actualizarPropiedadFormulario(objetivo, valor);
   }
 
   pulsarTeclaGeneral(caracter: string) {
@@ -100,7 +101,12 @@ export class ProveedoresComponent implements OnInit {
       valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
     }
 
-    this.valorTecladoEnConstruccion.update(val => val + valorAInsertar);
+    this.valorTecladoEnConstruccion.update(val => {
+      const nuevoValor = val + valorAInsertar;
+      // 🎯 Sincronizamos sobre la marcha con el formulario/filtro
+      this.actualizarPropiedadFormulario(this.inputObjetivoTeclado(), nuevoValor);
+      return nuevoValor;
+    });
   }
 
   alternarMayusculasGeneral() {
@@ -113,6 +119,23 @@ export class ProveedoresComponent implements OnInit {
 
   limpiarTecladoGeneral() {
     this.valorTecladoEnConstruccion.set('');
+    this.actualizarPropiedadFormulario(this.inputObjetivoTeclado(), '');
+  }
+
+  private actualizarPropiedadFormulario(objetivo: string, valor: string) {
+    if (objetivo === 'BUSQUEDA') {
+      this.filtroBusqueda.set(valor);
+    } else {
+      this.nuevoProveedor.update(prov => {
+        const actualizado = { ...prov };
+        if (objetivo === 'NOMBRE') actualizado.nombre = valor;
+        if (objetivo === 'CIF') actualizado.cif = valor;
+        if (objetivo === 'TELEFONO') actualizado.telefono = valor;
+        if (objetivo === 'EMAIL') actualizado.emailPedidos = valor.toLowerCase();
+        if (objetivo === 'DIRECCION') actualizado.direccion = valor;
+        return actualizado;
+      });
+    }
   }
 
   aplicarTextoAlFormulario() {
@@ -133,6 +156,10 @@ export class ProveedoresComponent implements OnInit {
       });
     }
     
+    this.mostrarTecladoGeneral.set(false);
+  }
+
+  cerrarTecladoGeneral() {
     this.mostrarTecladoGeneral.set(false);
   }
 
@@ -254,4 +281,4 @@ export class ProveedoresComponent implements OnInit {
     });
   }
 
-  }
+}

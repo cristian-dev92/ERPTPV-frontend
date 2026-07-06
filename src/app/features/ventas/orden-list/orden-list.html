@@ -115,70 +115,93 @@
           <hr class="separator-ticket">
 
           <div class="desglose-ticket-box">
-            <h3>📦 Contenido del Ticket (Modificación de Notas y Precios por Artículo)</h3>
+            <h3>📦 Contenido del Ticket</h3>
 
             <div class="tabla-desglose-tpv">
               @for (item of detallesEditados; track item.id; let idx = $index) {
                 <div class="linea-desglose-card" [class.es-servicio-item]="item.esServicio">
-                  
-                  <div class="linea-main-row">
-                    <div class="item-info">
-                      <span class="qty">{{ item.cantidad }}x</span>
-                      <span class="name">{{ item.nombre }}</span>
+      
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <span style="color: #4ade80; font-weight: bold; margin-right: 8px;">{{ item.cantidad }}x</span>
+                      <span style="font-weight: 600;">{{ item.nombre }}</span>
                     </div>
-                    <div class="item-precios">
-                      <span class="price-un">{{ item.precio | currency:'EUR' }}</span>
-                      <span class="price-tot"><strong>{{ item.subtotal | currency:'EUR' }}</strong></span>
+                  <div>
+                    <span style="color: #a0aec0; font-size: 0.95rem; margin-right: 10px;">{{ item.precio | currency:'EUR' }}</span>
+                    <span style="font-weight: bold; margin-right: 10px;">{{ item.subtotal | currency:'EUR' }}</span>
 
-                      @if (filtroTipo() !== 'CERRADOS') {
-                        <button type="button" class="btn-toggle-desplegable" 
-                                [class.expanded]="idDetalleDesplegado === item.id"
-                                (click)="toggleDesplegableServicio(item.id)"
-                                style="background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-left: 8px;">
-                          ✏️ Configurar
-                        </button>
-                        <button type="button" class="btn-eliminar-linea" 
-                                (click)="eliminarLineaLocal(item)"
-                                style="background-color: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-left: 4px;">
-                          🗑️ Borrar
-                        </button>
-                      }
-                    </div>
+                    @if (filtroTipo() !== 'CERRADOS') {
+                      <button type="button" 
+                              (click)="toggleDesplegableServicio(item.id)"
+                              style="background-color: #2b6cb0; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">
+                        ⚙️ Configurar
+                      </button>
+                      <button type="button" 
+                              (click)="eliminarLineaLocal(item)"
+                              style="background-color: rgba(229, 62, 62, 0.2); color: #f56565; border: 1px solid rgba(229, 62, 62, 0.4); padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-left: 4px;">
+                        🗑️ Borrar
+                      </button>
+                    }
                   </div>
+                </div>
 
-                  @if (idDetalleDesplegado === item.id) {
-                    <div class="desplegable-servicio-content animate-fade-in">
-                      @if (item.esServicio) {
-                        <div class="form-group-tpv-inline">
-                          <label>📝 Nota específica del trabajo:</label>
-                          <textarea [(ngModel)]="item.notasReparacion" (click)="activarTeclado('notas-linea', idx)"></textarea>
-                        </div>
-                        <div class="form-group-tpv-inline-date">
-                          <label>📅 Fecha de recogida prometida:</label>
-                          <div class="input-date-wrapper">
-                            <input type="date" inputmode="numeric" [(ngModel)]="item.fechaEntrega" (click)="$any($event.target).showPicker()">
-                          </div>
-                        </div>
-                      }
+              </div>
+            }
+          </div>
+         </div>
 
-                      @if (orden.estadoTaller === 'EN_TALLER' || orden.estadoTaller === 'LISTO' || orden.tipo === 'VENTA_DIRECTA') {
-                        <div class="form-group group-panic-button" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #fca5a5;">
-                          <label class="panic-label" style="color: #c53030; font-weight: bold;">🚨 Modificar Precio de esta línea:</label>
-                          <div class="panic-input-wrapper" style="display: flex; gap: 8px; margin-top: 4px;">
-                            <input type="text" inputmode="decimal" [(ngModel)]="item.nuevoPrecioInput" (click)="activarTeclado('precio-linea', idx)" class="panic-input" style="max-width: 120px; border: 1px solid #dc2626;" />
-                            <button type="button" class="btn-panic-submit" style="background-color: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px;" (click)="cambiarPrecioLineaEspecifica(item)">
-                              💥 Forzar Cambio
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    </div>
+          @for (item of detallesEditados; track item.id; let idx = $index) {
+            @if (idDetalleDesplegado === item.id) {
+              <div class="modal-backdrop submodal-backdrop animate-fade-in">
+                <div class="modal-content submodal-config">
+        
+              <div class="modal-header">
+                <h2>⚙️ Configurar Artículo</h2>
+                <button class="close-btn" (click)="toggleDesplegableServicio(null)">✕</button>
+              </div>
+
+              <div class="submodal-body">
+                <p style="margin: 0; font-size: 1.1rem; color: #ffffff;">
+                  Línea activa: <strong>{{ item.cantidad }}x {{ item.nombre }}</strong>
+                </p>
+
+                @if (item.esServicio) {
+                  <div class="config-group">
+                    <label>📝 Nota específica del trabajo:</label>
+                    <textarea [(ngModel)]="item.notasReparacion" (click)="activarTeclado('notas-linea', idx)"></textarea>
+                  </div>
+            
+                  <div class="config-group">
+                    <label>📅 Fecha de recogida prometida:</label>
+                    <input type="date" inputmode="numeric" [(ngModel)]="item.fechaEntrega" (click)="$any($event.target).showPicker()" />
+                  </div>
+                }
+
+                @if (ordenSeleccionada()?.estadoTaller === 'EN_TALLER' || ordenSeleccionada()?.estadoTaller === 'LISTO' || ordenSeleccionada()?.tipo === 'VENTA_DIRECTA') {
+                  <div class="panic-price-box">
+                    <label class="panic-label">🚨 Modificar Precio de esta línea:</label>
+                     <div class="panic-input-wrapper">
+                      <div class="panic-field-container">
+                        <span class="currency-symbol">€</span>
+                        <input type="text" inputmode="decimal" [(ngModel)]="item.nuevoPrecioInput" (click)="activarTeclado('precio-linea', idx)" placeholder="0.00" />
+                      </div>
+                      <button type="button" class="btn-panic-submit" (click)="cambiarPrecioLineaEspecifica(item)">
+                        💥 Confirmar precio
+                      </button>
+                     </div>
+                     <small style="color: #a0aec0; display: block; margin-top: 6px; font-size: 0.85rem;">Precio actual base: {{ item.precio | currency:'EUR' }}</small>
+                   </div>
                   }
 
+                  <button type="button" class="btn-submit-pay" style="margin-top: 0.5rem;" (click)="toggleDesplegableServicio(null)">
+                    Aceptar y Volver ✔️
+                  </button>
+                 </div>
+
                 </div>
+               </div>
               }
-            </div>
-          </div>
+            }
 
           <hr class="separator-ticket">
           <div class="totales-ticket-box">
@@ -188,7 +211,7 @@
 
           @if (orden.tipo === 'REPARACION' || orden.tipoOrden === 'REPARACION') {
             <button class="btn-save-edit" (click)="guardarCambiosReparacion()">
-              💾 Guardar Notas y Fechas de Servicios
+              💾 Guardar y Continuar
             </button>
           }
         </div> <div class="actions-section">

@@ -1,8 +1,30 @@
 <div class="config-panel-container">
   
   <div class="config-header">
-    <h2>⚙️ Configuración del Sistema</h2>
-    <p>Gestiona tu perfil de acceso y los operarios autorizados dentro de tu empresa.</p>
+    <div class="header-main-info">
+      <h2>⚙️ Configuración del Sistema</h2>
+      <p>Gestiona tu perfil de acceso y los operarios autorizados dentro de tu empresa.</p>
+    </div>
+
+    <div class="dispositivo-selector-wrapper">
+      <span class="selector-label">Modo Teclado Virtual:</span>
+      <div class="tabs-container">
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="!tecladoNativoForzado()" 
+          (click)="cambiarModoTeclado(false)">
+          🖥️ Activar Teclado
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="tecladoNativoForzado()" 
+          (click)="cambiarModoTeclado(true)">
+          ❌ Desactivar Teclado
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="config-grid">
@@ -240,7 +262,7 @@
   <div class="tpv-teclado-virtual">
     <div class="teclado-header">
       <span>Escribiendo en: <strong>{{ inputActivo().toUpperCase() }}</strong></span>
-      <button class="btn-cerrar-teclado" (click)="cerrarTeclado()">❌ Cerrar</button>
+      <button class="btn-cerrar-teclado" (click)="cerrarTeclado()">❌ CERRAR</button>
     </div>
     
     <div class="teclado-body">
@@ -257,6 +279,7 @@
           </button>
         }
       </div>
+
       <div class="teclado-fila">
         @for (letra of lineaLetras2; track letra) {
           <button type="button" (click)="escribirTeclado(letra)">
@@ -264,20 +287,35 @@
           </button>
         }
       </div>
+
       <div class="teclado-fila">
         @for (letra of lineaLetras3; track letra) {
           <button type="button" (click)="escribirTeclado(letra)">
-            {{ letra === 'com' ? '.com' : (mayusculas() ? letra.toUpperCase() : letra.toLowerCase()) }}
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+        @for (acento of lineaAcentos; track acento) {
+          <button type="button" class="btn-tecla-acento" (click)="escribirTeclado(acento)" style="background-color: #3b4f6c;">
+            {{ mayusculas() ? acento.toUpperCase() : acento.toLowerCase() }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila fila-dinamica">
+        @for (caracter of lineaEspecialDinamica; track caracter) {
+          <button type="button" class="btn-tecla-dinamica" (click)="escribirTeclado(caracter)" style="background-color: #2e3e52; color: #38bdf8;">
+            {{ caracter }}
           </button>
         }
       </div>
 
       <div class="teclado-fila fila-especial">
-        <button type="button" class="btn-tecla-mayus" [style.background-color]="mayusculas() ? '#4caf50' : '#ccc'" (click)="alternarMayusculas()">
+        <button type="button" class="btn-tecla-mayus" [style.background-color]="mayusculas() ? '#4caf50' : '#475569'" (click)="alternarMayusculas()">
           ↑ {{ mayusculas() ? 'MAYÚS' : 'minús' }}
         </button>
         <button type="button" class="btn-tecla-espacio" (click)="insertarEspacio()">ESPACIO</button>
         <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫ BORRAR</button>
+        <button type="button" class="btn-tecla-limpiar" (click)="limpiarTeclado()">🗑️ VACIAR</button>
         <button type="button" class="btn-tecla-aceptar" (click)="cerrarTeclado()">ACEPTAR ✔️</button>
       </div>
     </div>

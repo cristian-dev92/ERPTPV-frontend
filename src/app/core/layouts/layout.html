@@ -1,23 +1,13 @@
 <div class="app-container">
   <header class="top-bar">
     <div class="brand">👞 ERP ZAPATERO</div>
-    <div class="user-info">
-      @if (authService.usuarioNombre()) {
-      <span>Bienvenido, <strong>{{ authService.usuarioNombre() }}</strong></span>
-      } @else {
-    <span>Bienvenido, <strong>Usuario</strong></span>
-      }
-      <button (click)="onLogout()" class="btn-logout">Cerrar Sesión</button>
-    </div>
-  </header>
-
-  <div class="main-wrapper">
-    <nav class="sidebar">
+    
+    <nav class="top-nav">
       <a routerLink="/ventas" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="nav-item">
         <span class="icon">💰</span> TPV
       </a>
       <a routerLink="/ventas/tickets" routerLinkActive="active" class="nav-item">
-        <span class="icon">🧾</span> GESTION DE TICKETS
+        <span class="icon">🧾</span> TICKETS
       </a>
       <a routerLink="/inventario" routerLinkActive="active" class="nav-item">
         <span class="icon">📦</span> INVENTARIO
@@ -31,16 +21,25 @@
       <a routerLink="/proveedores" routerLinkActive="active" class="nav-item">
         <span class="icon">👥</span> PROVEEDORES
       </a>
-        <a routerLink="/clientes" routerLinkActive="active" class="nav-item">
-          <span class="icon">👤</span> CLIENTES
-        </a>
-        <a routerLink="/configuracion" routerLinkActive="active" class="nav-item">
-          <span class="icon">⚙️</span> CONFIGURACIÓN
-        </a>
+      <a routerLink="/clientes" routerLinkActive="active" class="nav-item">
+        <span class="icon">👤</span> CLIENTES
+      </a>
+      <a routerLink="/configuracion" routerLinkActive="active" class="nav-item">
+        <span class="icon">⚙️</span> CONFIGURACIÓN
+      </a>
     </nav>
 
-    <main class="content">
-      <router-outlet></router-outlet>
-    </main>
-  </div>
+    <div class="user-info">
+      @if (authService.usuarioNombre()) {
+        <span>Bienvenido, <strong>{{ authService.usuarioNombre() }}</strong></span>
+      } @else {
+        <span>Bienvenido, <strong>Usuario</strong></span>
+      }
+      <button (click)="onLogout()" class="btn-logout">Cerrar Sesión</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
 </div>

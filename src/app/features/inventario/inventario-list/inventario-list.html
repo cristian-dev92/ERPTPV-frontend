@@ -1,17 +1,16 @@
 <div class="header-section">
-  <h1>📦 Inventario / Catálogo</h1>
+  <h1>📦 Inventario</h1>
   <button class="btn-primary" routerLink="nuevo">+ Nuevo Artículo</button>
 </div>
 
-<!-- BARRA DE BÚSQUEDA TÁCTIL -->
-  <div class="search-bar-container">
-    <input type="text" 
-           [value]="terminoBusqueda()"
-           (input)="terminoBusqueda.set($any($event.target).value);"
-           (click)="abrirTecladoBusqueda()"
-           placeholder="🔍 Busque por su nombre..." 
-           class="search-input">
-  </div>
+<div class="search-bar-container">
+  <input type="text" 
+         [value]="terminoBusqueda()"
+         (input)="sincronizarTecladoFisico($any($event.target).value)"
+         (click)="abrirTecladoBusqueda('BUSCADOR')"
+         placeholder="🔍 Busque por su nombre..." 
+         class="search-input">
+</div>
 
 @if (loading()) {
   <p>Cargando catálogo de zapatos...</p>
@@ -60,15 +59,13 @@
           </td>
           <td>
             <div class="acciones-wrapper">
-            <button class="btn-edit" 
-                [routerLink]="['editar', item.id]">
+              <button class="btn-edit" [routerLink]="['editar', item.id]">
                 ✏️ Editar
-            </button>
-            <button class="btn-delete" 
-                (click)="eliminarProducto(item.id!, item.nombre)">
+              </button>
+              <button class="btn-delete" (click)="eliminarProducto(item.id!, item.nombre)">
                 🗑️ BORRAR
-            </button>
-           </div>
+              </button>
+            </div>
           </td>
         </tr>
       } @empty {
@@ -96,63 +93,66 @@
   </div>
 }
 
-@if (mostrarTecladoGeneral()) {
-  <div class="modal-teclado-general-container">
+@if (mostrarTeclado()) {
+  <div class="tpv-teclado-virtual">
+    <div class="teclado-header">
+      <span>Escribiendo en: <strong>{{ inputActivo().toUpperCase() }}</strong></span>
+      <button class="btn-cerrar-teclado" (click)="cerrarTeclado()">❌ CERRAR</button>
+    </div>
     
-    <div class="teclado-general-header">
-      <span class="titulo-contexto">Filtrar Inventario por Nombre</span>
-      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
-    </div>
+    <div class="teclado-body">
+      <div class="teclado-fila">
+        @for (num of lineaNumeros; track num) {
+          <button type="button" (click)="escribirTeclado(num)">{{ num }}</button>
+        }
+      </div>
 
-    <div class="teclado-general-pantalla">
-      <span class="texto-construccion" style="color: #38bdf8; font-size: 2rem; font-weight: bold;">
-        {{ valorTecladoEnConstruccion() || 'Busca el articulo...' }}
-      </span>
-      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
-    </div>
+      <div class="teclado-fila">
+        @for (letra of lineaLetras1; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+      </div>
 
-    <div class="teclado-general-wrapper-keys">
-      <div class="fila-qwerty">
-        @for (letra of ['0','1','2','3','4','5','6','7','8','9']; track letra) {
-          <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
-        }
-      </div>
-      <div class="fila-qwerty">
-        @for (letra of ['Q','W','E','R','T','Y','U','I','O','P']; track letra) {
-          <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-            {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
+      <div class="teclado-fila">
+        @for (letra of lineaLetras2; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
           </button>
         }
       </div>
-      <div class="fila-qwerty">
-        @for (letra of ['A','S','D','F','G','H','J','K','L', 'Ñ']; track letra) {
-          <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-            {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
+
+      <div class="teclado-fila">
+        @for (letra of lineaLetras3; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+        @for (acento of lineaAcentos; track acento) {
+          <button type="button" class="btn-tecla-acento" (click)="escribirTeclado(acento)" style="background-color: #3b4f6c;">
+            {{ mayusculas() ? acento.toUpperCase() : acento.toLowerCase() }}
           </button>
         }
       </div>
-      <div class="fila-qwerty">
-        @for (letra of ['Z','X','C','V','B','N','M','@','.', '-', '_']; track letra) {
-          <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-            {{ letra.match(/[A-ZÑ]/) ? (mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase()) : letra }}
+
+      <div class="teclado-fila fila-dinamica">
+        @for (caracter of lineaEspecialDinamica; track caracter) {
+          <button type="button" class="btn-tecla-dinamica" (click)="escribirTeclado(caracter)" style="background-color: #2e3e52; color: #38bdf8;">
+            {{ caracter }}
           </button>
         }
       </div>
-      <div class="fila-qwerty">
-        <button type="button" class="btn-mayus" 
-                [style.background-color]="mayusculasGeneral() ? '#4caf50' : '#ccc'" 
-                [style.color]="mayusculasGeneral() ? 'white' : 'black'"
-                (click)="alternarMayusculasGeneral()">
-          ↑ {{ mayusculasGeneral() ? 'MAYÚS' : 'minús' }}
+
+      <div class="teclado-fila fila-especial">
+        <button type="button" class="btn-tecla-mayus" [style.background-color]="mayusculas() ? '#4caf50' : '#475569'" (click)="alternarMayusculas()">
+          ↑ {{ mayusculas() ? 'MAYÚS' : 'minús' }}
         </button>
-
-        <button type="button" class="btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
-        <button type="button" class="btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
+        <button type="button" class="btn-tecla-espacio" (click)="insertarEspacio()">ESPACIO</button>
+        <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫ BORRAR</button>
+        <button type="button" class="btn-tecla-limpiar" (click)="limpiarTeclado()">🗑️ VACIAR</button>
+        <button type="button" class="btn-tecla-aceptar" (click)="cerrarTeclado()">ACEPTAR ✔️</button>
       </div>
-      
-      <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarBusqueda()">
-        🔍 APLICAR FILTRO DE BÚSQUEDA
-      </button>
     </div>
   </div>
 }

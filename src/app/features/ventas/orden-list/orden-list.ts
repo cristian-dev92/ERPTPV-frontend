@@ -171,7 +171,7 @@ export class OrdenListComponent implements OnInit {
   });
 }
 
-  toggleDesplegableServicio(id: number) {
+  toggleDesplegableServicio(id: number | null) {
     this.idDetalleDesplegado = this.idDetalleDesplegado === id ? null : id;
   }
 

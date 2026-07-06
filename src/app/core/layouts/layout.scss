@@ -2,71 +2,115 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
+// =========================================================================
+// CABECERA ÚNICA (Contiene todo en una sola línea)
+// =========================================================================
 .top-bar {
-  background: #2c3e50;
+  background: #515170;
   color: white;
-  padding: 1rem 2rem;
+  padding: 0 1.5rem; // Quitamos padding vertical para que las pestañas controlen la altura
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 1.2rem;
+  height: 60px; // Altura fija ideal de botonera superior
+  flex-shrink: 0;
+  gap: 1.5rem;
+
+  .brand {
+    font-size: 1.1rem;
+    font-weight: bold;
+    white-space: nowrap; // Evita que se rompa el logo
+  }
 }
 
-.main-wrapper {
+// NAVEGACIÓN DENTRO DE LA BARRA DE ARRIBA
+.top-nav {
   display: flex;
-  flex: 1;
-}
-
-.sidebar {
-  width: 250px;
-  background: #ecf0f1;
-  border-right: 1px solid #bdc3c7;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
+  flex-direction: row;
+  align-items: center;
+  height: 100%;
+  flex: 1; // Toma todo el espacio del centro
+  justify-content: center; // Centra los botones de menú
+  overflow-x: auto; // Scroll de seguridad por si se abre en monitores muy chicos
+  white-space: nowrap;
+  
+  &::-webkit-scrollbar { display: none; } // Oculta barra estética
+  scrollbar-width: none;  
 
   .nav-item {
-    padding: 1.5rem 1rem;
-    margin-bottom: 0.5rem;
-    text-decoration: none;
-    color: #2c3e50;
-    font-weight: bold;
-    border-radius: 8px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    transition: background 0.3s;
+    height: 100%; // Ocupa toda la altura de la cabecera
+    padding: 0 1rem;
+    text-decoration: none;
+    color: #ffffff; // Texto secundario suave sobre fondo oscuro
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 4px solid transparent;
+    transition: all 0.2s ease;
+    gap: 6px;
 
-    &:hover { background: #dce4e6; }
-    &.active {
-      background: #3498db;
+    &:hover { 
+      background: #130fdb; 
       color: white;
     }
-    .icon { margin-right: 10px; font-size: 1.5rem; }
+    
+    &.active {
+      color: #fff;
+      background: #4923b3; // Contraste más oscuro para marcar la pestaña activa
+      border-bottom-color: #3498db; // Línea azul de foco abajo
+    }
+    
+    .icon { 
+      font-size: 1.1rem; 
+    }
   }
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  flex-shrink: 0; // Que nunca se encoja para proteger el botón
 }
 
 .content {
   flex: 1;
-  padding: 2rem;
+  padding: 1.5rem;
   background: #f9f9f9;
   overflow-y: auto;
   position: relative !important;
-  padding-bottom: 320px !important;
 }
 
 .btn-logout {
   background: #e74c3c;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 4px;
   cursor: pointer;
   transition: background 0.2s;
   margin-left: 1rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+
+  &:hover { background: #c0392b; }
 }
 
-.btn-logout:hover {
-  background: #c0392b; /* Se oscurece un poco al pasar el ratón */
+// RESPONSIVE PARA MÓVILES
+@media (max-width: 900px) {
+  .top-bar {
+    padding: 0 0.8rem;
+    gap: 0.5rem;
+  }
+  .top-bar .user-info span { 
+    display: none; // En tablets/móviles quitamos el "Bienvenido Pepe" y dejamos solo el botón
+  }
+  .top-nav {
+    justify-content: flex-start; // En pantallas chicas, alinea a la izquierda para el scroll
+  }
 }

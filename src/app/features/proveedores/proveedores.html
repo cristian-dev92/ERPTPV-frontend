@@ -13,7 +13,7 @@
   <div class="search-bar-container" style="margin-bottom: 20px;">
     <input type="text" 
            [value]="filtroBusqueda()"
-           (input)="filtroBusqueda.set($any($event.target).value); buscarProveedores()"
+           (input)="sincronizarTecladoFisico('BUSQUEDA', $any($event.target).value); buscarProveedores()"
            (click)="abrirTecladoGeneralForm('BUSQUEDA', undefined, filtroBusqueda())"
            placeholder="🔍 Busque proveedor por razón social, CIF, teléfono o email..." 
            class="search-input">
@@ -66,7 +66,7 @@
 
   <!-- MODAL DE REGISTRO FLOTANTE -->
   @if (mostrarModalRegistro()) {
-    <div class="modal-overlay">
+    <div class="modal-overlay" [class.teclado-abierto]="mostrarTecladoGeneral()">
       <div class="modal-box">
         <div class="modal-header">
           <h3>{{ modoEdicion() ? '✏️ Editar Ficha de Proveedor' : '📦 Alta de Nuevo Proveedor' }}</h3>
@@ -80,6 +80,7 @@
               <label for="p-nombre">Razón Social / Nombre comercial *</label>
               <input type="text" id="p-nombre" name="nombre" 
                      [(ngModel)]="nuevoProveedor().nombre" 
+                     (input)="sincronizarTecladoFisico('NOMBRE', $any($event.target).value)"
                      (click)="abrirTecladoGeneralForm('NOMBRE', undefined, nuevoProveedor().nombre)"
                      >
             </div>
@@ -89,6 +90,7 @@
                 <label for="p-cif">C.I.F. o N.I.F.</label>
                 <input type="text" id="p-cif" name="cif" 
                        [(ngModel)]="nuevoProveedor().cif" 
+                       (input)="sincronizarTecladoFisico('CIF', $any($event.target).value)"
                        (click)="abrirTecladoGeneralForm('CIF', undefined, nuevoProveedor().cif)"
                        >
               </div>
@@ -97,6 +99,7 @@
                 <label for="p-telefono">Teléfono Comercial</label>
                 <input type="text" id="p-telefono" name="telefono" 
                        [(ngModel)]="nuevoProveedor().telefono" 
+                       (input)="sincronizarTecladoFisico('TELEFONO', $any($event.target).value)"
                        (click)="abrirTecladoGeneralForm('TELEFONO', undefined, nuevoProveedor().telefono)"
                        >
               </div>
@@ -106,6 +109,7 @@
               <label for="p-email">Email para Pedidos Directos</label>
               <input type="email" id="p-email" name="email" 
                      [(ngModel)]="nuevoProveedor().emailPedidos" 
+                     (input)="sincronizarTecladoFisico('EMAIL', $any($event.target).value)"
                      (click)="abrirTecladoGeneralForm('EMAIL', undefined, nuevoProveedor().emailPedidos)"
                      >
             </div>
@@ -114,6 +118,7 @@
               <label for="p-direccion">Dirección Postal / Almacén</label>
               <input type="text" id="p-direccion" name="direccion" 
                      [(ngModel)]="nuevoProveedor().direccion" 
+                     (input)="sincronizarTecladoFisico('DIRECCION', $any($event.target).value)"
                      (click)="abrirTecladoGeneralForm('DIRECCION', undefined, nuevoProveedor().direccion)"
                      >
             </div>
@@ -149,80 +154,65 @@
 }
 
 @if (mostrarTecladoGeneral()) {
-  <div class="modal-teclado-general-container">
+  <div class="tpv-teclado-virtual">
+    <div class="teclado-header">
+      <span>Escribiendo en: <strong>{{ inputObjetivoTeclado().toUpperCase() }}</strong></span>
+      <button class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">❌ CERRAR</button>
+    </div>
     
-    <div class="teclado-general-header">
-      <span class="titulo-contexto">
-        Teclado Táctil: 
-        @if(inputObjetivoTeclado() === 'NOMBRE'){ Razón Social }
-        @if(inputObjetivoTeclado() === 'TELEFONO'){ Teléfono Comercial}
-        @if(inputObjetivoTeclado() === 'CIF'){ Identificación CIF/NIF }
-        @if(inputObjetivoTeclado() === 'EMAIL'){ Correo Electrónico }
-        @if(inputObjetivoTeclado() === 'DIRECCION'){ Dirección Almacén }
-        @if(inputObjetivoTeclado() === 'BUSQUEDA'){ Buscador de Distribuidores }
-      </span>
-      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
-    </div>
+    <div class="teclado-body">
+      <div class="teclado-fila">
+        @for (num of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']; track num) {
+          <button type="button" (click)="pulsarTeclaGeneral(num)">{{ num }}</button>
+        }
+      </div>
 
-    <div class="teclado-general-pantalla">
-      <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
-      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
-    </div>
-
-    <div class="teclado-general-wrapper-keys">
-
-      @if (inputObjetivoTeclado() === 'TELEFONO') {
-        <div class="grid-numerico-descuento">
-          @for (num of ['1','2','3','4','5','6','7','8','9','0']; track num) {
-            <button type="button" class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
-          }
-          <button type="button" class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ BORRAR</button>
-        </div>
-      }
-      
-      @else {
-        <div class="fila-qwerty">
-           @for (letra of ['0','1','2','3','4','5','6','7','8','9']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['A','S','D','F','G','H','J','K','L', 'Ñ']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['Z','X','C','V','B','N','M','@','.', '-', '_']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{ letra.match(/[A-ZÑ]/) ? (mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase()) : letra }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          <button type="button" class="btn-mayus" 
-                  [style.background-color]="mayusculasGeneral() ? '#4caf50' : '#ccc'" 
-                  [style.color]="mayusculasGeneral() ? 'white' : 'black'"
-                  (click)="alternarMayusculasGeneral()">
-            ↑ {{ mayusculasGeneral() ? 'MAYÚS' : 'minús' }}
+      <div class="teclado-fila">
+        @for (letra of ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P']; track letra) {
+          <button type="button" (click)="pulsarTeclaGeneral(letra)">
+            {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
           </button>
+        }
+      </div>
 
-          <button type="button" class="btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
-          <button type="button" class="btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
-        </div>
-      }
-      
-      <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarTextoAlFormulario()">
-        ✔ ACEPTAR Y APLICAR
-      </button>
+      <div class="teclado-fila">
+        @for (letra of ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ']; track letra) {
+          <button type="button" (click)="pulsarTeclaGeneral(letra)">
+            {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila">
+        @for (letra of ['Z', 'X', 'C', 'V', 'B', 'N', 'M']; track letra) {
+          <button type="button" (click)="pulsarTeclaGeneral(letra)">
+            {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+        @for (acento of ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü']; track acento) {
+          <button type="button" class="btn-tecla-acento" (click)="pulsarTeclaGeneral(acento)" style="background-color: #3b4f6c;">
+            {{ mayusculasGeneral() ? acento.toUpperCase() : acento.toLowerCase() }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila fila-dinamica">
+        @for (caracter of (inputObjetivoTeclado() === 'EMAIL' ? ['@', '.', '-', '_', '.com', '.es'] : ['@', ',', '.', '_', '/', '-']); track caracter) {
+          <button type="button" class="btn-tecla-dinamica" (click)="pulsarTeclaGeneral(caracter)" style="background-color: #2e3e52; color: #38bdf8;">
+            {{ caracter }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila fila-especial">
+        <button type="button" class="btn-tecla-mayus" [style.background-color]="mayusculasGeneral() ? '#4caf50' : '#475569'" (click)="alternarMayusculasGeneral()">
+          ↑ {{ mayusculasGeneral() ? 'MAYÚS' : 'minús' }}
+        </button>
+        <button type="button" class="btn-tecla-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
+        <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracterGeneral()">⌫ BORRAR</button>
+        <button type="button" class="btn-tecla-limpiar" (click)="limpiarTecladoGeneral()">🗑️ VACIAR</button>
+        <button type="button" class="btn-tecla-aceptar" (click)="aplicarTextoAlFormulario()">ACEPTAR ✔️</button>
+      </div>
     </div>
   </div>
 }

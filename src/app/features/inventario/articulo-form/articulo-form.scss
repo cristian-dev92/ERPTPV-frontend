@@ -6,6 +6,14 @@
   margin: 20px auto;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+
+  // CUANDO EL TECLADO ESTÁ ABIERTO, AJUSTAMOS ESPACIOS
+  &.teclado-en-pantalla {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 340px; // Colchón de seguridad para poder hacer scroll por encima del teclado sin que tape nada
+  }
 
   h2 {
     margin-top: 0;
@@ -55,7 +63,6 @@
       }
     }
 
-   /* Contenedor alineado para el input y el botón de teclado táctil */
     .input-contenedor-tactil {
       display: flex;
       gap: 8px;
@@ -80,26 +87,9 @@
           pointer-events: none;
         }
       }
-
-      /* Botón del icono del teclado */
-      .btn-teclado-form {
-        padding: 0 14px;
-        background: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1.1rem;
-        transition: background-color 0.15s;
-
-        &:hover {
-          background-color: #e2e8f0;
-          border-color: #94a3b8;
-        }
-      }
     }
   }
 
-  /* Estilo especial para la caja informativa de la base imponible */
   .info-base-imponible {
     background-color: #f8fafc;
     border: 1px dashed #cbd5e1;
@@ -127,7 +117,6 @@
     }
   }
 
-  /* Botonera inferior */
   .form-acciones {
     display: flex;
     justify-content: flex-end;
@@ -149,9 +138,7 @@
     .btn-cancelar {
       background-color: #ff0707;
       color: #f5f5f5;
-      &:hover { 
-        background-color: #bd8198; 
-      }
+      &:hover { background-color: #bd8198; }
     }
 
     .btn-guardar {
@@ -162,144 +149,10 @@
   }
 }
 
-/* ==========================================
-   POPUP MODAL DEL TECLADO VIRTUAL TÁCTIL
-   ========================================== */
-.modal-teclado-overlay {
-  position: fixed; 
-  top: 50%;
-  right: 20px; 
-  width: 900px; 
-  height: auto;
-  transform: translateY(-50%);
-  z-index: 10005;
-  background: #1e293b;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  border: 1px solid #334155;
-  display: flex;
-  flex-direction: column;
-  animation: fadeInQuick 0.15s ease-out;
-
-  .teclado-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    color: #ffffff;
-
-    .teclado-titulo {
-      font-weight: 600;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #94a3b8;
-    }
-
-    .btn-cerrar-teclado {
-      background: #ef4444;
-      border: none;
-      color: white;
-      border-radius: 6px;
-      padding: 2px 8px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 1.1rem;
-      line-height: 1;
-      &:hover { filter: brightness(0.9); }
-    }
-  }
-
-  .teclado-pantalla {
-    background: #0f172a;
-    color: #38bdf8;
-    font-family: monospace;
-    padding: 12px;
-    font-size: 1.4rem;
-    font-weight: bold;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    min-height: 48px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid #1e293b;
-
-    .btn-vaciar {
-      background: transparent;
-      border: none;
-      color: #64748b;
-      font-size: 0.8rem;
-      font-family: sans-serif;
-      cursor: pointer;
-      font-weight: 600;
-      &:hover { color: #94a3b8; }
-    }
-  }
-
-  .teclado-rejilla-botones {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 12px;
-
-    .btn-tecla {
-      padding: 14px;
-      font-size: 1.25rem;
-      font-weight: bold;
-      background: #334155;
-      color: #ffffff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.1s;
-
-      &:hover { background-color: #475569; }
-      &:active { transform: scale(0.96); }
-
-      &.btn-borrar {
-        background: #dc2626;
-        color: white;
-        &:hover { background-color: #b91c1c; }
-      }
-    }
-  }
-
-  .btn-aceptar-teclado {
-    width: 100%;
-    padding: 12px;
-    background: #10b981;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.15s;
-    &:hover { background-color: #059669; }
-  }
-}
-
-/* Transición suave al alternar productos y servicios */
-.animacion-fade {
-  animation: fadeInQuick 0.2s ease-out;
-}
-
+.animacion-fade { animation: fadeInQuick 0.2s ease-out; }
 @keyframes fadeInQuick {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* Responsivo para pantallas de TPV más estrechas */
-@media (max-width: 600px) {
-  .formulario-articulo-container .form-grid {
-    grid-template-columns: 1fr;
-    
-    .form-group.full-width {
-      grid-column: span 1;
-    }
-  }
 }
 
 .notas-reparacion-container {
@@ -314,12 +167,10 @@
     resize: vertical;
     outline: none;
     transition: border-color 0.2s;
-
-    &:focus {
-      border-color: #3b82f6; // Color azul de enfoque o el corporativo que uses
-    }
+    &:focus { border-color: #3b82f6; }
   }
 }
+
 .txt-mutado {
   font-size: 0.8rem;
   color: #64748b;
@@ -328,214 +179,104 @@
 }
 
 // =========================================================================
-// ⌨️ TECLADO TÁCTIL GENERAL
+// Estilos del teclado nativo replicados con diseño Responsive total
 // =========================================================================
-.modal-teclado-general-container {
-  position: fixed; 
-  top: 50%;
-  right: 20px; /* ➡️ Fijado en el lateral derecho para no tapar tablas ni formularios */
-  transform: translateY(-50%); 
-  width: 740px; /* 📐 Ancho compacto ideal */
-  height: auto;
-  z-index: 999999 !important;
-  background: #1e293b;          
-  padding: 20px; 
-  border-radius: 16px; 
-  box-shadow: -10px 20px 30px rgba(0, 0, 0, 0.4);               
-  border: 1px solid #334155;
+.tpv-teclado-virtual {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 100vw;
+  background: #1e293b;
+  padding: 16px 24px;
+  border-top: 3px solid #334155;
+  box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  z-index: 99999;
   box-sizing: border-box;
-  font-family: inherit;
-  animation: fadeInQuick 0.15s ease-out;
 
-  /* Cabecera del Teclado */
-  .teclado-general-header {
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 12px; 
-    color: #ffffff;
-
-    .titulo-contexto {
-      font-weight: 700; 
-      font-size: 1.1rem; 
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #94a3b8;           
-    }
-
-    .btn-cerrar-teclado {
-      background: #ef4444; 
-      border: none; 
-      color: white; 
-      border-radius: 6px; 
-      width: 38px; 
-      height: 38px;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      &:active {
-        background: #b91c1c;
-      }
-    }
-  }
-
-  /* Pantalla de visualización */
-  .teclado-general-pantalla {
-    background: #0f172a;        
-    color: #38bdf8;             
-    font-family: 'Courier New', Courier, monospace; 
-    padding: 12px 16px; 
-    font-size: 1.6rem; 
-    font-weight: 700;
-    border-radius: 8px; 
-    margin-bottom: 15px; 
-    min-height: 55px; 
-    border: 1px solid #1e293b;
-    word-break: break-all; 
-    display: flex; 
+  .teclado-header {
+    display: flex;
     justify-content: space-between;
     align-items: center;
-    box-sizing: border-box;
+    color: white;
+    margin-bottom: 12px;
+    font-size: 1rem;
 
-    .btn-vaciar-pantalla {
-      color: #64748b; 
-      font-size: 0.85rem; 
+    .btn-cerrar-teclado {
+      background: #ef4444;
+      border: none;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
-      user-select: none;
-      background: #1e293b;
-      padding: 8px 12px;
-      border-radius: 6px;
-
-      &:active {
-        background: #334155;
-        color: #f1f5f9;
-      }
     }
   }
 
-  /* Envoltura interna de las teclas */
-  .teclado-general-wrapper-keys {
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
+  .teclado-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
 
-    button {
-      border: 1px solid #475569;
-      border-bottom: 4px solid #334155; /* Relieve táctil de mostrador */
-      border-radius: 6px; 
-      font-weight: 700; 
-      cursor: pointer;
-      user-select: none;
+    .teclado-fila {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.05s ease;
-
-      &:active {
-        transform: translateY(2px);
-        border-bottom-width: 1px;
-        filter: brightness(0.85);
-      }
-    }
-
-    /* SECCIÓN NUMÉRICA (Va suelta, al mismo nivel que las filas) */
-    .grid-numerico-descuento {
-      display: grid; 
-      grid-template-columns: repeat(3, 1fr); 
-      gap: 10px;
-
-      .btn-tecla-accion {
-        padding: 18px; 
-        font-size: 1.5rem; 
-        background: #334155; 
-        color: #ffffff;
-      }
-
-      .btn-borrar-atras {
-        flex: unset;
-        width: 100%;
-        background: #ef4444 !important; 
-        border-color: #dc2626 !important;
-        border-bottom-color: #991b1b !important;
-        color: #ffffff !important;
-        font-size: 1.3rem;
-      }
-    }
-
-    .fila-qwerty {
-      display: flex; 
-      gap: 10px; 
+      gap: 6px;
       justify-content: center;
       width: 100%;
 
-      /* Letras normales adaptadas a la nueva cuadrícula */
-      .btn-tecla-alpha {
+      button {
         flex: 1;
-        max-width: 60px;
-        height: 60px;
-        background: #334155; 
-        color: #ffffff; 
-        font-size: 1.5rem; 
-        padding: 0;
-      }
+        height: 54px;
+        font-size: 1.3rem;
+        font-weight: bold;
+        background: #334155;
+        color: white;
+        border: 1px solid #475569;
+        border-bottom: 4px solid #1e293b;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
 
-      /* MAYÚS Estirado */
-      .btn-mayus {
-        width: 130px; 
-        height: 60px;
-        background-color: #475569;
-        color: #ffffff;
-        font-size: 1rem;
-        
-        &.shift-active {
-          background-color: #10b981 !important; 
-          border-color: #059669 !important;
-          border-bottom-color: #047857 !important;
+        &:active {
+          transform: translateY(2px);
+          border-bottom-width: 1px;
         }
       }
 
-      /* ESPACIO Proporcionado y simétrico */
-      .btn-espacio {
-        width: 340px; 
-        height: 60px;           
-        background: #475569;    
-        color: #ffffff;
-        font-size: 1rem;
+      &.fila-especial {
+        button { font-size: 0.95rem; }
+        .btn-tecla-espacio { flex: 2.5; }
+        .btn-tecla-borrar { background: #dc2626; border-color: #b91c1c; }
+        .btn-tecla-limpiar { background: #64748b; border-color: #475569; }
+        .btn-tecla-aceptar { background: #10b981; border-color: #059669; }
       }
-
-      /* BORRAR Con ancho extendido idéntico al del login */
-      .btn-borrar-atras {
-        width: 170px; 
-        height: 60px;
-        background: #ef4444 !important; 
-        border-color: #dc2626 !important;
-        border-bottom-color: #991b1b !important;
-        color: #ffffff !important;
-        font-size: 1.1rem;
-      }
-    }
-
-    /* Botón verde de Confirmar inferior */
-    .btn-aceptar-teclado-general {
-      margin-top: 4px; 
-      padding: 15px; 
-      background: #10b981;      
-      border-color: #059669;
-      border-bottom-color: #047857;
-      color: white; 
-      font-size: 1.3rem; 
-      width: 100%;
-      height: 55px; 
     }
   }
 }
 
-@keyframes fadeInQuick {
-  from { opacity: 0; transform: translateY(-48%); }
-  to { opacity: 1; transform: translateY(-50%); }
+@media (max-width: 768px) {
+  .tpv-teclado-virtual {
+    padding: 10px;
+
+    .teclado-body .teclado-fila {
+      gap: 4px;
+      button {
+        height: 46px;
+        font-size: 1.1rem;
+      }
+      &.fila-especial button {
+        font-size: 0.8rem;
+        padding: 0 4px;
+      }
+    }
+  }
 }

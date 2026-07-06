@@ -32,10 +32,23 @@ export class ArticuloFormComponent implements OnInit {
   idArticuloEdicion = signal<number | null>(null);
 
   // === ESTADOS PARA EL TECLADO TÁCTIL EN FORMULARIO ===
-  mostrarTecladoGeneral = signal<boolean>(false);
-  inputObjetivoTeclado = signal<string>('');
-  valorTecladoEnConstruccion = signal<string>('');
-  mayusculasGeneral = signal<boolean>(true);
+  mostrarTeclado = signal<boolean>(false);
+  inputActivo = signal<string>('');
+  mayusculas = signal<boolean>(true);
+
+  // Listas de caracteres fijas para el renderizado del teclado
+  lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+  lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+  lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
+  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
+  lineaAcentos = ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü'];
+
+  // Caracteres dinámicos calculados según el campo objetivo
+  get lineaEspecialDinamica(): string[] {
+    return this.inputActivo() === 'EMAIL' 
+      ? ['@', '.', '-', '_', '.com', '.es'] 
+      : ['@', ',', '.', '_', '/', '-'];
+  }
 
    // Inyección de dependencias
   private articuloService = inject(ArticuloService);
@@ -94,69 +107,86 @@ export class ArticuloFormComponent implements OnInit {
     });
   }
 
-// === MÉTODOS DEL TECLADO GENERAL ===
-  abrirTecladoGeneralForm(
-    objetivo: 'NOMBRE' | 'PRECIO' | 'IVA' | 'STOCK_INICIAL' | 'STOCK_MINIMO' | 'NOTAS' | 'BUSCAR_PROVEEDOR', 
-    valorActual: string = ''
-  ) {
-    // Si están con la tablet en el taller, frenamos vuestro teclado virtual
+  // === MÉTODOS DEL TECLADO GENERAL ===
+  abrirTecladoGeneralForm(objetivo: string) {
     if (isMobileOrTablet()) {
-      return;
+      return; 
     }
-    this.inputObjetivoTeclado.set(objetivo);
-    this.valorTecladoEnConstruccion.set(valorActual);
-    this.mostrarTecladoGeneral.set(true);
+    this.inputActivo.set(objetivo);
+    this.mostrarTeclado.set(true);
   }
 
-  pulsarTeclaGeneral(caracter: string) {
-    const actual = this.valorTecladoEnConstruccion();
-    const objetivo = this.inputObjetivoTeclado();
+  // Sincroniza la escritura del teclado físico nativo con las señales en vivo
+  sincronizarTecladoFisico(objetivo: string, valor: string) {
+    this.inputActivo.set(objetivo);
+    this.actualizarValorSeñal(objetivo, valor);
+  }
 
-    // Validaciones de punto decimal para Precio e IVA
+  escribirTeclado(caracter: string) {
+    const objetivo = this.inputActivo();
+    const actual = this.obtenerValorActualPorObjetivo(objetivo);
+
+    // Evitar múltiples puntos en campos numéricos
     if (caracter === '.' && actual.includes('.')) return;
     if (actual.includes('.') && actual.split('.')[1].length >= 2 && (objetivo === 'PRECIO' || objetivo === 'IVA')) return;
 
-    // Si es una letra alfabética (no números, ni espacios, ni caracteres especiales), respetamos el Shift
-    let valorAInsertar = caracter;
-    const esLetra = /^[a-zA-ZÑñ]$/.test(caracter);
-    
-    if (esLetra) {
-      valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
+    let letraFormateada = caracter;
+    if (/^[a-zA-ZÑñÁÉÍÓÚÜáéíóúü]$/.test(caracter)) {
+      letraFormateada = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
     }
 
-    this.valorTecladoEnConstruccion.update(val => val + valorAInsertar);
+    const nuevoValor = actual + letraFormateada;
+    this.actualizarValorSeñal(objetivo, nuevoValor);
   }
 
-  alternarMayusculasGeneral() {
-    this.mayusculasGeneral.set(!this.mayusculasGeneral());
+  insertarEspacio() {
+    const objetivo = this.inputActivo();
+    const nuevoValor = this.obtenerValorActualPorObjetivo(objetivo) + ' ';
+    this.actualizarValorSeñal(objetivo, nuevoValor);
   }
 
-  borrarUltimoCaracterGeneral() {
-    this.valorTecladoEnConstruccion.update(val => val.slice(0, -1));
+  borrarUltimoCaracter() {
+    const objetivo = this.inputActivo();
+    const nuevoValor = this.obtenerValorActualPorObjetivo(objetivo).slice(0, -1);
+    this.actualizarValorSeñal(objetivo, nuevoValor);
   }
 
-  limpiarTecladoGeneral() {
-    this.valorTecladoEnConstruccion.set('');
+  limpiarTeclado() {
+    this.actualizarValorSeñal(this.inputActivo(), '');
   }
 
-  cerrarTecladoGeneral() {
-    this.mostrarTecladoGeneral.set(false);
+  alternarMayusculas() {
+    this.mayusculas.set(!this.mayusculas());
   }
 
-  aplicarTextoAlFormulario() {
-    const objetivo = this.inputObjetivoTeclado();
-    const valor = this.valorTecladoEnConstruccion();
+  cerrarTeclado() {
+    this.mostrarTeclado.set(false);
+  }
 
+  // Métodos auxiliares para mapear dinámicamente según el foco activo
+  private obtenerValorActualPorObjetivo(objetivo: string): string {
+    if (objetivo === 'NOMBRE') return this.nombre();
+    if (objetivo === 'NOTAS') return this.notasReparacion();
+    if (objetivo === 'BUSCAR_PROVEEDOR') return this.filtroProveedor();
+    if (objetivo === 'PRECIO') return this.precioFinal()?.toString() || '';
+    if (objetivo === 'IVA') return this.porcentajeIva().toString();
+    if (objetivo === 'STOCK_INICIAL') return this.stockInicial()?.toString() || '';
+    if (objetivo === 'STOCK_MINIMO') return this.stockMinimo()?.toString() || '';
+    return '';
+  }
+
+  private actualizarValorSeñal(objetivo: string, valor: string) {
     if (objetivo === 'NOMBRE') this.nombre.set(valor);
     if (objetivo === 'NOTAS') this.notasReparacion.set(valor);
     if (objetivo === 'BUSCAR_PROVEEDOR') this.filtroProveedor.set(valor);
     
     if (objetivo === 'PRECIO') {
-      const num = parseFloat(valor) || 0;
-      this.precioFinal.set(num === 0 ? null : num);
+      const num = parseFloat(valor);
+      this.precioFinal.set(isNaN(num) ? null : num);
     }
     if (objetivo === 'IVA') {
-      this.porcentajeIva.set(parseFloat(valor) || 0);
+      const num = parseFloat(valor);
+      this.porcentajeIva.set(isNaN(num) ? 0 : num);
     }
     if (objetivo === 'STOCK_INICIAL') {
       const num = parseInt(valor, 10);
@@ -166,8 +196,6 @@ export class ArticuloFormComponent implements OnInit {
       const num = parseInt(valor, 10);
       this.stockMinimo.set(isNaN(num) ? null : num);
     }
-
-    this.mostrarTecladoGeneral.set(false);
   }
 
   guardarArticulo(): void {
@@ -176,7 +204,6 @@ export class ArticuloFormComponent implements OnInit {
       return;
     }
 
-    // Comprobación a prueba de valores incorrectos o menores de 0
     const valorPrecio = this.precioFinal();
     if (valorPrecio === null || valorPrecio <= 0) {
       this.uiService.mostrarToast('El precio final debe ser mayor que 0.', 'error');
@@ -217,7 +244,7 @@ export class ArticuloFormComponent implements OnInit {
   }
 
   cancelarYVolver() {
-    this.mostrarTecladoGeneral.set(false);
+    this.mostrarTeclado.set(false);
     this.router.navigate(['/inventario']);
   }
   

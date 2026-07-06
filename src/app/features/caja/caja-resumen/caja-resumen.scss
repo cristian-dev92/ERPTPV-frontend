@@ -46,6 +46,7 @@ $border-color: #cbd5e1;
   border-bottom: 2px solid #f1f5f9;
   margin-bottom: 0.75rem;
   border-radius: 6px;
+  gap: 1rem;
 
   &.turno-finalizado-bg {
     background-color: #fff1f2;
@@ -57,7 +58,7 @@ $border-color: #cbd5e1;
       margin: 4px 0 0 0; 
       font-size: 0.85rem; 
       color: #475569;
-     }
+    }
   }
   
   .badge-active {
@@ -79,14 +80,11 @@ $border-color: #cbd5e1;
   }
 
   .operador-texto {
-      font-size: 1.1rem;
-      margin: 0;
-      color: #334155;
-      
-      strong {
-        font-weight: 700;
-      }
-    }
+    font-size: 1.1rem;
+    margin: 0;
+    color: #334155;
+    strong { font-weight: 700; }
+  }
 
   .fecha-meta { 
     font-size: 0.85rem; 
@@ -95,10 +93,10 @@ $border-color: #cbd5e1;
     text-align: right; 
   }
   .fecha-item {
-      font-size: 1.05rem;
-      font-weight: 700; 
-      color: #475569;
-      margin-bottom: 2px;
+    font-size: 1.05rem;
+    font-weight: 700; 
+    color: #475569;
+    margin-bottom: 2px;
   }
 
   .texto-cierre-alerta {
@@ -162,21 +160,21 @@ $border-color: #cbd5e1;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: filter 0.1s ease, transform 0.05s ease;
+    transition: all 0.15s ease;
 
     &:active { transform: scale(0.98); filter: brightness(0.9); }
 
-    &.btn-grey { background: #e2e8f0; color: $dark-pad; }
-    &.btn-blue { background: $color-blue; color: white; }
-    &.btn-green { background: $color-green; color: white; }
-    &.btn-red { background: $color-red; color: white; }
-    &.btn-purple { background: $color-purple; color: white; }
+    &.btn-grey { background: #e2e8f0; color: $dark-pad; &:hover { background: #cbd5e1; } }
+    &.btn-blue { background: $color-blue; color: white; &:hover { background: #1d4ed8; } }
+    &.btn-green { background: $color-green; color: white; &:hover { background: #059669; } }
+    &.btn-red { background: $color-red; color: white; &:hover { background: #dc2626; } }
+    &.btn-purple { background: $color-purple; color: white; &:hover { background: #7c3aed; } }
     .icon { font-size: 1.2rem; }
   }
 }
 
 // ==========================================
-// CONTROL DE FONDO MÓVIL / TABLET
+// CONTROL DE FONDO MÓVIL / TABLET (MODALES)
 // ==========================================
 .modal-backdrop-blur {
   position: fixed;
@@ -185,9 +183,21 @@ $border-color: #cbd5e1;
   backdrop-filter: blur(5px);
   display: flex; 
   justify-content: center; 
-  align-items: flex-start;
+  align-items: center; /* Centrado por defecto */
   z-index: 9999;
-  padding: 4vh 1rem 1rem 1rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  transition: align-items 0.2s ease-in-out;
+
+  // 🎯 CUANDO EL TECLADO ESTÁ ABIERTO, SUBIMOS LA FICHA AL TECHO
+  &.teclado-abierto {
+    align-items: flex-start;
+    padding-top: 2vh;
+    
+    .modal-sheet-tactil {
+      margin-top: 0;
+    }
+  }
 }
 
 .modal-sheet-tactil {
@@ -200,7 +210,7 @@ $border-color: #cbd5e1;
   overflow: hidden;
   display: flex; 
   flex-direction: column;
-  margin-top: 0;
+  transition: margin-top 0.2s ease-in-out;
 
   &.modal-cierre-wide {
     max-width: 740px; /* Ensanchado estratégico para albergar las dos columnas */
@@ -251,12 +261,6 @@ $border-color: #cbd5e1;
     grid-template-columns: 1.2fr 1fr;
     gap: 1.5rem;
     align-items: start;
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-      .divisor-cierre-modal { display: block; }
-    }
   }
 
   .instruction { color: #64748b; font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.4; }
@@ -269,6 +273,7 @@ $border-color: #cbd5e1;
     input {
       height: 48px; border: 2px solid $border-color; border-radius: 8px;
       padding: 0 12px; font-size: 1rem; outline: none; background: #fdfdfd;
+      &:focus { border-color: $color-blue; }
     }
     &.unique-huge {
       input {
@@ -285,7 +290,6 @@ $border-color: #cbd5e1;
   justify-content: center;
   height: 100%;
   padding: 0.5rem 0;
-  
   &.text-center { text-align: center; }
 }
 
@@ -294,6 +298,7 @@ $border-color: #cbd5e1;
   .select-opt {
     height: 50px; border: 2px solid $border-color; background: white;
     font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+    transition: all 0.15s;
     &.positivo.active { background: $color-green; color: white; border-color: $color-green; }
     &.negativo.active { background: $color-red; color: white; border-color: $color-red; }
   }
@@ -304,6 +309,8 @@ $border-color: #cbd5e1;
   font-size: 1rem; font-weight: 700; color: white; cursor: pointer; margin-top: 0.5rem;
   flex-shrink: 0;
   display: block;
+  transition: filter 0.15s;
+  &:hover { filter: brightness(0.9); }
   
   &.success { background: $color-green; }
   &.danger { background: $color-red; }
@@ -371,7 +378,7 @@ $border-color: #cbd5e1;
   background-color: #f8f9fa;
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 0; /* Al estar en paralelo no requiere margen inferior */
+  margin-bottom: 0;
   border: 1px solid #e9ecef;
   box-sizing: border-box;
   width: 100%;
@@ -398,11 +405,12 @@ $border-color: #cbd5e1;
   .font-bold-total { font-size: 1.2rem; font-weight: 800; }
 }
 
-/* Oculto por defecto en el Grid, reaparece mediante el Media Query */
 .divisor-cierre-modal { height: 1px; background-color: #dee2e6; margin: 10px 0; display: none; }
-
 .font-mono { font-family: monospace; }
 
+// ==========================================
+// ⌨️ TECLADO VIRTUAL INTEGRADO PULIDO Y RESPONSIVO
+// ==========================================
 .tpv-teclado-virtual {
   position: fixed; bottom: 0; left: 0; width: 100vw;
   background: #1e293b; color: white; box-shadow: 0 -10px 25px rgba(0,0,0,0.3);
@@ -412,22 +420,116 @@ $border-color: #cbd5e1;
     display: flex; justify-content: space-between; align-items: center;
     padding: 10px 16px; background: #0f172a; border-bottom: 1px solid #334155;
     span { font-size: 0.9rem; color: #cbd5e1; strong { color: #38bdf8; } }
-    .btn-cerrar-teclado { background: transparent; border: none; color: #f1f5f9; font-weight: 700; cursor: pointer; }
+    .btn-cerrar-teclado { 
+      background: #e74c3c;
+      border: none;
+      color: white;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      &:hover { background-color: #c0392b; }
+    } 
   }
 
   .teclado-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 800px; margin: 0 auto; }
+  
   .teclado-fila {
     display: flex; gap: 4px; justify-content: center; width: 100%;
+
     button {
-      flex: 1; height: 46px; border: none; border-radius: 6px;
-      background: #334155; color: white; font-weight: 700; font-size: 1.1rem;
-      cursor: pointer; &:active { background: #475569; }
+      flex: 1; 
+      min-width: 0; /* 👈 NUEVO: Clave absoluta para evitar desbordes en móviles */
+      height: 46px; 
+      border: none; 
+      border-radius: 6px;
+      background: #334155; 
+      color: white; 
+      font-weight: 700; 
+      font-size: 1.1rem;
+      cursor: pointer; 
+      transition: all 0.1s ease-in-out;
+
+      &:hover, &:active { background: #475569; }
     }
-    .btn-tecla-borrar { background: #b91c1c; flex: 2; &:active { background: #991b1b; } }
+    
+    .btn-tecla-borrar { 
+      background: #b91c1c; 
+      flex: 2; 
+      &:hover, &:active { background: #991b1b; } 
+    }
   }
+
   .fila-especial {
-    button { height: 50px; }
-    .btn-tecla-espacio { background: #475569; flex: 3; }
-    .btn-tecla-aceptar { background: $color-green; flex: 2; }
+    margin-top: 0.15rem;
+
+    button { 
+      height: 48px !important; 
+      font-size: 0.9rem !important; /* Texto un pelo más compacto para pantallas móviles */
+    }
+
+    .btn-tecla-mayus {
+      flex: 1.2;
+      color: white;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-tecla-espacio { 
+      background: #475569; 
+      flex: 2.2; 
+      &:hover { background: #5a6e88; }
+    }
+
+    .btn-tecla-borrar {
+      background: #b91c1c !important;
+      flex: 1.5;
+      &:hover, &:active { background: #991b1b !important; }
+    }
+
+    .btn-tecla-limpiar { 
+      flex: 1.2;
+      background-color: #fff1f2 !important; 
+      color: #e11d48 !important; 
+      border: 1px solid #fecdd3 !important;
+      &:hover { background-color: #ffe4e6 !important; }
+    }
+
+    .btn-tecla-aceptar { 
+      background: $color-green !important; 
+      flex: 1.8; 
+      &:hover, &:active { background: #0891b2 !important; }
+    }
+  }
+}
+
+// ==========================================
+// 📱 MEDIA QUERY ESTRATÉGICO PARA MÓVILES Y TABLETS
+// ==========================================
+@media (max-width: 768px) {
+  .caja-header-compact {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    
+    .fecha-meta {
+      text-align: left;
+    }
+  }
+
+  .tactil-form {
+    &.cierre-layout-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+
+  .divisor-cierre-modal { 
+    display: block; 
+  }
+
+  .modal-sheet-tactil {
+    max-height: 90vh; /* Mayor espacio vertical aprovechable */
   }
 }

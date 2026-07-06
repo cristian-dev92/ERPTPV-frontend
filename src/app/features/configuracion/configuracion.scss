@@ -10,11 +10,85 @@ $accent-blue: #3498db;
   background-color: #ffffff;
   min-height: 100vh;
   padding-bottom: 320px;
+  transition: padding-bottom 0.2s ease;
+
+  &.teclado-abierto {
+    padding-bottom: 340px; // Solo se añade el colchón cuando el teclado está activo abajo
+  }
 
   .config-header {
     margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; // Por si la pantalla se estrecha, baja limpiamente
+    gap: 1.5rem;
+    border-bottom: 1px solid $border-color;
+    padding-bottom: 1.5rem;
+
+    // Bloque del título original
     h2 { color: $primary-dark; margin: 0; font-size: 1.6rem; font-weight: 700; }
     p { color: #7f8c8d; margin: 0.3rem 0 0 0; font-size: 0.95rem; }
+
+    // SELECTOR DE MODO DE ENTRADA TOTALMENTE INTEGRADO
+    .dispositivo-selector-wrapper {
+      background-color: $bg-light;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid $border-color;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+
+      .selector-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .tabs-container {
+        display: flex;
+        background-color: #ffffff;
+        padding: 3px;
+        border-radius: 6px;
+        border: 1px solid $border-color;
+        gap: 3px;
+
+        .tab-btn {
+          background: none;
+          border: none;
+          color: #64748b;
+          padding: 0.5rem 1rem;
+          font-size: 0.85rem;
+          font-weight: 600;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          &:hover {
+            color: $primary-dark;
+            background-color: #f1f5f9;
+          }
+
+          &.active {
+            background-color: $accent-blue; // Usa tu color azul corporativo
+            color: white;
+            box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
+            
+            &:hover {
+              background-color: $accent-blue; // Mantiene el azul si pasas por encima
+              color: white;
+            }
+          }
+        }
+      }
+    }
   }
 
   .config-grid {
@@ -339,7 +413,7 @@ $accent-blue: #3498db;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    max-width: 900px;
+    max-width: 1000px; // Un pelín más ancho para que quepan holgados los acentos
     margin: 0 auto;
     width: 100%;
   }
@@ -362,11 +436,27 @@ $accent-blue: #3498db;
       font-weight: 600;
       cursor: pointer;
       user-select: none;
-      transition: background 0.1s;
+      transition: all 0.1s;
 
       &:active, &:hover {
         background-color: #475569;
       }
+    }
+
+    // 🎨 NUEVO: Estilo para los botones de acentos (Fila 4)
+    .btn-tecla-acento {
+      background-color: #2e3e52;
+      border-color: #475569;
+      color: #cbd5e1;
+      &:hover, &:active { background-color: #3b4f6c; }
+    }
+
+    // 🎨 NUEVO: Estilo para los caracteres variables dinámicos (Fila 5)
+    .btn-tecla-dinamica {
+      background-color: #1e293b;
+      border-color: #334155;
+      color: #38bdf8; // Color Cyan informativo para destacar que muta solo
+      &:hover, &:active { background-color: #2e3e52; }
     }
 
     .btn-tecla-borrar {
@@ -378,16 +468,46 @@ $accent-blue: #3498db;
     &.fila-especial {
       margin-top: 0.2rem;
       
+      .btn-tecla-mayus {
+        transition: background-color 0.2s ease;
+        // El color activo/inactivo ya lo controlas tú con [style.background-color] en HTML
+      }
+      
       .btn-tecla-espacio {
         flex: 3;
         background-color: #475569;
+        &:hover { background-color: #64748b; }
       }
+      
       .btn-tecla-aceptar {
         flex: 1.5;
         background-color: #16a34a;
         border-color: #15803d;
         &:active, &:hover { background-color: #15803d; }
       }
+
+      .btn-tecla-limpiar { 
+        background-color: #fff1f2; 
+        color: #e11d48;            
+        border: 1px solid #fecdd3;
+        font-weight: 500;
+       &:hover { background-color: #ffe4e6;}
+      } 
     }
   }
 }
+
+// Ajuste responsivo para el selector de teclado en cabecera
+  @media (max-width: 768px) {
+    .config-header {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .dispositivo-selector-wrapper {
+        width: 100%;
+        .tabs-container {
+          .tab-btn { flex: 1; justify-content: center; }
+        }
+      }
+    }
+  }

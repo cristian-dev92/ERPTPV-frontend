@@ -18,7 +18,7 @@ $danger: #ef4444;
 }
 
 .btn-primary {
-  background-color: #27ae60; // Verde "nuevo" para diferenciar del login azul
+  background-color: #27ae60;
   color: white;
   border: none;
   padding: 0.8rem 1.5rem;
@@ -32,7 +32,7 @@ $danger: #ef4444;
 
 .zapatero-table {
   width: 70%;
-  margin: 0 auto;
+  margin: 0 auto 140px auto; // Añadido margen inferior para evitar solapamientos con el teclado abierto
   border-collapse: collapse;
   background: white;
   border-radius: 8px;
@@ -46,16 +46,12 @@ $danger: #ef4444;
     
     th {
       padding: 1rem;
-      text-align: center;
       color: #718096;
       font-weight: 600;
       text-transform: uppercase;
       font-size: 0.85rem;
       text-align: center;
-      display: table-cell;
       vertical-align: middle;
-      justify-content: center;
-      align-items: center;
     }
   }
 
@@ -75,7 +71,6 @@ $danger: #ef4444;
   }
 }
 
-// Estilo para las etiquetas de tipo
 .badge {
   display: inline-block;
   padding: 0.25rem 0.6rem;
@@ -83,28 +78,12 @@ $danger: #ef4444;
   font-size: 0.75rem;
   font-weight: bold;
   background-color: #ebf8ff;
-  color: #3182ce; // Azul para Productos
+  color: #3182ce;
   margin: 0 auto;
 
   &.badge-serv {
     background-color: #faf5ff;
-    color: #805ad5; // Morado para Servicios/Reparaciones
-  }
-}
-
-.btn-edit {
-  background: transparent;
-  border: 1px solid #3182ce;
-  color: #3182ce;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #3182ce;
-    color: white;
+    color: #805ad5;
   }
 }
 
@@ -116,9 +95,10 @@ $danger: #ef4444;
   justify-content: center;
 }
 
-/* Badge de advertencia táctil / visual para material faltante */
 .badge-alert {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background-color: #fef2f2;
   color: #dc2626;
   border: 1px solid #fee2e2;
@@ -126,20 +106,14 @@ $danger: #ef4444;
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   animation: pulse-alert 2s infinite;
   margin: 0 auto;
 
-  &.badge-alert.sin-material {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fee2e2;
-
-  // Si tu diseño usa iconos o animaciones, un leve parpadeo sutil para llamar la atención
-  font-weight: 700;
- }
+  &.sin-material {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fee2e2;
+  }
 }
 
 @keyframes pulse-alert {
@@ -149,36 +123,35 @@ $danger: #ef4444;
 }
 
 .acciones-wrapper {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 
-    button {
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.8rem;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: all 0.15s ease-in-out;
-    }
-
-.btn-delete {
-  background-color: #fef2f2;
-      color: $danger;
-      border-color: #fca5a5;
-      &:hover { background-color: $danger; color: white; }
+  button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease-in-out;
   }
 
-.btn-edit {
+  .btn-delete {
+    background-color: #fef2f2;
+    color: $danger;
+    border-color: #fca5a5;
+    &:hover { background-color: $danger; color: white; }
+  }
+
+  .btn-edit {
     background-color: #eff6ff;
-      color: $secondary;
-      border-color: #bfdbfe;
-      &:hover { background-color: $secondary; color: white; }
+    color: $secondary;
+    border-color: #bfdbfe;
+    &:hover { background-color: $secondary; color: white; }
   }
 }
 
-// Fondo oscuro translúcido para centrar el modal
 .confir-backdrop {
   position: fixed;
   top: 0;
@@ -190,10 +163,9 @@ $danger: #ef4444;
   justify-content: center;
   align-items: center;
   z-index: 2000;
-  backdrop-filter: blur(2px); // Sutil efecto difuminado premium
+  backdrop-filter: blur(2px);
 }
 
-// Contenedor del modal moderno estilo tarjeta de confirmación
 .modal-confirm-content {
   background: white;
   padding: 2rem;
@@ -204,32 +176,12 @@ $danger: #ef4444;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   animation: scale-up-modal 0.15s ease-out;
 
-  .modal-confirm-icon {
-    font-size: 3rem;
-    margin-bottom: 0.5rem;
-  }
-
-  h2 {
-    color: #1a202c;
-    font-size: 1.4rem;
-    margin-bottom: 1rem;
-  }
-
-  p {
-    color: #4a5568;
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-bottom: 0.5rem;
-  }
-
-  .advertencia-sub {
-    color: #a0aec0;
-    font-size: 0.85rem;
-    margin-bottom: 1.5rem;
-  }
+  .modal-confirm-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+  h2 { color: #1a202c; font-size: 1.4rem; margin-bottom: 1rem; }
+  p { color: #4a5568; font-size: 1rem; line-height: 1.5; margin-bottom: 0.5rem; }
+  .advertencia-sub { color: #a0aec0; font-size: 0.85rem; margin-bottom: 1.5rem; }
 }
 
-// Botonera alineada
 .confirm-actions {
   display: flex;
   gap: 12px;
@@ -243,7 +195,7 @@ $danger: #ef4444;
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
-    flex: 1; // Hace que ambos botones tengan exactamente el mismo tamaño equilibrado
+    flex: 1;
   }
 
   .btn-cancel-modal {
@@ -253,7 +205,7 @@ $danger: #ef4444;
   }
 
   .btn-confirm-modal {
-    background-color: #e53e3e; // Rojo potente de borrado
+    background-color: #e53e3e;
     color: white;
     &:hover { 
       background-color: #c53030;
@@ -263,7 +215,6 @@ $danger: #ef4444;
   }
 }
 
-// Animación de entrada suave
 @keyframes scale-up-modal {
   from { transform: scale(0.92); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
@@ -279,197 +230,120 @@ $danger: #ef4444;
     font-size: 0.95rem;
     outline: none;
     transition: border-color 0.2s;
-    &:focus {
-      border-color: #3182ce;
-    }
+    &:focus { border-color: #3182ce; }
   }
 }
 
 // =========================================================================
-// ⌨️ TECLADO TÁCTIL GENERAL
+// ⌨️ TECLADO VIRTUAL UNIFICADO
 // =========================================================================
-.modal-teclado-general-container {
-  position: fixed; 
-  top: 50%;
-  right: 20px; /* ➡️ Fijado en el lateral derecho para no tapar tablas ni formularios */
-  transform: translateY(-50%); 
-  width: 740px; /* 📐 Ancho compacto ideal */
+.tpv-teclado-virtual {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100vw;
   height: auto;
+  background: #1e293b;
+  padding: 16px 24px;
+  border-top: 3px solid #334155;
+  box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
   z-index: 999999 !important;
-  background: #1e293b;          
-  padding: 20px; 
-  border-radius: 16px; 
-  box-shadow: -10px 20px 30px rgba(0, 0, 0, 0.4);               
-  border: 1px solid #334155;
   box-sizing: border-box;
-  font-family: inherit;
-  animation: fadeInQuick 0.15s ease-out;
+  animation: slideUpKeyboard 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Cabecera del Teclado */
-  .teclado-general-header {
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 12px; 
-    color: #ffffff;
-
-    .titulo-contexto {
-      font-weight: 700; 
-      font-size: 1.1rem; 
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #94a3b8;           
-    }
-
-    .btn-cerrar-teclado {
-      background: #ef4444; 
-      border: none; 
-      color: white; 
-      border-radius: 6px; 
-      width: 38px; 
-      height: 38px;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      &:active {
-        background: #b91c1c;
-      }
-    }
-  }
-
-  /* Pantalla de visualización */
-  .teclado-general-pantalla {
-    background: #0f172a;        
-    color: #38bdf8;             
-    font-family: 'Courier New', Courier, monospace; 
-    padding: 12px 16px; 
-    font-size: 1.6rem; 
-    font-weight: 700;
-    border-radius: 8px; 
-    margin-bottom: 15px; 
-    min-height: 55px; 
-    border: 1px solid #1e293b;
-    word-break: break-all; 
-    display: flex; 
+  .teclado-header {
+    display: flex;
     justify-content: space-between;
     align-items: center;
-    box-sizing: border-box;
+    color: white;
+    margin-bottom: 12px;
+    font-size: 1rem;
+    strong { color: #38bdf8; }
 
-    .btn-vaciar-pantalla {
-      color: #64748b; 
-      font-size: 0.85rem; 
+    .btn-cerrar-teclado {
+      background: #ef4444;
+      border: none;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
-      user-select: none;
-      background: #1e293b;
-      padding: 8px 12px;
-      border-radius: 6px;
-
-      &:active {
-        background: #334155;
-        color: #f1f5f9;
-      }
+      &:active { filter: brightness(0.85); }
     }
   }
 
-  /* Envoltura interna de las teclas */
-  .teclado-general-wrapper-keys {
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
+  .teclado-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
 
-    button {
-      border: 1px solid #475569;
-      border-bottom: 4px solid #334155; /* Relieve táctil de mostrador */
-      border-radius: 6px; 
-      font-weight: 700; 
-      cursor: pointer;
-      user-select: none;
+    .teclado-fila {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.05s ease;
-
-      &:active {
-        transform: translateY(2px);
-        border-bottom-width: 1px;
-        filter: brightness(0.85);
-      }
-    }
-
-    .fila-qwerty {
-      display: flex; 
-      gap: 10px; 
+      gap: 6px;
       justify-content: center;
       width: 100%;
 
-      /* Letras normales adaptadas a la nueva cuadrícula */
-      .btn-tecla-alpha {
+      button {
         flex: 1;
-        max-width: 60px;
-        height: 60px;
-        background: #334155; 
-        color: #ffffff; 
-        font-size: 1.5rem; 
-        padding: 0;
-      }
+        height: 52px;
+        font-size: 1.25rem;
+        font-weight: bold;
+        background: #334155;
+        color: white;
+        border: 1px solid #475569;
+        border-bottom: 4px solid #0f172a;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        transition: all 0.05s ease;
 
-      /* MAYÚS Estirado */
-      .btn-mayus {
-        width: 130px; 
-        height: 60px;
-        background-color: #475569;
-        color: #ffffff;
-        font-size: 1rem;
-        
-        &.shift-active {
-          background-color: #10b981 !important; 
-          border-color: #059669 !important;
-          border-bottom-color: #047857 !important;
+        &:active {
+          transform: translateY(2px);
+          border-bottom-width: 1px;
+          filter: brightness(0.9);
         }
       }
 
-      /* ESPACIO Proporcionado y simétrico */
-      .btn-espacio {
-        width: 340px; 
-        height: 60px;           
-        background: #475569;    
-        color: #ffffff;
-        font-size: 1rem;
-      }
-
-      /* BORRAR Con ancho extendido idéntico al del login */
-      .btn-borrar-atras {
-        width: 170px; 
-        height: 60px;
-        background: #ef4444 !important; 
-        border-color: #dc2626 !important;
-        border-bottom-color: #991b1b !important;
-        color: #ffffff !important;
+      &.fila-dinamica button {
+        height: 48px;
         font-size: 1.1rem;
       }
-    }
 
-    /* Botón verde de Confirmar inferior */
-    .btn-aceptar-teclado-general {
-      margin-top: 4px; 
-      padding: 15px; 
-      background: #10b981;      
-      border-color: #059669;
-      border-bottom-color: #047857;
-      color: white; 
-      font-size: 1.3rem; 
-      width: 100%;
-      height: 55px; 
+      &.fila-especial {
+        button { font-size: 0.9rem; height: 52px; }
+        .btn-tecla-mayus { flex: 1.5; color: white; }
+        .btn-tecla-espacio { flex: 3.5; background: #475569; }
+        .btn-tecla-borrar { background: #dc2626; border-color: #b91c1c; }
+        .btn-tecla-limpiar { background: #64748b; border-color: #475569; }
+        .btn-tecla-aceptar { background: #10b981; border-color: #059669; }
+      }
     }
   }
 }
 
-@keyframes fadeInQuick {
-  from { opacity: 0; transform: translateY(-48%); }
-  to { opacity: 1; transform: translateY(-50%); }
+@keyframes slideUpKeyboard {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .zapatero-table { width: 100%; margin-bottom: 220px; }
+  .tpv-teclado-virtual {
+    padding: 10px;
+    .teclado-body .teclado-fila {
+      gap: 4px;
+      button { height: 44px; font-size: 1.05rem; }
+      &.fila-dinamica button { height: 40px; font-size: 0.95rem; }
+      &.fila-especial button { height: 44px; font-size: 0.75rem; padding: 0 4px; }
+    }
+  }
 }

@@ -1,18 +1,16 @@
-<div class="formulario-articulo-container">
+<div class="formulario-articulo-container" [class.teclado-en-pantalla]="mostrarTeclado()">
   <h2>Crear / Editar Artículo</h2>
 
   <form class="form-grid" novalidate>
     
-    <!-- Nombre -->
     <div class="form-group full-width">
       <label for="nombre">Nombre del Artículo *</label>
       <input type="text" id="nombre" [value]="nombre()" 
-      (click)="abrirTecladoGeneralForm('NOMBRE', nombre())"
-      (input)="nombre.set($any($event.target).value)" 
+        (click)="abrirTecladoGeneralForm('NOMBRE')"
+        (input)="sincronizarTecladoFisico('NOMBRE', $any($event.target).value)" 
       />
     </div>
 
-    <!-- Tipo -->
     <div class="form-group">
       <label for="tipo">Tipo</label>
       <select id="tipo" [value]="tipo()" (change)="tipo.set($any($event.target).value)">
@@ -21,67 +19,60 @@
       </select>
     </div>
 
-    <!-- Proveedor -->
     <div class="form-group">
       <label for="proveedor">Proveedor</label>
       <select id="proveedor" [value]="idProveedor() ?? ''" 
-      (click)="abrirTecladoGeneralForm('BUSCAR_PROVEEDOR', proveedores().find(p => p.id === idProveedor())?.nombre || '')"
-      placeholder="Escriba para filtrar lista..." 
-      class="search-input"
-      (change)="idProveedor.set(+$any($event.target).value)">
+        class="search-input"
+        (change)="idProveedor.set(+$any($event.target).value)">
         <option value="" disabled selected>Selecciona un proveedor</option>
         @for (prov of proveedores(); track prov.id) {
           <option [value]="prov.id">{{ prov.nombre }}</option>
         } @empty {
-          <option value="" disabled>⚠️ No hay coincidencias para tu búsqueda</option>
+          <option value="" disabled>⚠️ No hay proveedores asignados</option>
         }
       </select>
     </div>
 
-    <!-- Bloque Condicional: Stocks (Solo si es PRODUCTO) -->
     @if (tipo() === 'PRODUCTO') {
       <div class="form-group animacion-fade">
         <label for="stockInicial">Stock Inicial</label>
-        <input type="number" id="stockInicial" 
-        [value]="stockInicial()" 
-        inputmode="numeric"
-        (click)="abrirTecladoGeneralForm('STOCK_INICIAL', stockInicial()?.toString() || '')"
-        (input)="stockInicial.set(+$any($event.target).value)" min="0" />
+        <input type="text" id="stockInicial" 
+          [value]="stockInicial() !== null ? stockInicial() : ''" 
+          (click)="abrirTecladoGeneralForm('STOCK_INICIAL')"
+          (input)="sincronizarTecladoFisico('STOCK_INICIAL', $any($event.target).value)" />
       </div>
 
       <div class="form-group animacion-fade">
         <label for="stockMinimo">Stock Mínimo</label>
-        <input type="number" id="stockMinimo" 
-        [value]="stockMinimo()" 
-        (click)="abrirTecladoGeneralForm('STOCK_MINIMO', stockMinimo()?.toString() || '')" 
-        (input)="stockMinimo.set(+$any($event.target).value)" min="0" />
+        <input type="text" id="stockMinimo" 
+          [value]="stockMinimo() !== null ? stockMinimo() : ''" 
+          (click)="abrirTecladoGeneralForm('STOCK_MINIMO')" 
+          (input)="sincronizarTecladoFisico('STOCK_MINIMO', $any($event.target).value)" />
       </div>
     }
 
-    <!-- Precio Final (PVP con IVA) -> MAPEA A precioFinal -->
     <div class="form-group">
       <label for="precioFinal">Precio (PVP con IVA) *</label>
       <div class="input-contenedor-tactil">
-        <div class="input-dinero">
-          <input type="number" id="precioFinal" step="0.01" 
-          [value]="precioFinal()" 
-          inputmode="decimal"
-          (click)="abrirTecladoGeneralForm('PRECIO', precioFinal()?.toString() || '')"
-          (input)="precioFinal.set(+$any($event.target).value)" required />
+        <div class="input-moneda">
+          <input type="text" id="precioFinal" 
+            [value]="precioFinal() !== null ? precioFinal() : ''" 
+            (click)="abrirTecladoGeneralForm('PRECIO')"
+            (input)="sincronizarTecladoFisico('PRECIO', $any($event.target).value)" required />
           <span class="addon">€</span>
         </div>
       </div>
     </div>
 
-      <div class="form-group">
-        <label for="porcentajeIva">Porcentaje de IVA *</label>
-        <div class="input-contenedor-tactil">
-          <div class="input-porcentaje">
-            <input type="number" id="porcentajeIva" step="0.1"
-             [value]="porcentajeIva()"
-             (click)="abrirTecladoGeneralForm('IVA', porcentajeIva().toString() || '')"
-             (input)="porcentajeIva.set(+$any($event.target).value)" placeholder="21" required />
-            <span class="addon">%</span>
+    <div class="form-group">
+      <label for="porcentajeIva">Porcentaje de IVA *</label>
+      <div class="input-contenedor-tactil">
+        <div class="input-porcentaje">
+          <input type="text" id="porcentajeIva"
+            [value]="porcentajeIva()"
+            (click)="abrirTecladoGeneralForm('IVA')"
+            (input)="sincronizarTecladoFisico('IVA', $any($event.target).value)" required />
+          <span class="addon">%</span>
         </div>
       </div>
     </div>
@@ -100,9 +91,9 @@
         id="notasReparacion" 
         rows="3" 
         [value]="notasReparacion()" 
-        (focus)="abrirTecladoGeneralForm('NOTAS', notasReparacion() || '')"
-        (input)="notasReparacion.set($any($event.target).value)" 
-        ></textarea>
+        (click)="abrirTecladoGeneralForm('NOTAS')"
+        (input)="sincronizarTecladoFisico('NOTAS', $any($event.target).value)" 
+      ></textarea>
     </div>
 
     <div class="form-acciones full-width">
@@ -113,85 +104,66 @@
   </form>
 </div>
 
-@if (mostrarTecladoGeneral()) {
-  <div class="modal-teclado-general-container">
+@if (mostrarTeclado()) {
+  <div class="tpv-teclado-virtual">
+    <div class="teclado-header">
+      <span>Escribiendo en: <strong>{{ inputActivo().toUpperCase() }}</strong></span>
+      <button class="btn-cerrar-teclado" (click)="cerrarTeclado()">❌ CERRAR</button>
+    </div>
     
-    <div class="teclado-general-header">
-      <span class="titulo-contexto">
-        Teclado Táctil: 
-        @if(inputObjetivoTeclado() === 'NOMBRE'){ Nombre del Artículo }
-        @if(inputObjetivoTeclado() === 'PRECIO'){ PVP Final con IVA (€) }
-        @if(inputObjetivoTeclado() === 'IVA'){ Tipo de Gravamen IVA (%) }
-        @if(inputObjetivoTeclado() === 'STOCK_INICIAL'){ Unidades de Entrada }
-        @if(inputObjetivoTeclado() === 'STOCK_MINIMO'){ Umbral Alerta de Stock }
-        @if(inputObjetivoTeclado() === 'NOTAS'){ Anotaciones de Almacén }
-        @if(inputObjetivoTeclado() === 'BUSCAR_PROVEEDOR'){ Filtrar Distribuidor }
-      </span>
-      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
-    </div>
+    <div class="teclado-body">
+      <div class="teclado-fila">
+        @for (num of lineaNumeros; track num) {
+          <button type="button" (click)="escribirTeclado(num)">{{ num }}</button>
+        }
+      </div>
 
-    <div class="teclado-general-pantalla">
-      <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
-      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
-    </div>
-
-    <div class="teclado-general-wrapper-keys">
-
-      @if (inputObjetivoTeclado() === 'PRECIO' || inputObjetivoTeclado() === 'IVA' || inputObjetivoTeclado() === 'STOCK_INICIAL' || inputObjetivoTeclado() === 'STOCK_MINIMO') {
-        <div class="grid-numerico-descuento">
-          @for (num of ['1','2','3','4','5','6','7','8','9','0']; track num) {
-            <button type="button" class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
-          }
-          @if (inputObjetivoTeclado() === 'PRECIO' || inputObjetivoTeclado() === 'IVA') {
-            <button type="button" class="btn-tecla-accion" (click)="pulsarTeclaGeneral('.')">.</button>
-          }
-          <button type="button" class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ BORRAR</button>
-        </div>
-      }
-      
-      @else {
-        <div class="fila-qwerty">
-          @for (letra of ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['A','S','D','F','G','H','J','K','L', 'Ñ']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['Z','X','C','V','B','N','M','@','.', '-', '_']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{  letra.match(/[A-ZÑ]/) ? (mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase()) : letra }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          <button type="button" class="btn-mayus" 
-                  [style.background-color]="mayusculasGeneral() ? '#4caf50' : '#ccc'" 
-                  [style.color]="mayusculasGeneral() ? 'white' : 'black'"
-                  (click)="alternarMayusculasGeneral()">
-            ↑ {{ mayusculasGeneral() ? 'MAYÚS' : 'minús' }}
+      <div class="teclado-fila">
+        @for (letra of lineaLetras1; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
           </button>
-          
-          <button type="button" class="btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
-          <button type="button" class="btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
-        </div>
-      }
-      
-      <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarTextoAlFormulario()">
-        ✔ ACEPTAR Y APLICAR
-      </button>
+        }
+      </div>
+
+      <div class="teclado-fila">
+        @for (letra of lineaLetras2; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila">
+        @for (letra of lineaLetras3; track letra) {
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+        @for (acento of lineaAcentos; track acento) {
+          <button type="button" class="btn-tecla-acento" (click)="escribirTeclado(acento)" style="background-color: #3b4f6c;">
+            {{ mayusculas() ? acento.toUpperCase() : acento.toLowerCase() }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila fila-dinamica">
+        @for (caracter of lineaEspecialDinamica; track caracter) {
+          <button type="button" class="btn-tecla-dinamica" (click)="escribirTeclado(caracter)" style="background-color: #2e3e52; color: #38bdf8;">
+            {{ caracter }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila fila-especial">
+        <button type="button" class="btn-tecla-mayus" [style.background-color]="mayusculas() ? '#4caf50' : '#475569'" (click)="alternarMayusculas()">
+          ↑ {{ mayusculas() ? 'MAYÚS' : 'minús' }}
+        </button>
+        <button type="button" class="btn-tecla-espacio" (click)="insertarEspacio()">ESPACIO</button>
+        <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫ BORRAR</button>
+        <button type="button" class="btn-tecla-limpiar" (click)="limpiarTeclado()">🗑️ VACIAR</button>
+        <button type="button" class="btn-tecla-aceptar" (click)="cerrarTeclado()">ACEPTAR ✔️</button>
+      </div>
     </div>
   </div>
 }

@@ -18,6 +18,9 @@ export class ConfiguracionComponent implements OnInit {
   private uiService = inject(UiService);
   public authService = inject(AuthService);
 
+  // Estado reactivo del teclado guardado en el dispositivo
+  tecladoNativoForzado = signal<boolean>(false);
+
   // --- ESTADOS DE CARGA ---
   loading = signal<boolean>(false);
   mostrarFormularioNuevo = signal<boolean>(false);
@@ -55,12 +58,35 @@ export class ConfiguracionComponent implements OnInit {
   // --- CONFIGURACIÓN TECLADO TÁCTIL ---
   mostrarTeclado = signal<boolean>(false);
   inputActivo = signal<string>('');
-  mayusculas = signal<boolean>(true); // NUEVO: Estado para alternar Mayús/Minús
+  mayusculas = signal<boolean>(true);
+  valorTecladoEnConstruccion = signal<string>('');
 
-  lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '@'];
-  lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ', '.'];
-  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '_', 'com'];
+  // Filas base (Estrictamente alfabéticas y limpias)
+  lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+  lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
+  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
   lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+
+  // Vocales con acento para cuando se necesiten (se pueden pintar en una mini-fila lateral o superior)
+  lineaAcentos = ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü'];
+
+  // Fila variable inteligente según el input
+  get lineaEspecialDinamica(): string[] {
+   const input = this.inputActivo().toLowerCase();
+  
+  // Si están escribiendo en un campo de Email, priorizamos arroba y extensiones
+  if (input.includes('email') || input.includes('correo')) {
+    return ['@', '.', '-', '_', '.com', '.es', '.net'];
+  }
+
+  // Si es un campo de contraseña, incluimos el '@' junto a otros símbolos fuertes de seguridad
+  if (input.includes('pass') || input.includes('password') || input.includes('clave')) {
+    return ['@', '.', '_', '-', '!', '#', '$', '%'];
+  }
+  
+  // Si es un buscador, un nombre o descripción, metemos símbolos de texto/comercio comunes
+  return ['@', ',', '.', '_', '/', '%', '&', '"', '(', ')', '¡', '!', '¿','?'];
+}
 
   // Buffers temporales
   textoEmailTmp = '';
@@ -74,11 +100,26 @@ export class ConfiguracionComponent implements OnInit {
   textoNuevoEmpPassTmp = '';
 
   ngOnInit(): void {
+    // Leemos la persistencia del navegador nada más arrancar la pantalla
+    this.tecladoNativoForzado.set(localStorage.getItem('FORZAR_TECLADO_NATIVO') === 'true');
     // 🟢 Solo llamamos si es Administrador
     if (this.authService.getRolActual() === 'ROLE_ADMIN') {
       this.obtenerPersonalAutorizado();
     }
   }
+
+  /**
+   * Cambia el modo del buffer de entrada según el dispositivo
+   */
+  cambiarModoTeclado(forzarNativo: boolean): void {
+    this.tecladoNativoForzado.set(forzarNativo);
+    if (forzarNativo) {
+      localStorage.setItem('FORZAR_TECLADO_NATIVO', 'true');
+    } else {
+      localStorage.removeItem('FORZAR_TECLADO_NATIVO');
+    }
+  }
+
 
   obtenerPersonalAutorizado(): void {
     this.configService.listarEmpleados().subscribe({
@@ -89,7 +130,7 @@ export class ConfiguracionComponent implements OnInit {
 
   // --- MÉTODOS TECLADO TÁCTIL (CORREGIDO PARA MEMORIZAR Y SINCRONIZAR FÍSICO) ---
   activarTeclado(campo: string) {
-    if (isMobileOrTablet()) {
+    if (this.tecladoNativoForzado() || isMobileOrTablet()) {
       return;
     }
     this.inputActivo.set(campo);
@@ -123,6 +164,10 @@ export class ConfiguracionComponent implements OnInit {
   cerrarTeclado() {
     this.mostrarTeclado.set(false);
     this.inputActivo.set('');
+    // Limpieza opcional de los buffers para asegurar la higiene de datos táctiles
+    this.textoPassActualTmp = '';
+    this.textoNuevaPassTmp = '';
+    this.textoConfirmarPassTmp = '';
   }
 
   // MEJORADO: Ahora respeta si está activo el modo mayúsculas o minúsculas
@@ -130,13 +175,15 @@ export class ConfiguracionComponent implements OnInit {
     const campo = this.inputActivo();
     if (!campo) return;
 
-    let valorAInsertar = caracter === 'com' ? '.com' : caracter;
+    let valorAInsertar = caracter;
     
-    // Si no es un carácter especial o número, aplicamos la transformación de caja
-    if (caracter !== 'com' && !this.lineaNumeros.includes(caracter) && caracter !== '-' && caracter !== '_' && caracter !== '.' && caracter !== '@') {
-      valorAInsertar = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
-    }
-
+    // Si es un texto alfabético normal o acentuado, aplicamos la caja correspondiente
+    if (this.mayusculas()) {
+     valorAInsertar = caracter.toUpperCase();
+    } else {
+     valorAInsertar = caracter.toLowerCase();
+    } 
+    // Sincronización con tus buffers existentes
     if (campo === 'inputEmail') { this.textoEmailTmp += valorAInsertar; this.inputEmail = this.textoEmailTmp; }
     if (campo === 'passActual') { this.textoPassActualTmp += valorAInsertar; this.passActual = this.textoPassActualTmp; }
     if (campo === 'nuevaPass') { this.textoNuevaPassTmp += valorAInsertar; this.nuevaPass = this.textoNuevaPassTmp; }
@@ -167,10 +214,30 @@ export class ConfiguracionComponent implements OnInit {
     if (campo === 'nuevoEmpPass') { this.textoNuevoEmpPassTmp = this.textoNuevoEmpPassTmp.slice(0, -1); this.nuevoEmpleado.password = this.textoNuevoEmpPassTmp; }
   }
 
+  limpiarTeclado() {
+   this.vaciarCampoActivo();
+  }
+  
   insertarEspacio() {
     this.escribirTeclado(' ');
   }
 
+  vaciarCampoActivo() {
+    const campo = this.inputActivo();
+    if (!campo) return;
+
+    // Vaciamos tanto la propiedad del formulario como su buffer temporal
+    if (campo === 'inputEmail') { this.inputEmail = ''; this.textoEmailTmp = ''; }
+    if (campo === 'passActual') { this.passActual = ''; this.textoPassActualTmp = ''; }
+    if (campo === 'nuevaPass') { this.nuevaPass = ''; this.textoNuevaPassTmp = ''; }
+    if (campo === 'confirmarPass') { this.confirmarPass = ''; this.textoConfirmarPassTmp = ''; }
+    if (campo === 'nuevoEmailUsuario') { this.nuevoEmailUsuario = ''; this.textoUserEmailTmp = ''; }
+    if (campo === 'nuevaPassUsuario') { this.nuevaPassUsuario = ''; this.textoUserPassTmp = ''; }
+    if (campo === 'nuevoEmpNombre') { this.nuevoEmpleado.nombre = ''; this.textoNuevoEmpNombreTmp = ''; }
+    if (campo === 'nuevoEmpEmail') { this.nuevoEmpleado.email = ''; this.textoNuevoEmpEmailTmp = ''; }
+    if (campo === 'nuevoEmpPass') { this.nuevoEmpleado.password = ''; this.textoNuevoEmpPassTmp = ''; }
+  }
+  
   // --- ACCIONES PERFIL ---
   solicitarCambioPassword() {
     if (!this.passActual || !this.nuevaPass || !this.confirmarPass) {

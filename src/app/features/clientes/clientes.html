@@ -1,268 +1,224 @@
-
-  @if (!modoModalSolo()) {
-    <div class="clientes-container">
-
-     <header class="clientes-header">
-      <div>
-        <h1>👤 Directorio de Clientes</h1>
-        <p>Gestione el historial de contacto y datos de facturación de vuestro taller.</p>
-      </div>
-      <button (click)="abrirModal()" class="btn-nuevo-cliente" type="button">
-        ➕ Registrar Cliente
-      </button>
-    </header>
-
+<div class="clientes-container" [class.teclado-abierto]="mostrarTeclado()">
+  <header class="clientes-header">
+    <div>
+      <h1>Gestión de Clientes</h1>
+      <p>Búsqueda, alta y vinculación de fichas de reparación</p>
+    </div>
+    <button class="btn-nuevo-cliente" (click)="abrirModal()">➕ Nuevo Cliente</button>
+  </header>
 
   <div class="search-bar-container">
-    <input type="text" 
-           [value]="filtroBusqueda()"
-           (input)="filtroBusqueda.set($any($event.target).value);"
-           (click)="abrirTecladoGeneralForm('BUSQUEDA', undefined, filtroBusqueda())"
-           placeholder="🔍 Busque por nombre, teléfono, email, dni, direccion, cp, ciudad " 
-           class="search-input">
+    <input 
+      type="text" 
+      class="search-input" 
+      placeholder="🔍 Buscar por nombre, teléfono, DNI o ciudad..."
+      [ngModel]="filtroBusqueda()"
+      (ngModelChange)="filtroBusqueda.set($event)"
+      (focus)="abrirTeclado('BUSQUEDA', filtroBusqueda())">
   </div>
 
-  <div class="tabla-wrapper">
-    <table class="zapatero-table" [class.tabla-modo-seleccion]="modoModalSolo()">
+  <div class="tabla-wrapper desktop-only">
+    <table class="zapatero-table">
       <thead>
         <tr>
           <th>Nombre del Cliente</th>
-          <th>Teléfono de Aviso</th>
-          <th>Correo Electrónico</th>
-          <th>DNI/NIF</th>
-          <th>Ciudad</th>
-          <th>Estado</th>
+          <th>Teléfono</th>
+          <th>Documento / DNI</th>
+          <th>Email</th>
+          <th>Ubicación</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         @if (cargando()) {
-          <tr>
-            <td colspan="7" class="tabla-loading">
-              ⏳ Buscando en el archivo de la zapatería...
-            </td>
-          </tr>
+          <tr><td colspan="6" class="tabla-loading">Cargando base de datos de clientes...</td></tr>
+        } @else if (clientesFiltrados().length === 0) {
+          <tr><td colspan="6" class="tabla-vacia">No se encontraron clientes coincidentes</td></tr>
         } @else {
-          @for (c of clientesFiltrados(); track c.id) {
-            <tr [class.fila-seleccionable]="modoModalSolo()" (click)="modoModalSolo() ? seleccionarCliente(c) : null">
-              <td class="txt-negrita">{{ c.nombre }}</td>
-              <td class="txt-telefono">{{ c.telefono }}</td>
-              <td class="txt-email">{{ c.email || '-' }}</td>
-              <td class="txt-mutado">{{ c.documentoIdentidad || '-' }}</td>
-              <td>{{ c.ciudad || '-' }}</td>
-              
-                <td (click)="$event.stopPropagation()">
-                <span class="badge-activo" [class.badge-inactivo]="c.activo === false">
-                  {{ c.activo !== false ? '🟢 Activo' : '🔴 Inactivo' }}
-                </span>
-              </td>
-               
-                 <td (click)="$event.stopPropagation()">
-                  <div class="botones-gestion">
-                    <button type="button" class="btn-accion-editar" (click)="editarCliente(c)" title="Editar Ficha">
-                      ✏️ EDITAR
-                    </button>
-                    <button type="button" class="btn-accion-eliminar" (click)="solicitarConfirmacionBorrar(c)" title="Eliminar Cliente">
-                      🗑️ BORRAR
-                    </button>
-                  </div>
-              </td>
-            </tr>
-          } @empty {
+          @for (cliente of clientesFiltrados(); track cliente.id) {
             <tr>
-              <td colspan="6" class="tabla-vacia">
-                📭 Ningún cliente coincide con la consulta o la base de datos está vacía.
+              <td class="txt-negrita">{{ cliente.nombre }}</td>
+              <td class="txt-telefono">{{ cliente.telefono }}</td>
+              <td class="txt-mutado">{{ cliente.documentoIdentidad || '-' }}</td>
+              <td class="txt-email">{{ cliente.email || '-' }}</td>
+              <td>{{ cliente.ciudad }}{{ cliente.codigoPostal ? ' ('+cliente.codigoPostal+')' : '' }}</td>
+              <td>
+                <div class="acciones-celda">
+                  @if (modoModalSolo()) {
+                    <button class="btn-seleccionar-cliente-tvc" (click)="seleccionarCliente(cliente)">Seleccionar</button>
+                  }
+                  <div class="botones-gestion">
+                    <button class="btn-accion-editar" (click)="editarCliente(cliente)">✏️</button>
+                    <button class="btn-accion-eliminar" (click)="solicitarConfirmacionBorrar(cliente)">🗑️</button>
+                  </div>
+                </div>
               </td>
             </tr>
-           }
-         }
-       </tbody>
-     </table>
-   </div>
- </div>
-}
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid-clientes-movil mobile-only">
+    @if (cargando()) {
+      <div class="card-loading">Cargando clientes...</div>
+    } @else if (clientesFiltrados().length === 0) {
+      <div class="card-vacia">No hay registros coincidentes.</div>
+    } @else {
+      @for (cliente of clientesFiltrados(); track cliente.id) {
+        <div class="cliente-mobile-card">
+          <div class="card-info">
+            <h3>{{ cliente.nombre }}</h3>
+            <p class="tel">📞 {{ cliente.telefono }}</p>
+            @if (cliente.email) { <p class="mail">✉️ {{ cliente.email }}</p> }
+            @if (cliente.documentoIdentidad) { <p class="dni">🪪 DNI: {{ cliente.documentoIdentidad }}</p> }
+          </div>
+          <div class="card-actions">
+            @if (modoModalSolo()) {
+              <button class="btn-seleccionar-movil" (click)="seleccionarCliente(cliente)">Vincular</button>
+            }
+            <button class="btn-edit-movil" (click)="editarCliente(cliente)">✏️</button>
+            <button class="btn-delete-movil" (click)="solicitarConfirmacionBorrar(cliente)">🗑️</button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>
 
 @if (mostrarModalRegistro()) {
-  <div class="modal-overlay" (click)="cerrarModal()">
-    <div class="modal-box" (click)="$event.stopPropagation()">
-      
+  <div class="modal-overlay" [class.teclado-abierto]="mostrarTeclado()">
+    <div class="modal-box">
       <div class="modal-header">
-        <h3>{{ modoEdicion() ? '✏️ Editar Ficha de Cliente' : '👤 Registrar Nuevo Cliente' }}</h3>
-        <p>{{ modoEdicion() ? 'Modifique los datos comerciales guardados en el archivo.' : 'Introduzca los datos para la facturación y avisos de reparaciones del taller.' }}</p>
+        <h3>{{ modoEdicion() ? 'Modificar Ficha' : 'Alta de Cliente' }}</h3>
+        <p>Introduce los datos mínimos para cumplir con VeriFactu y avisar del estado de sus reparaciones</p>
       </div>
 
-      <form (ngSubmit)="guardarCliente()">
-        
+      <div class="form-group">
+        <label>Nombre y Apellidos *</label>
+        <input type="text" [(ngModel)]="nuevoCliente().nombre" (focus)="abrirTeclado('NOMBRE', nuevoCliente().nombre)">
+      </div>
+
+      <div class="form-row">
         <div class="form-group">
-          <label>Nombre Completo *</label>
-          <input type="text" 
-                 [value]="nuevoCliente().nombre" 
-                 (input)="nuevoCliente.update(c => ({...c, nombre: $any($event.target).value}))"
-                 (click)="abrirTecladoGeneralForm('NOMBRE', undefined, nuevoCliente().nombre)" 
-                 >
+          <label>Teléfono Móvil *</label>
+          <input type="text" [(ngModel)]="nuevoCliente().telefono" (focus)="abrirTeclado('TELEFONO', nuevoCliente().telefono)">
         </div>
-
         <div class="form-group">
-          <label>📱 Teléfono de Aviso *</label>
-          <input type="text" 
-                 [value]="nuevoCliente().telefono" 
-                 (input)="nuevoCliente.update(c => ({...c, telefono: $any($event.target).value}))"
-                 (click)="abrirTecladoGeneralForm('TELEFONO', undefined, nuevoCliente().telefono)" 
-                 >
+          <label>DNI / NIE / CIF</label>
+          <input type="text" [(ngModel)]="nuevoCliente().documentoIdentidad" (focus)="abrirTeclado('DNI', nuevoCliente().documentoIdentidad)">
         </div>
+      </div>
 
+      <div class="form-group">
+        <label>Correo Electrónico</label>
+        <input type="email" [(ngModel)]="nuevoCliente().email" (focus)="abrirTeclado('EMAIL', nuevoCliente().email)">
+      </div>
+
+      <div class="form-group">
+        <label>Dirección Postal</label>
+        <input type="text" [(ngModel)]="nuevoCliente().direccion" (focus)="abrirTeclado('DIRECCION', nuevoCliente().direccion)">
+      </div>
+
+      <div class="form-row">
         <div class="form-group">
-          <label>✉️ Correo Electrónico</label>
-          <input type="email" 
-                 [value]="nuevoCliente().email" 
-                 (input)="nuevoCliente.update(c => ({...c, email: $any($event.target).value}))"
-                 (click)="abrirTecladoGeneralForm('EMAIL', undefined, nuevoCliente().email)" 
-                 >
+          <label>Código Postal</label>
+          <input type="text" [(ngModel)]="nuevoCliente().codigoPostal" (focus)="abrirTeclado('CP', nuevoCliente().codigoPostal)">
         </div>
-
         <div class="form-group">
-          <label>📍 Dirección Taller/Casa</label>
-          <input type="text" 
-                 [value]="nuevoCliente().direccion" 
-                 (input)="nuevoCliente.update(c => ({...c, direccion: $any($event.target).value}))"
-                 (click)="abrirTecladoGeneralForm('DIRECCION', undefined, nuevoCliente().direccion)" 
-                 >
+          <label>Ciudad</label>
+          <input type="text" [(ngModel)]="nuevoCliente().ciudad" (focus)="abrirTeclado('CIUDAD', nuevoCliente().ciudad)">
         </div>
+      </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>🪪 DNI / NIF</label>
-            <input type="text" 
-                   [value]="nuevoCliente().documentoIdentidad" 
-                   (input)="nuevoCliente.update(c => ({...c, documentoIdentidad: $any($event.target).value}))"
-                   (click)="abrirTecladoGeneralForm('DNI', undefined, nuevoCliente().documentoIdentidad)" 
-                   >
-          </div>
-          <div class="form-group">
-            <label>📍 Código Postal</label>
-            <input type="text" 
-                   [value]="nuevoCliente().codigoPostal" 
-                   (input)="nuevoCliente.update(c => ({...c, codigoPostal: $any($event.target).value}))"
-                   (click)="abrirTecladoGeneralForm('CP', undefined, nuevoCliente().codigoPostal)" 
-                   >
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>🏙️ Ciudad</label>
-          <input type="text" 
-                 [value]="nuevoCliente().ciudad" 
-                 (input)="nuevoCliente.update(c => ({...c, ciudad: $any($event.target).value}))"
-                 (click)="abrirTecladoGeneralForm('CIUDAD', undefined, nuevoCliente().ciudad)" 
-                 >
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
-          <button type="submit" class="btn-guardar">
-            {{ modoEdicion() ? 'Guardar Cambios' : 'Registrar Cliente' }}
-          </button>
-        </div>
-
-      </form>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn-guardar" (click)="guardarCliente()">Guardar Ficha</button>
+      </div>
     </div>
   </div>
 }
 
 @if (mostrarModalBorrar()) {
-  <div class="modal-overlay-borrar" (click)="cerrarModalBorrar()">
-    <div class="modal-box-borrar" (click)="$event.stopPropagation()">
+  <div class="modal-overlay-borrar">
+    <div class="modal-box-borrar">
       <div class="modal-header-borrar">
         <div class="icono-advertencia">⚠️</div>
-        <h3>¿Confirmar Eliminación?</h3>
-        <p>¿Seguro que quiere borrar al cliente <strong>{{ clienteABorrarNombre() }}</strong>?</p>
-        <p class="txt-peligro-aviso">Esta acción no se puede deshacer y afectará al histórico de pedidos.</p>
+        <h3>¿Eliminar Ficha de Cliente?</h3>
+        <p>Estás a punto de eliminar permanentemente a:</p>
+        <p><strong>{{ clienteABorrarNombre() }}</strong></p>
+        <p class="txt-peligro-aviso">Esta acción no se puede deshacer si el cliente posee deudas pendientes o tickets fiscales.</p>
       </div>
-
       <div class="modal-footer-borrar">
-        <button type="button" class="btn-cancelar-borrar" (click)="cerrarModalBorrar()">Cancelar</button>
-        <button type="button" class="btn-confirmar-borrar" (click)="confirmarEliminar()">❌ Sí, Eliminar</button>
+        <button class="btn-cancelar-borrar" (click)="cerrarModalBorrar()">No, Mantener</button>
+        <button class="btn-confirmar-borrar" (click)="confirmarEliminar()">Sí, Eliminar</button>
       </div>
     </div>
   </div>
 }
 
-@if (mostrarTecladoGeneral()) {
-  <div class="modal-teclado-general-container">
+@if (mostrarTeclado()) {
+  <div class="tpv-teclado-virtual">
+    <div class="teclado-header">
+      <span>Escribiendo en: <strong>{{ inputActivo() }}</strong></span>
+      <div class="pantalla-preview-teclado">{{ valorTecladoEnConstruccion() || '...' }}</div>
+      <button class="btn-cerrar-teclado" (click)="cerrarTeclado()">❌ CERRAR</button>
+    </div>
     
-    <div class="teclado-general-header">
-      <span class="titulo-contexto">
-        Teclado Táctil: 
-        @if(inputObjetivoTeclado().includes('NOMBRE')){ Nombre y Apellidos }
-        @if(inputObjetivoTeclado().includes('TELEFONO')){ Teléfono Comercial }
-        @if(inputObjetivoTeclado().includes('DNI') || inputObjetivoTeclado().includes('CIF')){ DNI / NIF }
-        @if(inputObjetivoTeclado().includes('EMAIL')){ Correo Electrónico }
-        @if(inputObjetivoTeclado().includes('DIRECCION')){ Dirección Postal }
-        @if(inputObjetivoTeclado().includes('CP')){ Código Postal }
-        @if(inputObjetivoTeclado().includes('CIUDAD')){ Ciudad }
-        @if(inputObjetivoTeclado().includes('BUSQUEDA')){ Búsqueda de Clientes }
-      </span>
-      <button type="button" class="btn-cerrar-teclado" (click)="cerrarTecladoGeneral()">X</button>
-    </div>
+    <div class="teclado-body">
+      <div class="teclado-fila">
+        @for (num of lineaNumeros; track num) {
+          <button type="button" (click)="pulsarTecla(num)">{{ num }}</button>
+        }
+      </div>
 
-    <div class="teclado-general-pantalla">
-      <span class="texto-construccion">{{ valorTecladoEnConstruccion() || 'Escriba aquí...' }}</span>
-      <span class="btn-vaciar-pantalla" (click)="limpiarTecladoGeneral()">❌ Vaciar</span>
-    </div>
-
-    <div class="teclado-general-wrapper-keys">
-
-      @if (inputObjetivoTeclado().endsWith('TELEFONO') || inputObjetivoTeclado().endsWith('CP')) {
-        <div class="grid-numerico-descuento">
-          @for (num of ['1','2','3','4','5','6','7','8','9','0']; track num) {
-            <button type="button" class="btn-tecla-accion" (click)="pulsarTeclaGeneral(num)">{{num}}</button>
-          }
-          <button type="button" class="btn-tecla-accion btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">⌫ BORRAR</button>
-        </div>
-      }
-      
-      @else {
-        <div class="fila-qwerty">
-          @for (letra of ['0','1','2','3','4','5','6','7','8','9']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">{{letra}}</button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['Q','W','E','R','T','Y','U','I','O','P']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['A','S','D','F','G','H','J','K','L', 'Ñ']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{ mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase() }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          @for (letra of ['Z','X','C','V','B','N','M','@','.', '-', '_']; track letra) {
-            <button type="button" class="btn-tecla-alpha" (click)="pulsarTeclaGeneral(letra)">
-              {{ letra.match(/[A-ZÑ]/) ? (mayusculasGeneral() ? letra.toUpperCase() : letra.toLowerCase()) : letra }}
-            </button>
-          }
-        </div>
-        <div class="fila-qwerty">
-          <button type="button" class="btn-mayus" 
-                  [style.background-color]="mayusculasGeneral() ? '#4caf50' : '#ccc'" 
-                  [style.color]="mayusculasGeneral() ? 'white' : 'black'"
-                  (click)="alternarMayusculasGeneral()">
-            ↑ {{ mayusculasGeneral() ? 'MAYÚS' : 'minús' }}
+      <div class="teclado-fila">
+        @for (letra of lineaLetras1; track letra) {
+          <button type="button" (click)="pulsarTecla(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
           </button>
+        }
+      </div>
 
-          <button type="button" class="btn-espacio" (click)="pulsarTeclaGeneral(' ')">ESPACIO</button>
-          <button type="button" class="btn-borrar-atras" (click)="borrarUltimoCaracterGeneral()">BORRAR ⌫</button>
-        </div>
-      } <button type="button" class="btn-aceptar-teclado-general" (click)="aplicarTextoAlFormulario()">
-        ✔ ACEPTAR Y APLICAR
-      </button>
+      <div class="teclado-fila">
+        @for (letra of lineaLetras2; track letra) {
+          <button type="button" (click)="pulsarTecla(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+      </div>
 
-    </div> 
-  </div> 
+      <div class="teclado-fila">
+        @for (letra of lineaLetras3; track letra) {
+          <button type="button" (click)="pulsarTecla(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
+        }
+        @for (acento of lineaAcentos; track acento) {
+          <button type="button" class="btn-tecla-acento" (click)="pulsarTecla(acento)">
+            {{ mayusculas() ? acento.toUpperCase() : acento.toLowerCase() }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila fila-dinamica">
+        @for (caracter of lineaEspecialDinamica; track caracter) {
+          <button type="button" class="btn-tecla-dinamica" (click)="pulsarTecla(caracter)">
+            {{ caracter }}
+          </button>
+        }
+      </div>
+
+      <div class="teclado-fila fila-especial">
+        <button type="button" class="btn-tecla-mayus" [class.shift-active]="mayusculas()" (click)="alternarMayusculas()">
+          ↑ {{ mayusculas() ? 'MAYÚS' : 'minús' }}
+        </button>
+        <button type="button" class="btn-tecla-espacio" (click)="pulsarTecla(' ')">ESPACIO</button>
+        <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫ BORRAR</button>
+        <button type="button" class="btn-tecla-limpiar" (click)="limpiarTeclado()">🗑️ VACIAR</button>
+        <button type="button" class="btn-tecla-aceptar" (click)="cerrarTeclado()">ACEPTAR ✔️</button>
+      </div>
+    </div>
+  </div>
 }

@@ -15,8 +15,8 @@ import { isMobileOrTablet } from '../../core/utils/device-utils';
 export class ClientesComponent implements OnInit {
   private clienteService = inject(ClienteService);
   private uiService = inject(UiService);
-  modoModalSolo = input<boolean>(false);
 
+  modoModalSolo = input<boolean>(false);
   //Emitir el cliente seleccionado o creado hacia el componente TPV
   onClienteSeleccionado = output<ClienteDTO>();
 
@@ -51,11 +51,32 @@ export class ClientesComponent implements OnInit {
     );
   });
 
-  // SIGNALS PARA EL CONTROL DEL TECLADO GENERAL
-  mostrarTecladoGeneral = signal<boolean>(false);
-  inputObjetivoTeclado = signal<string>('');
+  // --- CONFIGURACIÓN TECLADO TÁCTIL ---
+  mostrarTeclado = signal<boolean>(false);
+  inputActivo = signal<string>('');
   valorTecladoEnConstruccion = signal<string>('');
-  mayusculasGeneral = signal<boolean>(true);
+  mayusculas = signal<boolean>(true);
+
+  // Filas base (Estrictamente alfabéticas y limpias)
+  lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
+  lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
+  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
+  lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+
+  // Vocales con acento para cuando se necesiten (se pueden pintar en una mini-fila lateral o superior)
+  lineaAcentos = ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü'];
+
+  // Fila variable inteligente según el input
+  get lineaEspecialDinamica(): string[] {
+    const input = this.inputActivo().toLowerCase();
+    if (input.includes('email') || input.includes('correo')) {
+      return ['@', '.', '-', '_', '.com', '.es', '.net'];
+    }
+    if (input.includes('pass') || input.includes('password') || input.includes('clave')) {
+      return ['@', '.', '_', '-', '!', '#', '$', '%'];
+    }
+    return ['@', ',', '.', '_', '/', '%', '&', '"', '(', ')', '¡', '!', '¿', '?'];
+  }
 
   // CONTROL DE MODO MODAL PARA SELECCIÓN RÁPIDA DESDE TPV
   modoEdicion = signal<boolean>(false);
@@ -66,94 +87,62 @@ export class ClientesComponent implements OnInit {
   clienteABorrarId = signal<number | null>(null);
   clienteABorrarNombre = signal<string>('');
 
-
-
   ngOnInit() {
     this.cargarClientes();
   }
 
   // ⌨️ MÉTODOS DEL TECLADO TÁCTIL
-  abrirTecladoGeneralForm(
-    objetivo: 'NOMBRE' | 'TELEFONO' | 'DNI' | 'EMAIL' | 'DIRECCION' | 'CP' | 'CIUDAD' | 'BUSQUEDA',
-  index?: number | null | undefined,
-  valorActualForm: string = '') 
-  {
-    if (isMobileOrTablet()) {
-    return;
-  }
-    this.inputObjetivoTeclado.set(objetivo);
-    this.valorTecladoEnConstruccion.set(valorActualForm || '');
-    this.mostrarTecladoGeneral.set(true);
+  abrirTeclado(objetivo: string, valorActual: string = '') {
+    if (isMobileOrTablet()) return; // Dispositivos móviles usan teclado nativo
+    this.inputActivo.set(objetivo);
+    this.valorTecladoEnConstruccion.set(valorActual || '');
+    this.mostrarTeclado.set(true);
   }
 
-  pulsarTeclaGeneral(caracter: string) {
-   // 🚀 NUEVO: Procesamos si el carácter es una letra para respetar el estado de las mayúsculas
+  pulsarTecla(caracter: string) {
     let valorAInsertar = caracter;
-    const esLetra = /^[a-zA-ZÑñ]$/.test(caracter);
-    
-    if (esLetra) {
-      valorAInsertar = this.mayusculasGeneral() ? caracter.toUpperCase() : caracter.toLowerCase();
+    if (/^[a-zA-ZÑñÁÉÍÓÚÜáéíóúü]$/.test(caracter)) {
+      valorAInsertar = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
     }
-
-    // Mantenemos tu lógica original de actualización de strings y filtrado reactivo al vuelo
     this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + valorAInsertar);
-    
-    if (this.inputObjetivoTeclado() === 'BUSQUEDA') {
-      this.filtroBusqueda.set(this.valorTecladoEnConstruccion());
-    }
+    this.actualizarCampoDestino(this.valorTecladoEnConstruccion());
   }
 
-  alternarMayusculasGeneral() {
-    this.mayusculasGeneral.set(!this.mayusculasGeneral());
+  alternarMayusculas() {
+    this.mayusculas.set(!this.mayusculas());
   }
 
-  borrarUltimoCaracterGeneral() {
-   this.valorTecladoEnConstruccion.update(val => val.slice(0, -1));
-    
-    // 💡 Clonamos la validación del filtro para que la búsqueda responda también al borrar de forma táctil
-    if (this.inputObjetivoTeclado() === 'BUSQUEDA') {
-      this.filtroBusqueda.set(this.valorTecladoEnConstruccion());
-    }
+  borrarUltimoCaracter() {
+    this.valorTecladoEnConstruccion.update(val => val.slice(0, -1));
+    this.actualizarCampoDestino(this.valorTecladoEnConstruccion());
   }
 
-  limpiarTecladoGeneral() {
+  limpiarTeclado() {
     this.valorTecladoEnConstruccion.set('');
-    
-    if (this.inputObjetivoTeclado() === 'BUSQUEDA') {
-      this.filtroBusqueda.set('');
-    }
+    this.actualizarCampoDestino('');
   }
 
-  cerrarTecladoGeneral() {
-    this.mostrarTecladoGeneral.set(false);
-    this.inputObjetivoTeclado.set('');
-    this.valorTecladoEnConstruccion.set('');
+  cerrarTeclado() {
+    this.mostrarTeclado.set(false);
   }
 
-  // 🎯 VOLCAR EL TEXTO CONSTRUIDO AL SIGNAL NUEVOCLIENTE
-  aplicarTextoAlFormulario() {
-    const campo = this.inputObjetivoTeclado();
-    const valor = this.valorTecladoEnConstruccion();
-
-    if (campo === 'BUSQUEDA'){ 
+  private actualizarCampoDestino(valor: string) {
+    const campo = this.inputActivo();
+    if (campo === 'BUSQUEDA') {
       this.filtroBusqueda.set(valor);
-      this.cerrarTecladoGeneral();
       return;
     }
-
     this.nuevoCliente.update(cliente => {
-      const actualizacion = { ...cliente };
-      if (campo === 'NOMBRE') actualizacion.nombre = valor;
-      if (campo === 'TELEFONO') actualizacion.telefono = valor;
-      if (campo === 'DNI') actualizacion.documentoIdentidad = valor;
-      if (campo === 'EMAIL') actualizacion.email = valor.toLowerCase(); 
-      if (campo === 'DIRECCION') actualizacion.direccion = valor;
-      if (campo === 'CP') actualizacion.codigoPostal = valor;
-      if (campo === 'CIUDAD') actualizacion.ciudad = valor;
-      return actualizacion;
+      const act = { ...cliente };
+      if (campo === 'NOMBRE') act.nombre = valor;
+      if (campo === 'TELEFONO') act.telefono = valor;
+      if (campo === 'DNI') act.documentoIdentidad = valor;
+      if (campo === 'EMAIL') act.email = valor.toLowerCase();
+      if (campo === 'DIRECCION') act.direccion = valor;
+      if (campo === 'CP') act.codigoPostal = valor;
+      if (campo === 'CIUDAD') act.ciudad = valor;
+      return act;
     });
-
-    this.cerrarTecladoGeneral();
   }
   
   cargarClientes() {

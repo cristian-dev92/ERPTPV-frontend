@@ -126,7 +126,7 @@
     </div>
 
     @if (mostrarModalMovimiento()) {
-      <div class="modal-backdrop-blur">
+      <div class="modal-backdrop-blur" [class.teclado-abierto]="mostrarTeclado()">
         <div class="modal-sheet-tactil">
           <div class="sheet-header">
             <h3>Registrar Caja Manual</h3>
@@ -149,20 +149,22 @@
 
             <div class="input-field-tactil">
               <label>Importe (€)</label>
-              <input type="text" 
-               [value]="inputActivo() === 'monto' ? textoMontoTmp : (montoMovimiento || '')"
-               inputmode="decimal"
-               (input)="sincronizarTecladoFisicoCaja('monto', textoMontoTmp)"
-               (click)="activarTeclado('monto')">
+              <input 
+                type="text" 
+                [value]="inputActivo() === 'monto' ? textoMontoTmp : (montoMovimiento || '')"
+                inputmode="decimal"
+                (input)="sincronizarTecladoFisicoCaja('monto', $any($event.target).value)"
+                (click)="activarTeclado('monto')">
             </div>
 
             <div class="input-field-tactil">
               <label>Concepto / Motivo</label>
-              <input type="text" 
-              [(ngModel)]="descripcionMovimiento"
-              inputmode="decimal"
-              (click)="activarTeclado('descripcion')"
-              (input)="sincronizarTecladoFisicoCaja('monto', textoMontoTmp)">
+              <input 
+                type="text" 
+                [ngModel]="descripcionMovimiento"
+                inputmode="decimal"
+                (click)="activarTeclado('descripcion')"
+                (input)="sincronizarTecladoFisicoCaja('descripcion', $any($event.target).value)">
             </div>
 
             <button class="btn-confirm-tactil-action success" (click)="guardarMovimientoManual()">
@@ -173,8 +175,8 @@
       </div>
     }
 
-    @if (mostrarModalCierre()) {
-  <div class="modal-backdrop-blur">
+    @if (mostrarModalCierre()) { 
+  <div class="modal-backdrop-blur" [class.teclado-abierto]="mostrarTeclado()">
     <div class="modal-sheet-tactil modal-cierre-wide">
       <div class="sheet-header">
         <h3>Cierre de Caja Operativo</h3>
@@ -230,7 +232,7 @@
             <label>EFECTIVO TOTAL EN CAJA (€)</label>
             <input type="text" 
                    [(ngModel)]="textoSaldoTmp"
-                   (input)="sincronizarTecladoFisicoCaja('saldoFinalRealContado', textoSaldoTmp)"
+                   (input)="sincronizarTecladoFisicoCaja('saldoFinalRealContado', $any($event.target).value)"
                    (click)="activarTeclado('saldoFinalRealContado')">
           </div>
 
@@ -245,7 +247,7 @@
 }
 
     @if (mostrarModalApertura()) {
-      <div class="modal-backdrop-blur">
+      <div class="modal-backdrop-blur" [class.teclado-abierto]="mostrarTeclado()">
         <div class="modal-sheet-tactil">
           <div class="sheet-header">
             <h3>Declaración de Fondo Inicial</h3>
@@ -258,7 +260,7 @@
               <input type="text" 
                      [(ngModel)]="textoAperturaTmp"
                      inputmode="decimal"
-                     (input)="sincronizarTecladoFisicoCaja('montoApertura', textoAperturaTmp)"
+                     (input)="sincronizarTecladoFisicoCaja('montoApertura', $any($event.target).value)"
                      (click)="activarTeclado('montoApertura')">
             </div>
             <button class="btn-confirm-tactil-action success" (click)="ejecutarAperturaCaja()">
@@ -324,25 +326,33 @@
 
       <div class="teclado-fila">
         @for (letra of lineaLetras1; track letra) {
-          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
         }
       </div>
       <div class="teclado-fila">
         @for (letra of lineaLetras2; track letra) {
-          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
         }
       </div>
       <div class="teclado-fila">
         @for (letra of lineaLetras3; track letra) {
-          <button type="button" (click)="escribirTeclado(letra)">{{ letra }}</button>
+          <button type="button" (click)="escribirTeclado(letra)">
+            {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+          </button>
         }
-      </div>
-      <div class="teclado-fila">
-        <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫</button>
       </div>
 
       <div class="teclado-fila fila-especial">
+        <button type="button" class="btn-tecla-mayus" [style.background-color]="mayusculas() ? '#4caf50' : '#475569'" (click)="alternarMayusculas()">
+          ↑ {{ mayusculas() ? 'MAYÚS' : 'minús' }}
+        </button>
         <button type="button" class="btn-tecla-espacio" (click)="insertarEspacio()">ESPACIO</button>
+        <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫ BORRAR</button>
+        <button type="button" class="btn-tecla-limpiar" (click)="limpiarTeclado()">🗑️ VACIAR</button>
         <button type="button" class="btn-tecla-aceptar" (click)="cerrarTeclado()">ACEPTAR ✔️</button>
       </div>
     </div>

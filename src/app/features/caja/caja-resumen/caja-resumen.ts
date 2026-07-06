@@ -55,6 +55,7 @@ export class CajaResumenComponent implements OnInit {
   inputActivo = signal<string>('');
   terminoBusqueda = signal<string>('');
   ordenes = signal<any[]>([]);
+  mayusculas = signal<boolean>(true);
 
   // Distribución de teclas para el teclado táctil del TPV
   lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
@@ -230,30 +231,42 @@ escribirTeclado(caracter: string) {
   const campo = this.inputActivo();
   if (!campo) return;
 
+  // Transformamos el carácter según el estado de las mayúsculas solo si es una letra
+  const esLetra = caracter.length === 1 && caracter.toLowerCase() !== caracter.toUpperCase() || caracter === 'Ñ' || caracter === 'ñ';
+  if (esLetra) {
+    caracter = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
+  }
+  
   // Control para el Concepto / Motivo (Texto normal)
   if (campo === 'descripcion') {
     this.descripcionMovimiento = (this.descripcionMovimiento || '') + caracter;
     return;
   }
 
-  // 3. Control para campos numéricos de la caja (Importe y Cierre Real)
- if (campo === 'monto') {
-    // Evitamos que pongan dos puntos seguidos (ej: "12..5")
+  // Control para campos numéricos de la caja (Importe y Cierre Real)
+  if (campo === 'monto') {
     if (caracter === '.' && this.textoMontoTmp.includes('.')) return;
-    
     this.textoMontoTmp += caracter;
-    // Asignamos al modelo el valor numérico real de fondo, convirtiendo sobre la marcha
     this.montoMovimiento = parseFloat(this.textoMontoTmp) || 0;
   } else if (campo === 'saldoFinalRealContado') {
     if (caracter === '.' && this.textoSaldoTmp.includes('.')) return;
-    
     this.textoSaldoTmp += caracter;
     this.saldoFinalRealContado = parseFloat(this.textoSaldoTmp) || 0;
   } else if (campo === 'montoApertura') {
-      if (caracter === '.' && this.textoAperturaTmp.includes('.')) return;
-      this.textoAperturaTmp += caracter;
-      this.montoApertura = parseFloat(this.textoAperturaTmp) || 0;
-    }
+    if (caracter === '.' && this.textoAperturaTmp.includes('.')) return;
+    this.textoAperturaTmp += caracter;
+    this.montoApertura = parseFloat(this.textoAperturaTmp) || 0;
+  }
+}
+
+alternarMayusculas() {
+  this.mayusculas.set(!this.mayusculas());
+}
+
+limpiarTeclado() {
+  const campo = this.inputActivo();
+  if (!campo) return;
+  this.sincronizarTecladoFisicoCaja(campo, '');
 }
 
 // Borrar el último carácter (Tecla Retroceso ⌫)
@@ -279,12 +292,15 @@ borrarUltimoCaracter() {
 // Añadir espacio (Tecla Espaciadora)
 insertarEspacio() {
   const campo = this.inputActivo();
+  if (!campo) return;
+
   if (campo === 'busqueda') {
     this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
   } else if (campo === 'descripcion') {
-    this.descripcionMovimiento = (this.descripcionMovimiento || '') + ' ';
+    // Forzamos la mutación de la cadena para que Angular detecte el cambio de espacio en el input
+    this.escribirTeclado(' ');
   }
- }
+}
 
  sincronizarTecladoFisicoCaja(campo: string, valor: string) {
   // En lugar de un Signal global, sincronizamos los strings temporales correspondientes (los buffers de texto)
