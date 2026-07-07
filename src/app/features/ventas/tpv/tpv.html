@@ -278,7 +278,12 @@
           <button type="button" 
                   [class.activo]="metodoPagoSeleccionado() === 'TRANSFERENCIA'"
                   (click)="metodoPagoSeleccionado.set('TRANSFERENCIA')">
-            🏦 Transf.
+            🏦 Transfer
+          </button>
+          <button type="button" 
+                  [class.activo]="metodoPagoSeleccionado() === 'BIZUM'"
+                  (click)="metodoPagoSeleccionado.set('BIZUM')">
+            💸 Bizum
           </button>
           <button type="button" 
                   [class.activo]="metodoPagoSeleccionado() === 'OTRO'"

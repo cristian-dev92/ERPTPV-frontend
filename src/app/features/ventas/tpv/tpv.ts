@@ -373,7 +373,7 @@ export class TpvComponent implements OnInit {
 
   // Métodos privados para manejar los flujos de cobro según la selección del cajero
   private cobrarTicketCompleto(id: number) {
-    this.ordenService.cobrar(id, this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO').subscribe({
+    this.ordenService.cobrar(id, this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO').subscribe({
       next: (res) => {
         this.uiService.mostrarToast('💰 ¡Venta cobrada al 100% correctamente en Caja!', 'success');
         // Guardamos la referencia de operación/ID para la llamada del PDF
@@ -409,7 +409,7 @@ export class TpvComponent implements OnInit {
   }
 
   // Método para registrar un anticipo en una reparación
-  private cobrarAnticipoTicket(id: number, importe: number, metodoPago: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO') {
+  private cobrarAnticipoTicket(id: number, importe: number, metodoPago: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO') {
     // CAMINO A: SI EL IMPORTE ES ZERO (No deja señal)
   if (importe === 0) {
     this.uiService.mostrarToast(`📋 Resguardo de depósito generado con éxito (Sin anticipo).`, 'success');
@@ -1235,7 +1235,7 @@ abrirModal() {
 
   const requestDevolucion = {
     ordenOrigenId: ticket.id,
-    metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO',
+    metodoPago: this.metodoPagoSeleccionado() as 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO',
     lineas: lineasFiltradasBody
   };
 

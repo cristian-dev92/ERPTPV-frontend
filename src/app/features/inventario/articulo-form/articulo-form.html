@@ -11,6 +11,14 @@
       />
     </div>
 
+    <div class="form-group full-width">
+      <label for="codigoBarras">Código de Barras <span class="txt-mutado">(Escáner o Manual)</span></label>
+      <input type="text" id="codigoBarras" [value]="codigoBarras()" placeholder="Haz clic aquí antes de usar el escáner"
+        (click)="abrirTecladoGeneralForm('CODIGO_BARRAS')"
+        (input)="sincronizarTecladoFisico('CODIGO_BARRAS', $any($event.target).value)" 
+      />
+    </div>
+
     <div class="form-group">
       <label for="tipo">Tipo</label>
       <select id="tipo" [value]="tipo()" (change)="tipo.set($any($event.target).value)">
@@ -29,6 +37,36 @@
           <option [value]="prov.id">{{ prov.nombre }}</option>
         } @empty {
           <option value="" disabled>⚠️ No hay proveedores asignados</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="familiaPadre">Familia</label>
+      <select id="familiaPadre" [value]="familiaSeleccionadaId() ?? ''"
+        (change)="onFamiliaPadreChange(+$any($event.target).value)">
+        <option value="">Sin Familia (Raíz)</option>
+        @for (fam of familiasPadre(); track fam.id) {
+          <option [value]="fam.id">📂 {{ fam.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="subfamilia">Subfamilia</label>
+      <select id="subfamilia" [value]="subfamiliaSeleccionadaId() ?? ''"
+        [disabled]="!familiaSeleccionadaId() || subfamiliasFiltradas().length === 0"
+        (change)="subfamiliaSeleccionadaId.set(+$any($event.target).value)">
+        
+        @if (!familiaSeleccionadaId()) {
+          <option value="">Selecciona primero una familia</option>
+        } @else if (subfamiliasFiltradas().length === 0) {
+          <option value="">No hay subfamilias disponibles</option>
+        } @else {
+          <option value="">Ninguna (Dejar como principal)</option>
+          @for (sub of subfamiliasFiltradas(); track sub.id) {
+            <option [value]="sub.id">↳ 📑 {{ sub.nombre }}</option>
+          }
         }
       </select>
     </div>
@@ -53,29 +91,27 @@
 
     <div class="form-group">
       <label for="precioFinal">Precio (PVP con IVA) *</label>
-      <div class="input-contenedor-tactil">
-        <div class="input-moneda">
-          <input type="text" id="precioFinal" 
-            [value]="precioFinal() !== null ? precioFinal() : ''" 
-            (click)="abrirTecladoGeneralForm('PRECIO')"
-            (input)="sincronizarTecladoFisico('PRECIO', $any($event.target).value)" required />
+      <div class="input-addon-wrapper">
+          <input type="text" 
+                 id="precioFinal" 
+                 [value]="precioFinal() !== null ? precioFinal() : ''" 
+                 (click)="abrirTecladoGeneralForm('PRECIO')"
+                 (input)="sincronizarTecladoFisico('PRECIO', $any($event.target).value)" required />
           <span class="addon">€</span>
         </div>
       </div>
-    </div>
 
     <div class="form-group">
       <label for="porcentajeIva">Porcentaje de IVA *</label>
-      <div class="input-contenedor-tactil">
-        <div class="input-porcentaje">
-          <input type="text" id="porcentajeIva"
-            [value]="porcentajeIva()"
-            (click)="abrirTecladoGeneralForm('IVA')"
-            (input)="sincronizarTecladoFisico('IVA', $any($event.target).value)" required />
+      <div class="input-addon-wrapper">
+          <input type="text" 
+                 id="porcentajeIva"
+                 [value]="porcentajeIva()"
+                 (click)="abrirTecladoGeneralForm('IVA')"
+                 (input)="sincronizarTecladoFisico('IVA', $any($event.target).value)" required />
           <span class="addon">%</span>
         </div>
       </div>
-    </div>
 
     <div class="form-group full-width info-base-imponible">
       <label>Precio Base (Sin IVA - Calculado para gestión)</label>

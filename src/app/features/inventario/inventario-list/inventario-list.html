@@ -3,23 +3,51 @@
   <button class="btn-primary" routerLink="nuevo">+ Nuevo Artículo</button>
 </div>
 
-<div class="search-bar-container">
-  <input type="text" 
-         [value]="terminoBusqueda()"
-         (input)="sincronizarTecladoFisico($any($event.target).value)"
-         (click)="abrirTecladoBusqueda('BUSCADOR')"
-         placeholder="🔍 Busque por su nombre..." 
-         class="search-input">
+<div class="search-bar-zone">
+  <div class="input-buscar-wrapper">
+    <input type="text" 
+           [value]="terminoBusqueda()"
+           (input)="sincronizarTecladoFisico($any($event.target).value)"
+           (click)="abrirTecladoBusqueda('BUSCADOR')"
+           placeholder="🔍 Nombre del artículo o escanea código de barras..." 
+           class="search-input">
+  </div>
+
+  <div class="selectors-filtros">
+    <select [value]="familiaFiltroId() ?? ''" (change)="onFamiliaFiltroChange(+$any($event.target).value)" class="filtro-select">
+      <option value="">📂 Todas las Familias</option>
+      @for (fam of familiasPadre(); track fam.id) {
+        <option [value]="fam.id">{{ fam.nombre }}</option>
+      }
+    </select>
+
+    <select [value]="subfamiliaFiltroId() ?? ''" 
+            [disabled]="!familiaFiltroId() || subfamiliasFiltradas().length === 0"
+            (change)="subfamiliaFiltroId.set(+$any($event.target).value)" 
+            class="filtro-select">
+      @if (!familiaFiltroId()) {
+        <option value="">📑 Selecciona Familia primero</option>
+      } @else if (subfamiliasFiltradas().length === 0) {
+        <option value="">No hay subfamilias</option>
+      } @else {
+        <option value="">📑 Todas las subfamilias</option>
+        @for (sub of subfamiliasFiltradas(); track sub.id) {
+          <option [value]="sub.id">↳ {{ sub.nombre }}</option>
+        }
+      }
+    </select>
+  </div>
 </div>
 
 @if (loading()) {
-  <p>Cargando catálogo de zapatos...</p>
+  <p class="txt-cargando">Cargando catálogo de artículos y materiales...</p>
 } @else {
   <table class="zapatero-table">
     <thead>
       <tr>
         <th>Nombre</th>
         <th>Tipo</th>
+        <th>Código de Barras</th>
         <th>Precio</th>
         <th>Stock</th>
         <th>Acciones</th>
@@ -28,17 +56,23 @@
     <tbody>
       @for (item of articulosFiltrados(); track item.id) {
         <tr>
-          <td><strong>{{ item.nombre }}</strong></td>
+          <td class="td-nombre">
+            <strong>{{ item.nombre }}</strong>
+            @if (item.notas) {
+              <span class="nota-interna-badge" [title]="item.notas">📝 Con notas</span>
+            }
+          </td>
           <td>
             <span class="badge" [class.badge-serv]="item.tipo === 'SERVICIO'">
               {{ item.tipo }}
             </span>
           </td>
-          <td>{{ item.precioFinal | currency:'EUR' }}</td>
+          <td class="txt-barcode">{{ item.codigoBarras || '—' }}</td>
+          <td class="txt-precio">{{ item.precioFinal | currency:'EUR' }}</td>
           <td>
             @if (item.tipo === 'PRODUCTO') {
               <div class="stock-container">
-                <span>{{ item.stock ?? 0 }} u.</span>
+                <span class="cantidad-stock">{{ item.stock ?? 0 }} u.</span>
                 
                 @if (item.stock !== undefined && item.stock !== null && item.stock <= 0) {
                   <span class="badge-alert sin-material" title="¡Urgente! Reponer existencias">
@@ -54,7 +88,7 @@
                 }
               </div>
             } @else {
-              <span style="color: #94a3b8;">N/A</span>
+              <span class="txt-servicio-na">🛠️ Incalculable</span>
             }
           </td>
           <td>
@@ -70,7 +104,7 @@
         </tr>
       } @empty {
         <tr>
-          <td colspan="5">No hay artículos en el inventario. ¡Añade el primero!</td>
+          <td colspan="6" class="txt-vacio">No se encontraron artículos que coincidan con los filtros aplicados.</td>
         </tr>
       }
     </tbody>

@@ -5,7 +5,7 @@ import { forkJoin, map, Observable, tap } from 'rxjs';
 // Mapeo exacto de los Schemas de Java para que tu Front vaya sobre seguro
 export type TipoOrden = 'VENTA_DIRECTA' | 'REPARACION' | 'DEVOLUCION';
 
-export type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO';
+export type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO';
 
 export interface DetalleOrdenDTO {
   id: number;

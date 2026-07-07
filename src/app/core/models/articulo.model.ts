@@ -4,44 +4,32 @@
  * o un SERVICIO (como una reparación).
  */
 export interface Articulo {
-  /** * ID único del artículo. 
-   * Es opcional (?) porque cuando creamos un zapato nuevo en el frontend, 
-   * aún no tiene ID hasta que el backend lo guarda y nos lo devuelve.
-   */
+  /** * ID único del artículo. Es opcional (?) porque cuando creamos un zapato nuevo en el frontend, aún no tiene ID hasta que el backend lo guarda y nos lo devuelve. */
   id?: number;
-
   /** Nombre comercial del producto o servicio (ej: "Suela de Goma", "Mocasín") */
   nombre: string;
-
-  /** * Discriminador estricto del backend.
-   * PRODUCTO: Se le aplica control de stock.
-   * SERVICIO: No tiene stock, es mano de obra.
-   */
+  /** Discriminador estricto del backend. PRODUCTO: Se le aplica control de stock.SERVICIO: No tiene stock, es mano de obra. */
   tipo: 'PRODUCTO' | 'SERVICIO';
-
-  /** * Cantidad disponible en la tienda. 
-   * Solo es relevante si el tipo es 'PRODUCTO'.
-   */
+  /** Cantidad disponible en la tienda. Solo es relevante si el tipo es 'PRODUCTO'. */
   stock?: number | null;
   stockMinimo?: number | null;
   /** Descripción ampliada de los materiales o el trabajo a realizar */
   descripcion?: string;
-
-  // --- NÚCLEO FINANCIERO (B2C Top-Down) ---
-  /** Precio Final de venta al público (PVP con IVA incluido) */
+  // --- NÚCLEO FINANCIERO (B2C Top-Down) Precio Final de venta al público (PVP con IVA incluido) */
   precioFinal: number;      
   /** Porcentaje de IVA aplicado al artículo (Ej: 21, 10, 4, 0) */
   porcentajeIva: number; 
   /** Campo imprescindible para las chapitas del catálogo */
   porcentajeDescuento?: number;
-
-  // --- DATOS DE CONTROL INTERNO ---
+  // --- DATOS DE CONTROL INTERNO
   activo?: boolean;
   empresaId?: number;
-
-  // --- CAMPOS ADICIONALES PARA REPARACIONES ---
+  // --- CAMPOS ADICIONALES PARA REPARACIONES 
   notasReparacion?: string | null;
-
-  // --- NOTAS INTERNAS DE INVENTARIO/ALMACÉN ---
+  // --- NOTAS INTERNAS DE INVENTARIO/ALMACÉN 
   notas?: string | null;
+  // --- CAMPOS PARA FAMILIA Y SUBFAMILIA
+  familiaId?: number | null;
+  // --- LECTURA DE CODIGO DE BARRAS
+  codigoBarras?: string | null;
 }

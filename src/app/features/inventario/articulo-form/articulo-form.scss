@@ -7,12 +7,16 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease-in-out;
+  box-sizing: border-box;
 
-  // CUANDO EL TECLADO ESTÁ ABIERTO, AJUSTAMOS ESPACIOS
+  * {
+    box-sizing: border-box; // Garantiza que los paddings no ensanchen los inputs
+  }
+
   &.teclado-en-pantalla {
     margin-top: 10px;
     margin-bottom: 20px;
-    padding-bottom: 340px; // Colchón de seguridad para poder hacer scroll por encima del teclado sin que tape nada
+    padding-bottom: 340px; 
   }
 
   h2 {
@@ -26,7 +30,7 @@
 
   .form-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr)); // Evita que las columnas se desborden
     gap: 20px;
   }
 
@@ -34,6 +38,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    width: 100%;
 
     &.full-width {
       grid-column: span 2;
@@ -47,7 +52,8 @@
       letter-spacing: 0.5px;
     }
 
-    input, select {
+    input, select, textarea {
+      width: 100%; // Forzado para rellenar su celda correspondiente
       padding: 10px 14px;
       border-radius: 8px;
       border: 1px solid #cbd5e1;
@@ -61,31 +67,43 @@
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
       }
+
+      &:disabled {
+        background-color: #f1f5f9;
+        color: #94a3b8;
+        cursor: not-allowed;
+        border-color: #e2e8f0;
+      }
     }
 
-    .input-contenedor-tactil {
-      display: flex;
-      gap: 8px;
+    #codigoBarras {
+      background-color: #fafafa;
+      font-family: monospace;
+      letter-spacing: 1px;
+      &:focus {
+        background-color: #fff;
+      }
+    }
+
+    // Estructura nueva y limpia para los inputs con símbolo (€, %)
+    .input-addon-wrapper {
+      position: relative;
       width: 100%;
+      display: flex;
+      align-items: center;
 
-      .input-moneda, .input-porcentaje {
-        position: relative;
-        flex: 1;
-        
-        input {
-          width: 100%;
-          padding-right: 35px;
-        }
+      input {
+        padding-right: 40px !important; // Espacio sagrado para que el texto del precio no toque el símbolo
+      }
 
-        .addon {
-          position: absolute;
-          right: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          font-weight: 600;
-          color: #94a3b8;
-          pointer-events: none;
-        }
+      .addon {
+        position: absolute;
+        right: 14px;
+        font-weight: 700;
+        color: #94a3b8;
+        pointer-events: none;
+        font-size: 0.95rem;
+        user-select: none;
       }
     }
   }
@@ -136,15 +154,15 @@
     }
 
     .btn-cancelar {
-      background-color: #ff0707;
-      color: #f5f5f5;
-      &:hover { background-color: #bd8198; }
+      background-color: #ef4444; // Corregido a un rojo moderno UX
+      color: #ffffff;
+      &:hover { background-color: #dc2626; }
     }
 
     .btn-guardar {
       background-color: #3b82f6;
       color: white;
-      &:hover { background-color: #536fad; }
+      &:hover { background-color: #2563eb; }
     }
   }
 }
@@ -157,17 +175,8 @@
 
 .notas-reparacion-container {
   textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    background-color: #fff;
-    font-family: inherit;
-    font-size: 0.95rem;
     resize: vertical;
-    outline: none;
-    transition: border-color 0.2s;
-    &:focus { border-color: #3b82f6; }
+    font-family: inherit;
   }
 }
 
@@ -176,6 +185,30 @@
   color: #64748b;
   font-weight: normal;
   margin-left: 0.5rem;
+}
+
+// Colapso total en pantallas de tablet vertical o móvil
+@media (max-width: 640px) {
+  .formulario-articulo-container {
+    padding: 16px;
+    margin: 10px;
+    
+    .form-grid {
+      grid-template-columns: 1fr; 
+      gap: 15px;
+    }
+    
+    .form-group.full-width {
+      grid-column: span 1;
+    }
+    
+    .form-acciones {
+      flex-direction: column-reverse;
+      button {
+        width: 100%;
+      }
+    }
+  }
 }
 
 // =========================================================================

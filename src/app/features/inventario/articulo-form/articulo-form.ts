@@ -6,6 +6,7 @@ import { UiService } from '../../../core/services/ui.service';
 import { CommonModule } from "@angular/common";
 import { ProveedorDTO, ProveedorService } from '../../../core/services/proveedor.service';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
+import { FamiliaDTO, FamiliaService } from '../../../core/services/familia.service';
 
 @Component({
   selector: 'app-articulo-form',
@@ -24,6 +25,11 @@ export class ArticuloFormComponent implements OnInit {
   
   precioFinal = signal<number | null>(null); // El PVP con IVA que teclea el usuario
   porcentajeIva = signal<number>(21);       // 21% seleccionado por defecto
+
+  // === Nuevas señales codigo barras y familias ===
+  codigoBarras = signal<string>('');
+  familiaSeleccionadaId = signal<number | null>(null);
+  subfamiliaSeleccionadaId = signal<number | null>(null);
 
   // === Señal para las notas internas del artículo ===
   notasReparacion = signal<string>('');
@@ -56,17 +62,31 @@ export class ArticuloFormComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private proveedorservice = inject(ProveedorService);
+  private familiaService = inject(FamiliaService);
   
-  // Señal limpia para almacenar los proveedores reales del Backend
+  // Señal limpia para almacenar los proveedore y familia reales del Backend
   proveedores = signal<ProveedorDTO[]>([]);
   filtroProveedor = signal<string>('');
+  todasLasFamilias = signal<FamiliaDTO[]>([]);
+
+  // COMPUTED: Filtra familias principales (las que no tienen padre)
+  familiasPadre = computed(() => {
+    return this.todasLasFamilias().filter(f => !f.familiaPadreId);
+  });
+
+  // COMPUTED: Filtra subfamilias según el padre seleccionado
+  subfamiliasFiltradas = computed(() => {
+    const padreId = this.familiaSeleccionadaId();
+    if (!padreId) return [];
+    return this.todasLasFamilias().filter(f => f.familiaPadreId === padreId);
+  });
 
   ngOnInit(): void {
     this.cargarProveedores();
-    this.comprobarModoEdicion();
+    this.cargarFamilias();
   }
 
-  // 🚀 Comprueba si viene un ID en la ruta para cargar los datos del artículo
+  // Comprueba si viene un ID en la ruta para cargar los datos del artículo
   comprobarModoEdicion(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
@@ -84,6 +104,23 @@ export class ArticuloFormComponent implements OnInit {
           this.precioFinal.set(articulo.precioFinal);
           this.porcentajeIva.set(articulo.porcentajeIva);
           this.notasReparacion.set(articulo.notas || '');
+          this.codigoBarras.set(articulo.codigoBarras || '');
+          // Lógica de asignación de familias al editar
+          if (articulo.familiaId) {
+            // Buscamos la familia en la lista cargada para saber si es padre o subfamilia
+            const fam = this.todasLasFamilias().find(f => f.id === articulo.familiaId);
+            if (fam) {
+              if (fam.familiaPadreId) {
+                // Es una subfamilia: seteamos el padre para abrir el segundo selector y luego la subfamilia
+                this.familiaSeleccionadaId.set(fam.familiaPadreId);
+                this.subfamiliaSeleccionadaId.set(fam.id);
+              } else {
+                // Es una familia raíz
+                this.familiaSeleccionadaId.set(fam.id);
+                this.subfamiliaSeleccionadaId.set(null);
+              }
+            }
+          }
         },
         error: (err) => {
           console.error('Error al recuperar el artículo:', err);
@@ -97,14 +134,31 @@ export class ArticuloFormComponent implements OnInit {
   // Carga real de tus proveedores desde el backend
   cargarProveedores(): void {
     this.proveedorservice.obtenerMisProveedores().subscribe({
-      next: (data: ProveedorDTO[]) => {
-        this.proveedores.set(data);
+      next: (data: ProveedorDTO[]) => this.proveedores.set(data),
+        error: (err: any) => console.error('Error al cargar proveedores:', err)
+      });
+   }
+
+   cargarFamilias(): void {
+    this.familiaService.obtenerMisFamilias().subscribe({
+      next: (data: FamiliaDTO[]) => {
+        this.todasLasFamilias.set(data);
+        // Si estábamos esperando a que cargaran los datos en modo edición, re-ejecutamos la comprobación
+        if (this.route.snapshot.paramMap.get('id')) {
+          this.comprobarModoEdicion();
+        }
       },
       error: (err: any) => {
-        console.error('Error al cargar proveedores:', err);
-        this.uiService.mostrarToast('No se pudieron cargar los proveedores', 'error');
+        console.error('Error al cargar familias:', err);
+        this.uiService.mostrarToast('No se pudieron cargar las familias de inventario', 'error');
       }
     });
+  }
+
+  // Se dispara cuando el usuario cambia la familia raíz en el select
+  onFamiliaPadreChange(id: number): void {
+    this.familiaSeleccionadaId.set(id ? id : null);
+    this.subfamiliaSeleccionadaId.set(null); // Reseteamos siempre la subfamilia anterior
   }
 
   // === MÉTODOS DEL TECLADO GENERAL ===
@@ -166,6 +220,7 @@ export class ArticuloFormComponent implements OnInit {
   // Métodos auxiliares para mapear dinámicamente según el foco activo
   private obtenerValorActualPorObjetivo(objetivo: string): string {
     if (objetivo === 'NOMBRE') return this.nombre();
+    if (objetivo === 'CODIGO_BARRAS') return this.codigoBarras();
     if (objetivo === 'NOTAS') return this.notasReparacion();
     if (objetivo === 'BUSCAR_PROVEEDOR') return this.filtroProveedor();
     if (objetivo === 'PRECIO') return this.precioFinal()?.toString() || '';
@@ -177,6 +232,7 @@ export class ArticuloFormComponent implements OnInit {
 
   private actualizarValorSeñal(objetivo: string, valor: string) {
     if (objetivo === 'NOMBRE') this.nombre.set(valor);
+    if (objetivo === 'CODIGO_BARRAS') this.codigoBarras.set(valor);
     if (objetivo === 'NOTAS') this.notasReparacion.set(valor);
     if (objetivo === 'BUSCAR_PROVEEDOR') this.filtroProveedor.set(valor);
     
@@ -210,6 +266,11 @@ export class ArticuloFormComponent implements OnInit {
       return;
     }
 
+    // Estrategia en cascada para la jerarquía de familias
+    const idFamiliaFinal = this.subfamiliaSeleccionadaId() 
+      ? Number(this.subfamiliaSeleccionadaId()) 
+      : (this.familiaSeleccionadaId() ? Number(this.familiaSeleccionadaId()) : null);
+
     const articuloPayload = {
       nombre: this.nombre(),
       tipo: this.tipo(),
@@ -219,13 +280,18 @@ export class ArticuloFormComponent implements OnInit {
       precioFinal: this.precioFinal() ?? 0,
       porcentajeIva: this.porcentajeIva(),
       notas: this.notasReparacion().trim(),
+      codigoBarras: this.codigoBarras().trim() || null,
+      familiaId: idFamiliaFinal,
       activo: true
     };
 
     const idEdicion = this.idArticuloEdicion();
 
     if (idEdicion) {
-      this.articuloService.actualizarArticulo(idEdicion, articuloPayload).subscribe({
+      // 1. Añadimos el id directamente al payload para que viaje todo en un único objeto
+      const payloadConId = { ...articuloPayload, id: idEdicion };
+      // 2. Pasamos solo un argumento al servicio, tal y como este espera ahora
+      this.articuloService.actualizarArticulo(payloadConId).subscribe({
         next: () => {
           this.uiService.mostrarToast('Artículo actualizado con éxito', 'success');
           this.router.navigate(['/inventario']);
@@ -252,12 +318,9 @@ export class ArticuloFormComponent implements OnInit {
   precioBaseVisual = computed(() => {
     const pvp = this.precioFinal();
     const iva = this.porcentajeIva();
-
     if (!pvp || pvp <= 0) return '0.00';
-
     // Fórmula B2C: PVP / (1 + (IVA / 100))
     const baseImponible = pvp / (1 + (iva / 100));
-    
     // Lo devolvemos formateado a 2 decimales para la vista
     return baseImponible.toFixed(2);
   });

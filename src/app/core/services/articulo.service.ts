@@ -33,8 +33,8 @@ export class ArticuloService {
   }
 
   // Actualiza un artículo existente.
-  actualizarArticulo(id: number, articulo: Articulo): Observable<Articulo> {
-    return this.http.put<Articulo>(`${this.apiUrl}/${id}`, articulo);
+  actualizarArticulo(articulo: Articulo): Observable<Articulo> {
+    return this.http.put<Articulo>(`${this.apiUrl}/${articulo.id}`, articulo);
   }
 
   // Elimina un artículo por su ID.
