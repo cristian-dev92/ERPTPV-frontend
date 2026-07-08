@@ -1,4 +1,5 @@
 <div class="clientes-container" [class.teclado-abierto]="mostrarTeclado()">
+  @if (!modoModalSolo()) {
   <header class="clientes-header">
     <div>
       <h1>Gestión de Clientes</h1>
@@ -82,12 +83,12 @@
             <button class="btn-delete-movil" (click)="solicitarConfirmacionBorrar(cliente)">🗑️</button>
           </div>
         </div>
-      }
-    }
-  </div>
-</div>
+       }
+     }
+   </div>
+  }
 
-@if (mostrarModalRegistro()) {
+@if (!modoModalSolo() && mostrarModalRegistro()) {
   <div class="modal-overlay" [class.teclado-abierto]="mostrarTeclado()">
     <div class="modal-box">
       <div class="modal-header">

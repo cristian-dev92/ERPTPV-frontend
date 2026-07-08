@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal, computed, ViewChild, HostListener } 
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO, DetalleOrdenDTO } from '../../../core/services/orden.service';
 import { Articulo } from '../../../core/models/articulo.model';
-import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
+import { CurrencyPipe, DatePipe, NgClass, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CajaService } from '../../../core/services/caja.service';
 import { ClienteService } from '../../../core/services/cliente.service';
@@ -10,8 +10,11 @@ import { UiService } from '../../../core/services/ui.service';
 import { HttpClient } from "@angular/common/http";
 import { ClientesComponent } from '../../clientes/clientes';
 import { Router } from "@angular/router";
-import { DomSanitizer } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
+
+// Definición de Tipo Estricto para Métodos de Pago
+export type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO';
 
 // Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
 export interface Cliente {
@@ -25,6 +28,7 @@ export interface Cliente {
 export interface ItemCarrito extends NuevaLineaDTO {
   articuloId: number;
   nombre: string;
+  tipo: 'PRODUCTO' | 'SERVICIO';
   cantidad: number;
   precio: number;
   porcentajeDescuento: number;
@@ -77,7 +81,7 @@ export interface OrdenDTO {
 @Component({
   selector: 'app-tpv',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule, ClientesComponent, NgClass],
+  imports: [CurrencyPipe, DatePipe, FormsModule, ClientesComponent, NgClass, DecimalPipe],
   templateUrl: './tpv.html',
   styleUrl: './tpv.scss'
 })
@@ -96,97 +100,199 @@ export class TpvComponent implements OnInit {
   public Math = Math;
   @ViewChild(ClientesComponent) clientesComponent!: ClientesComponent;
 
+  // === SIGNALS DEL TPV ===
+  carrito = signal<ItemCarrito[]>([]);
+  historialTickets = signal<OrdenDTO[]>([]);
+  clienteSeleccionado = signal<Cliente | null>(null);
+  clienteSeleccionadoId = signal<number | null>(null);
+  busquedaCliente = signal<string>('');
+  clientesEncontrados = signal<Cliente[]>([]);
+  
+  fechaRecogida = signal<string>('');
+  sinFechaRecogida = signal<boolean>(false);
+  descuentoGlobal = signal<number>(0);
+  metodoPagoSeleccionado = signal<MetodoPago>('EFECTIVO');
+  mostrarModalMetodosPago = false;
+  mostrarModalPreguntaAnticipo = signal<boolean>(false);
+  opcionesMetodosPago: MetodoPago[] = ['EFECTIVO', 'TARJETA', 'BIZUM','TRANSFERENCIA', 'OTRO'];
+  mostrarHistorial = signal<boolean>(false);
+
+  // Estados de PDF e Impresión
+  idOperacionProcesada = signal<number | null>(null);
+  numeroTicketActual = signal<string>('TKT-PROVISIONAL');
+  horaTicketActual = signal<string>('');
+  datosFacturaAeat = signal<any>(null);
+  isTicketVisible = signal<boolean>(false);
+  cargandoPDF = signal<boolean>(false);
+  urlSeguraPdf = signal<SafeResourceUrl>(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank'));
+  private rawBlobUrl: string | null = null; // Para liberar memoria
+
+  // Modales y Flujos Especiales
+  mostrarModalPedirTicket = false;
+  mostrarModalSeleccionDevolucion = false;
+  mostrarModalSeleccionPago = signal<boolean>(false); // Modificado para casar con el HTML
+  ticketOrigenEncontrado: OrdenDTO | null = null;
+  numeroTicketBuscarInput: string = '';
+  idOrdenPendienteAnticipo = signal<number | null>(null);
+  saldoInicialInput: number = 0;
+  valorAnticipoFijo = signal<string>('');
+  parseFloat = parseFloat;
+
+  // Estado del modal de teclado virtual / edición unificada de línea
+  indiceItemEditandoLinea = signal<number | null>(null);
+  modoCampoEdicionActivo = signal<'PRECIO' | 'DESCUENTO'>('PRECIO');
+  precioLineaEnConstruccion = signal<string>('');
+  descuentoLineaEnConstruccion = signal<string>('');
+  notaLineaEnConstruccion = signal<string>('');
+
+  // Variables auxiliares para flujos genéricos heredados
+  tipoOrdenSeleccionada = signal<TipoOrden>('VENTA_DIRECTA');
+
   // Estados del catalogo tactil
   articulos = signal<Articulo[]>([]); // Lista completa de artículos cargada desde el backend
   categoriaSeleccionada = signal<'TODOS' | 'PRODUCTO' | 'SERVICIO'>('TODOS');
   busquedaArticulo = signal<string>('');
-
-  // === ESTADOS DEL PANEL DE HISTORIAL INFERIOR ===
-  mostrarHistorial = signal<boolean>(false); // Empieza cerrado por defecto
-  historialTickets = signal<OrdenDTO[]>([]); // Aquí guardaremos los tickets del día para mostrar en el historial inferior
 
   // --- ESTADO PARA MODIFICAR PRECIOS CON EL KEYPAD ---
   indiceItemEditandoPrecio = signal<number | null>(null);
   precioEnConstruccion = signal<string>(''); // Guarda los dígitos que pulsa el usuario (ej:
 
   // Estado del carrito de compra y caja
-  carrito = signal<ItemCarrito[]>([]); // Aquí guardaremos { articuloId, nombre, cantidad, precio, notas }
-  saldoInicialInput: number = 0;
-  descuentoGlobal = signal<number>(0); // Descuento global en porcentaje
   indiceLineaDescuentoActual = signal<number | null>(null); // Para saber a qué línea se le está aplicando un descuento manual específico
-
-  // Para controlar el flujo de Reparación en el TPV
-  tipoOrdenSeleccionada = signal<TipoOrden>('VENTA_DIRECTA'); // Por defecto, el TPV arranca en modo Venta Directa
-  sinFechaRecogida = signal<boolean>(false); // Nuevo estado para controlar el toggle de "Sin Fecha de Recogida" en reparaciones
-  fechaRecogida = signal<string>(''); // Guardamos la fecha prometida de recogida como string para que sea fácil de bindear con el input type="date"
-
-  // Métodos de pago ampliados con tipado estricto
-  metodoPagoSeleccionado = signal<string>('EFECTIVO');
-
-  // Para la búsqueda de clientes en el TPV
-  clienteSeleccionadoId = signal<number | null>(null); // null para ventas anónimas
-  busquedaCliente = signal(''); // El término que el cajero escribe para buscar clientes
-  clientesEncontrados = signal<Cliente[]>([]); // Resultados de la búsqueda de clientes
-  clienteSeleccionado = signal<Cliente | null>(null); // El cliente seleccionado en el TPV
-
-  // === MODULO DE COMPROBACIÓN VERI*FACTU ===
-  datosFacturaAeat = signal<InfoVerifaktu | null>(null);
 
   // Comprobación segura de caja abierta (computed reacciona al signal del servicio)
   cajaActual = this.cajaService.cajaActual;
   cajaAbierta = computed(() => !!this.cajaService.cajaActual());
 
   // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
-  mostrarTecladoGeneral = signal<boolean>(false);
-  inputObjetivoTeclado = signal<'ARTICULO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' |'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'NOTAS_REPARACION' | null>(null);
+  mostrarTeclado = signal<boolean>(false);
+  inputActivo = signal<string>(''); // Aquí meteremos 'ARTICULO', 'CLIENTE', 'NOTAS_REPARACION', etc.
+  mayusculas = signal<boolean>(true);
   valorTecladoEnConstruccion = signal<string>('');
-  filtroBusqueda = signal<string>('');
-  mayusculasGeneral = signal<boolean>(true);
 
   // Distribución de teclas idéntica a tu diseño favorito del TPV
-  lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
   lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
   lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ'];
-  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '_', '.'];
+  lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
+  lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+  lineaAcentos = ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü'];
 
-  // Variable para recordar la orden que se acaba de crear mientras se responde al flujo táctil
-  idOrdenPendienteAnticipo = signal<number | null>(null);
+  // Guardamos estos dos de tu lógica anterior para saber qué línea del carrito se está editando
+  indiceLineaTemporal = signal<number | null>(null);
+  maxUnidadesPermitidas = 1;
+
+  // Fila variable inteligente según el input
+  get lineaEspecialDinamica(): string[] {
+    const input = this.inputActivo().toLowerCase();
+    
+    if (input.includes('email') || input.includes('correo')) {
+      return ['@', '.', '-', '_', '.com', '.es', '.net'];
+    }
+    if (input.includes('pass') || input.includes('password') || input.includes('clave')) {
+      return ['@', '.', '_', '-', '!', '#', '$', '%'];
+    }
+    // Para notas de taller, buscadores o cantidades
+    return ['@', ',', '.', '_', '/', '%', '&', '"', '(', ')', '¡', '!', '¿', '?'];
+  }
 
   // Estados para el nuevo modal interactivo de devolución parcial
-  mostrarModalSeleccionDevolucion = false;
-  ticketOrigenEncontrado: OrdenDTO | null = null;
   lineasSeleccionadasParaDevolver: Map<number, { checked: boolean, cantidadADevolver: number }> = new Map();
-  numeroTicketBuscarInput = '';
-  mostrarModalPedirTicket = false;
 
   // Variables de control añadidas a tu componente para rastrear qué línea de devolución editamos
   idLineaDevolucionActual: number | null = null;;
   maxUnidadesLineaActual: number = 1;
  
+  // === COMPUTED SIGNALS ===
   totalTicket = computed(() => {
-  // 1. Calculamos la suma de todas las líneas aplicando sus respectivos descuentos individuales
-  const totalLineasConDescuento = this.carrito().reduce((acc, item) => {
-    const descLinea = item.porcentajeDescuento || 0; 
-    const precioConDescuento = item.precio * (1 - descLinea / 100);
-    return acc + (precioConDescuento * item.cantidad);
-  }, 0);
-  // 2. Aplicamos el descuento global sobre la suma total de las líneas
-  const descGlobal = this.descuentoGlobal();
-  const totalFinal = totalLineasConDescuento * (1 - descGlobal / 100);
-  // SI ES DEVOLUCIÓN: Retornamos el valor en negativo para restar de caja
-  if (this.tipoOrdenSeleccionada() === 'DEVOLUCION') {
-    return totalFinal > 0 ? -totalFinal : totalFinal;
-  }
-  // Para ventas normales, aseguramos que nunca baje de 0
-  return totalFinal > 0 ? totalFinal : 0;
- });
-
-  tieneServicioEnCarrito = computed(() => {
-    return this.carrito().some(item => {
-      const art = this.articulos().find(a => a.id === item.articuloId);
-      return art?.tipo === 'SERVICIO';
-    });
+    let subtotal = this.carrito().reduce((sum, item) => {
+      const precioConDtoLinea = item.precio * (1 - (item.porcentajeDescuento / 100));
+      return sum + (precioConDtoLinea * item.cantidad);
+    }, 0);
+    const descGlobal = this.descuentoGlobal();
+    return subtotal * (1 - (descGlobal / 100));
   });
+
+  // === MÉTODOS DEL CORE TPV ===
+  tieneServicioEnCarrito(): boolean {
+    return this.carrito().some(item => item.tipo?.toUpperCase() === 'SERVICIO');
+  }
+
+  ajustarCantidad(index: number, cambio: number): void {
+    this.carrito.update(items => items.map((item, i) => {
+      if (i === index) {
+        const nuevaCant = item.cantidad + cambio;
+        return { ...item, cantidad: nuevaCant < 1 ? 1 : nuevaCant };
+      }
+      return item;
+    }));
+  }
+
+  quitarDelCarrito(index: number): void {
+    this.carrito.update(items => items.filter((_, i) => i !== index));
+    this.uiService.mostrarToast('Artículo eliminado del carrito.', 'success');
+  }
+
+  // Ejecuta la apertura del modal intermedio de selección de pago
+  ejecutarProcesarYFacturar(): void {
+    if (this.carrito().length === 0) return;
+
+    const tipoActual = this.tipoOrdenSeleccionada();
+
+    // 🛡️ 1. CONTROL DE SEGURIDAD: CLIENTE OBLIGATORIO
+    if (tipoActual !== 'VENTA_DIRECTA' && !this.clienteSeleccionado()) {
+      this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
+      return;
+    }
+
+    // 🛡️ 2. CONTROL DE SEGURIDAD: FECHA DE RECOGIDA OBLIGATORIA
+    if (tipoActual === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
+      this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
+      return;
+    }
+
+    this.mostrarModalSeleccionPago.set(true);
+  }
+
+  // Al pinchar sobre un método de pago en el modal táctil
+  procesarVentaConMetodo(metodo: MetodoPago): void {
+    this.metodoPagoSeleccionado.set(metodo);
+    this.mostrarModalSeleccionPago.set(false);
+    this.finalizarVenta();
+    // Aquí disparas tu lógica real de guardado hacia el backend. Ejemplo analógico:
+    this.uiService.mostrarToast(`Procesando cobro en ${metodo}...`, 'success');
+    // ... tu llamada HTTP a backend para registrar la venta directa o la orden de taller
+  }
+
+  obtenerIconoPago(metodo: MetodoPago): string {
+    const iconos: Record<MetodoPago, string> = {
+      EFECTIVO: '💵',
+      TARJETA: '💳',
+      BIZUM: '💸',
+      TRANSFERENCIA: '🏦',
+      OTRO: '📲'
+    };
+    return iconos[metodo] || '💰';
+  }
+
+  abrirModalMetodosPago(): void {
+    if (this.carrito().length > 0) {
+      const tipoActual = this.tipoOrdenSeleccionada();
+
+      // 🛡️ 1. CONTROL DE SEGURIDAD: CLIENTE OBLIGATORIO
+      if (tipoActual !== 'VENTA_DIRECTA' && !this.clienteSeleccionado()) {
+        this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
+        return;
+      }
+
+      // 🛡️ 2. CONTROL DE SEGURIDAD: FECHA DE RECOGIDA OBLIGATORIA
+      if (tipoActual === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
+        this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
+        return;
+      }
+
+      this.mostrarModalSeleccionPago.set(true);
+    }
+  }
 
   // Filtrado de artículos en tiempo real
   articulosFiltrados = computed(() => {
@@ -202,22 +308,12 @@ export class TpvComponent implements OnInit {
   });
 
   // Estado para controlar la visibilidad del ticket de venta al finalizar la compra, que se muestra solo en tablets y móviles
-  isTicketVisible = signal(false);
   idTicketOrigenDevolucion =signal<number | null>(null);
-
-  // Variables para mostrar el número de ticket y la hora en el recibo de venta
-  numeroTicketActual = signal<string>('TKT-PROVISIONAL');
-  horaTicketActual = signal<string>('');
 
   // Estados para controlar el proceso de devolución manual sin ticket, que se activa al hacer clic en el botón rojo de "Devolución Manual"
   mostrarModalDevolucion = false;
   mensajeModalDevolucion = '';
-  ticketParaDevolver: OrdenDTO | null = null;;
-
-  // Variable para guardar la ID de la operación que se acaba de procesar (venta o devolución) y que se usará para generar el PDF del ticket correspondiente
-  idOperacionProcesada = signal<number | string | null>(null); 
-  cargandoPDF = signal<boolean>(false);                        
-  urlSeguraPdf = signal<any>(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank')); // URL segura para incrustar el PDF generado por el backend en el iframe del TPV             
+  ticketParaDevolver: OrdenDTO | null = null;          
 
   // Método que se ejecuta al cargar el componente, ideal para cargar los artículos y comprobar el estado de la caja
   ngOnInit() {
@@ -275,99 +371,81 @@ export class TpvComponent implements OnInit {
         articuloId: idSeguro,
         nombre: articulo.nombre,
         cantidad: 1,
-        precio: articulo.precioFinal, // Usamos el precio final del artículo como precio base en el carrito
-        porcentajeDescuento: 0, // Por defecto sin descuento
-        notasReparacion: null // Usamos null para que machee perfecto con el DTO
+        precio: articulo.precioFinal,
+        porcentajeDescuento: 0, 
+        notasReparacion: null, 
+        tipo: articulo.tipo
       };
     
       return [...items, nuevoItem];
     });
   }
 
-  // El método que controla los botones + y - que pusimos en el HTML
-  ajustarCantidad(index: number, cambio: number) {
-  const actual = this.carrito();
-  const item = actual[index];
-  
-  item.cantidad += cambio;
-
-  if (item.cantidad <= 0) {
-    this.quitarDelCarrito(index);
-  } else {
-    // Actualizamos el signal para que la UI reaccione
-    this.carrito.set([...actual]);
-  }
-}
-
-  // Método para eliminar un artículo del carrito al hacer clic en el icono de la papelera
-  quitarDelCarrito(index: number) {
-    const actual = this.carrito();
-    actual.splice(index, 1);
-    this.carrito.set([...actual]);
-    // ✨ Si vaciamos el carrito o ya no quedan servicios dentro, permitimos reevaluar el tipo
-    const tieneServicios = this.carrito().some(item => {
-      // Buscamos en la lista de artículos cargados si el item actual es de tipo SERVICIO
-      const art = this.articulos().find(a => a.id === item.articuloId);
-      return art?.tipo === 'SERVICIO';
-    });
-
-    if (!tieneServicios && this.carrito().length === 0) {
-      this.tipoOrdenSeleccionada.set('VENTA_DIRECTA');
-    }
-  }
-
   // ==================================================
   // 💰 FLUJO ORDINARIO: VENTAS DIRECTAS Y REPARACIONES
   // ==================================================
-  // Método para finalizar la venta, que se ejecuta al hacer clic en el botón "Finalizar Venta" del HTML
   finalizarVenta() {
-    //1. Validacion de caja abierta antes de permitir finalizar la venta
+    // 1. Validación de caja abierta (Primer muro)
     if (!this.cajaAbierta()) {
       this.uiService.mostrarToast('¡Atención! Debes abrir la caja antes de realizar una venta.', 'warning');
       return;
     }
 
-    // 2. VALIDACIÓN DE ÓRDENES DE TALLER (Control de seguridad frente a olvidos)
-    if (this.tipoOrdenSeleccionada() && this.tipoOrdenSeleccionada() !== 'VENTA_DIRECTA' && !this.clienteSeleccionado()) {
+    // 2. CORREGIDO: VALIDACIÓN ESTRICTA DE CLIENTE (Evita que pase si no es VENTA_DIRECTA)
+    const tipoActual = this.tipoOrdenSeleccionada();
+    if (tipoActual !== 'VENTA_DIRECTA' && !this.clienteSeleccionado()) {
       this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
       return;
-   }
-    // Si es reparación, obligamos a que pongan una fecha de recogida
-    if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
+    }
+
+    // 3. Validación de fecha de recogida para reparaciones
+    if (tipoActual === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
       this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
       return;
     }
+
     // Construimos la petición cumpliendo con la interfaz estricta NuevaOrdenDTO
     const request: NuevaOrdenDTO = {
-      empresaId: 1,  // Reemplazar por el ID real de tu sesión si cambia
-      empleadoId: 2, // Reemplazar por el ID real del empleado logueado si cambia
+      empresaId: 1,  
+      empleadoId: 2, 
       clienteId: this.clienteSeleccionadoId(),
-      tipo: this.tipoOrdenSeleccionada(),
-      fechaPrometidaRecogida: this.tipoOrdenSeleccionada() === 'REPARACION' && !this.sinFechaRecogida() ? this.fechaRecogida() : null,
-      // 1. Añadido en la raíz el Descuento Global que te pide Javi
+      tipo: tipoActual,
+      fechaPrometidaRecogida: tipoActual === 'REPARACION' && !this.sinFechaRecogida() ? this.fechaRecogida() : null,
       descuentoGlobal: this.descuentoGlobal() || 0,
-      // 2. Mapeado de líneas limpio: sin hacer matemáticas de precios en el front
       lineas: this.carrito().map(item => ({
-      articuloId: item.articuloId,
-      cantidad: item.cantidad,
-      precioUnitario: item.precio, // Mandamos el precio original bruto
-      porcentajeDescuento: item.porcentajeDescuento || 0, // Pasamos el % de descuento de esta línea
-      notasReparacion: item.notasReparacion || null // Pasamos las notas de reparación (ej: "Zapatilla izq...")
-     }))
-   };
+        articuloId: item.articuloId,
+        cantidad: item.cantidad,
+        precioUnitario: item.precio, 
+        porcentajeDescuento: item.porcentajeDescuento || 0, 
+        notasReparacion: item.notasReparacion || null 
+      }))
+    };
 
     this.ordenService.crearOrden(request).subscribe({
       next: (ordenGuardada) => {
-          // Dependiendo del tipo de orden y la configuración, decidimos el flujo de cobro:
-          if (this.tipoOrdenSeleccionada() === 'VENTA_DIRECTA') {
+        // Dependiendo del tipo de orden y la configuración, decidimos el flujo de cobro:
+        if (tipoActual === 'VENTA_DIRECTA') {
           this.cobrarTicketCompleto(ordenGuardada.id);
-            } else {
-          // En vez de un confirm() nativo, guardamos la ID y abrimos el paso de la pregunta SÍ/NO
+        } else {
+          // Guardamos la ID devuelta por Java
           this.idOrdenPendienteAnticipo.set(ordenGuardada.id);
-          this.abrirTecladoGeneral('PREGUNTA_ANTICIPO');
+          
+          // 🌟 INDEPENDIENTE: Abrimos el modal de la pregunta directamente sin tocar el teclado virtual
+          this.mostrarModalPreguntaAnticipo.set(true);
         }
       },
-      error: (err) => this.uiService.mostrarToast('Error al crear ticket: ' + (err.error?.message || err.error || 'Error desconocido'), 'error')
+      error: (err) => {
+        console.error('Error completo del backend:', err);
+        let mensajeDetallado = 'Error desconocido al crear el ticket.';
+        if (err.error) {
+          if (typeof err.error === 'string') mensajeDetallado = err.error;
+          else if (err.error.message) mensajeDetallado = err.error.message;
+          else if (err.message) mensajeDetallado = err.message;
+        } else if (err.message) {
+          mensajeDetallado = err.message;
+        }
+        this.uiService.mostrarToast('🚫 Fallo en Servidor: ' + mensajeDetallado, 'error');
+      }
     });
   }
 
@@ -408,45 +486,35 @@ export class TpvComponent implements OnInit {
     });
   }
 
-  // Método para registrar un anticipo en una reparación
-  private cobrarAnticipoTicket(id: number, importe: number, metodoPago: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO') {
-    // CAMINO A: SI EL IMPORTE ES ZERO (No deja señal)
-  if (importe === 0) {
-    this.uiService.mostrarToast(`📋 Resguardo de depósito generado con éxito (Sin anticipo).`, 'success');
+  // === FLUJO COBROS, ANTICIPOS Y VERI*FACTU ===
 
-    this.idOperacionProcesada.set(id);
-    
-    // Aquí usamos el ID de la orden para el número de ticket/resguardo
-    // Si tu backend genera otro código, puedes adaptarlo
-    this.numeroTicketActual.set(`REP-${id}`); 
-    this.horaTicketActual.set(new Date().toLocaleTimeString());
-    
-    this.datosFacturaAeat.set({
-      qr: '', // Los resguardos sin cobro no suelen requerir QR de VeriFactu inmediatamente
-      ref: `REP-${id}`,
-      total: 0,
-      fecha: new Date().toLocaleTimeString()
-    });
+  private cobrarAnticipoTicket(id: number, importe: number, metodoPago: MetodoPago) {
+    if (importe === 0) {
+      this.uiService.mostrarToast(`📋 Resguardo de depósito generado con éxito (Sin anticipo).`, 'success');
+      this.idOperacionProcesada.set(id);
+      this.numeroTicketActual.set(`REP-${id}`); 
+      this.horaTicketActual.set(new Date().toLocaleTimeString());
+      
+      this.datosFacturaAeat.set({
+        qr: '',
+        ref: `REP-${id}`,
+        total: 0,
+        fecha: new Date().toISOString() // 🟢 Mejora 3: ISO Estricto para AEAT
+      });
 
-    // Refrescar el historial inferior para reparaciones sin anticipo
-    this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
-      next: (ticketsActualizados) => this.historialTickets.set(ticketsActualizados)
-    });
+      this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+        next: (ticketsActualizados: any) => this.historialTickets.set(ticketsActualizados)
+      });
 
-    // Abrimos tu nueva ventana modal SCSS de previsualización
-    this.isTicketVisible.set(true);
-    // Disparamos la generación del PDF. Tu backend recibirá el ID de la orden 
-    // y verá que al no tener anticipos asociados, debe pintar el "Resguardo de Taller" estándar.
-    this.generarYPrevisualizarTicket();
-    // REFRESCAR STOCK: Añadido aquí para reparaciones sin señal
-    this.cargarCatalogo();
-    return; // Cortamos la ejecución aquí para que NO llame al servicio del backend erróneo
-  }
-    // CAMINO B: CON ANTICIPO
+      this.isTicketVisible.set(true);
+      this.generarYPrevisualizarTicket();
+      this.cargarCatalogo();
+      return;
+    }
+
     this.ordenService.registrarAnticipo(id, importe, metodoPago).subscribe({
       next: (res: any) => {
-        this.uiService.mostrarToast(`📉 ¡Anticipo de ${importe}€ registrado con éxito! El ticket queda pendiente del resto.`, 'success');
-        // Seteamos datos para que salte tu modal VeriFactu y permita sacar el ticket/resguardo con el anticipo
+        this.uiService.mostrarToast(`📉 ¡Anticipo de ${importe}€ registrado con éxito!`, 'success');
         this.idOperacionProcesada.set(id);
         this.numeroTicketActual.set(res.numeroTicket);
         this.horaTicketActual.set(new Date().toLocaleTimeString());
@@ -454,27 +522,22 @@ export class TpvComponent implements OnInit {
           qr: '',
           ref: res.numeroTicket,
           total: importe,
-          fecha: new Date().toLocaleTimeString()
+          fecha: new Date().toISOString() // 🟢 Mejora 3: ISO Estricto para AEAT
         });
-        // Refrescar el historial inferior para reparaciones con anticipo
         this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
-          next: (ticketsActualizados) => this.historialTickets.set(ticketsActualizados)
+          next: (ticketsActualizados: any) => this.historialTickets.set(ticketsActualizados)
         });
-        // Mostramos el ticket de anticipo con el PDF previsualizado para que el cajero pueda imprimirlo o revisarlo antes de cerrar el recibo
         this.isTicketVisible.set(true);
-        // Después de registrar el anticipo, previsualizamos el ticket con el importe del anticipo y dejamos la orden abierta para que el cajero pueda cobrar el resto más tarde.
         this.generarYPrevisualizarTicket();
-        // REFRESCAR STOCK: Añadido aquí para reparaciones con señal
         this.cargarCatalogo();
       },
-      error: (err) => this.uiService.mostrarToast('Error al registrar el anticipo: ' + (err.error || err.message), 'error')
+      error: (err: any) => this.uiService.mostrarToast('Error al registrar el anticipo: ' + (err.error || err.message), 'error')
     });
   }
 
   /* 🖨️ Función para obtener el PDF del Backend y meterlo en la previsualización */
   generarYPrevisualizarTicket(): void {
     const idOrden = this.idOperacionProcesada();
-    
     if (!idOrden) {
       this.uiService.mostrarToast('No se encontró ninguna ID de operación activa.', 'error');
       return;
@@ -483,6 +546,7 @@ export class TpvComponent implements OnInit {
     this.cargandoPDF.set(true);
     this.ordenService.getTicketPdf(Number(idOrden)).subscribe({
       next: (blob: Blob) => {
+        this.limpiarMemoriaBlobUrl();
         // Creamos una URL segura a partir del binario recibido
         const blobUrl = window.URL.createObjectURL(blob);
         // Blindamos la URL aquí mismo diciéndole a Angular que confíe en este Blob
@@ -501,15 +565,14 @@ export class TpvComponent implements OnInit {
 
   /* Acción del historial inferior para descargar el PDF oficial A4 regulado */
   previsualizarFacturaA4(ticket: OrdenDTO): void {
-    // 🚀 1. Extraemos el nombre del cliente EXACTAMENTE igual que lo haces en tu HTML
+    // Extraemos el nombre del cliente EXACTAMENTE igual que lo haces en tu HTML
     const nombreCliente = ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General';
-    // 2. Verificación obligatoria de cliente (idéntica a tu lógica)
+    // Verificación obligatoria de cliente (idéntica a tu lógica)
     if (nombreCliente === 'Cliente General') {
       this.uiService.mostrarToast('No se puede generar una factura formal A4 para una venta anónima. Debe registrar un cliente.', 'warning');
       return;
     }
-
-    // 2. Activamos los estados de carga y abrimos la pantalla del visor
+    // Activamos los estados de carga y abrimos la pantalla del visor
     this.cargandoPDF.set(true);
     this.isTicketVisible.set(true); // Abre el modal donde está tu iframe
 
@@ -549,6 +612,90 @@ export class TpvComponent implements OnInit {
     }
   }
     });
+  }
+
+  cerrarReciboAeat(): void {
+    this.isTicketVisible.set(false);
+    this.limpiarMemoriaBlobUrl(); 
+    this.urlSeguraPdf.set(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank'));
+    this.datosFacturaAeat.set(null);
+    this.idOperacionProcesada.set(null);
+    this.idOrdenPendienteAnticipo.set(null);
+    this.limpiarCarrito();
+  }
+
+  private limpiarMemoriaBlobUrl() {
+    if (this.rawBlobUrl) {
+      window.URL.revokeObjectURL(this.rawBlobUrl);
+      this.rawBlobUrl = null;
+    }
+  }
+
+  // === MODAL UNIFICADO DE EDICIÓN DE LÍNEA (HTML MOCKUP) ===
+
+  abrirModalEdicionLinea(index: number) {
+    const item = this.carrito()[index];
+    this.indiceItemEditandoLinea.set(index);
+    this.modoCampoEdicionActivo.set('PRECIO');
+    this.precioLineaEnConstruccion.set(item.precio.toString());
+    this.descuentoLineaEnConstruccion.set(item.porcentajeDescuento.toString());
+    this.notaLineaEnConstruccion.set(item.notasReparacion || '');
+  }
+
+  pulsarTeclaEdicionLinea(tecla: string) {
+    const modo = this.modoCampoEdicionActivo();
+    const signalAEditar = modo === 'PRECIO' ? this.precioLineaEnConstruccion : this.descuentoLineaEnConstruccion;
+    const actual = signalAEditar();
+
+    if (tecla === '.' && actual.includes('.')) return;
+    if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
+
+    signalAEditar.set(actual + tecla);
+  }
+
+  borrarUltimoDigitoEdicionLinea() {
+    const modo = this.modoCampoEdicionActivo();
+    const signalAEditar = modo === 'PRECIO' ? this.precioLineaEnConstruccion : this.descuentoLineaEnConstruccion;
+    const actual = signalAEditar();
+    if (actual.length > 0) {
+      signalAEditar.set(actual.slice(0, -1));
+    }
+  }
+
+  guardarCambiosLineaUnificada() {
+    const index = this.indiceItemEditandoLinea();
+    if (index === null) return;
+
+    const nuevoPrecio = parseFloat(this.precioLineaEnConstruccion() || '0');
+    let nuevoDto = parseFloat(this.descuentoLineaEnConstruccion() || '0');
+
+    if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
+      this.uiService.mostrarToast('El precio introducido no es válido.', 'warning');
+      return;
+    }
+    if (nuevoDto < 0) nuevoDto = 0;
+    if (nuevoDto > 100) nuevoDto = 100;
+
+    this.carrito.update(items => {
+      const copia = [...items];
+      copia[index] = {
+        ...copia[index],
+        precio: nuevoPrecio,
+        porcentajeDescuento: nuevoDto,
+        notasReparacion: this.notaLineaEnConstruccion()
+      };
+      return copia;
+    });
+
+    this.uiService.mostrarToast('Línea de artículo actualizada', 'success');
+    this.cerrarModalEdicionLinea();
+  }
+
+  cerrarModalEdicionLinea() {
+    this.indiceItemEditandoLinea.set(null);
+    this.precioLineaEnConstruccion.set('');
+    this.descuentoLineaEnConstruccion.set('');
+    this.notaLineaEnConstruccion.set('');
   }
 
   /* Acción rápida del historial inferior para cambiar de estado una reparación de taller */
@@ -602,35 +749,7 @@ export class TpvComponent implements OnInit {
       this.uiService.mostrarToast('No se pudo conectar con el visor de impresión.', 'error');
     }
   }
-
-   /* ➔ ACCIÓN DE CONTINUAR: Limpia todo el TPV y lo prepara para la siguiente venta */
-  cerrarReciboAeat(): void {
-    this.isTicketVisible.set(false);
-    this.urlSeguraPdf.set(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank'));
-    this.datosFacturaAeat.set(null);
-    this.idOperacionProcesada.set(null);
-    this.idOrdenPendienteAnticipo.set(null);
-    this.limpiarCarrito();
-    this.deseleccionarCliente();
-  }
-
-  // Método para limpiar el carrito y resetear estados después de finalizar una venta o reparación
-  private limpiarCarrito() {
-    this.carrito.set([]); // Vaciamos el carrito para la siguiente venta
-    this.fechaRecogida.set(''); // Reseteamos la fecha de recogida prometida para la siguiente venta
-    this.sinFechaRecogida.set(false); // Reseteamos el toggle de "Sin fecha de recogida" para la siguiente venta normal
-    this.deseleccionarCliente(); // Reseteamos el cliente seleccionado a null para la siguiente venta anónima
-    this.descuentoGlobal.set(0); // Reseteamos el descuento global para la siguiente venta
-    this.tipoOrdenSeleccionada.set('VENTA_DIRECTA'); // Reseteamos el tipo de orden a venta directa para la siguiente venta
-    this.metodoPagoSeleccionado.set('EFECTIVO'); // Reseteamos el método de pago a efectivo para la siguiente venta
-    this.seleccionarCategoria('TODOS'); // Reseteamos el filtro de categoría para mostrar todo el catálogo en la siguiente venta
-    this.cargandoPDF.set(false); // Reseteamos el estado de carga del PDF para la siguiente venta
-    this.indiceItemEditandoPrecio.set(null); // Cerramos el keypad de precio por si acaso quedó abierto
-    this.precioEnConstruccion.set(''); // Reseteamos el valor en construcción del precio para la siguiente venta
-    this.numeroTicketActual.set('TKT-PROVISIONAL'); // Reseteamos el número de ticket para la siguiente venta
-    this.horaTicketActual.set(''); // Reseteamos la hora del ticket para la siguiente venta
-  }
-  
+  // === MÉTODOS ADICIONALES REQUERIDOS ===
   // Métodos para manejar la búsqueda y selección de clientes en el TPV (útil para reparaciones)
   buscarClientes(termino: string) {
     this.busquedaCliente.set(termino);
@@ -860,228 +979,6 @@ toggleSinFechaRecogida(): void {
   }
 }
 
-// === GESTIÓN DEL TECLADO GENERAL (MOSTRADOR, DESCUENTOS Y ANTICIPOS) ===
-
-abrirTecladoGeneral(objetivo: 'ARTICULO' | 'CLIENTE' | 'DESCUENTO'| 'DESCUENTO_MANUAL' | 'PREGUNTA_ANTICIPO' | 'CANTIDAD_ANTICIPO' | 'APERTURA_CAJA' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'NOTAS_REPARACION' , 
- index: any = null,
- maxCantidad: number = 1 
- ) {
-  // Si es la pregunta de sí/no del anticipo, permitimos que pase siempre.
-  // Para todo lo demás (que requiere escribir texto o números), cortamos si es tablet.
-  if (objetivo !== 'PREGUNTA_ANTICIPO' && isMobileOrTablet()) {
-    return;
-  }
-  this.mayusculasGeneral.set(false);
-  this.inputObjetivoTeclado.set(objetivo);
-
-  if (objetivo === 'PREGUNTA_ANTICIPO' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA') {
-    this.valorTecladoEnConstruccion.set('');
-  } else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
-    this.indiceLineaDescuentoActual.set(index);
-    const item = this.carrito()[index];
-    const descuentoActual = item ? (item.porcentajeDescuento || 0) : 0;
-    this.valorTecladoEnConstruccion.set(descuentoActual > 0 ? descuentoActual.toString() : '');
-  } else if (objetivo === 'NOTAS_REPARACION' && index !== null) {
-    // Recuperamos la nota existente al abrir el teclado en el mostrador
-    this.indiceLineaDescuentoActual.set(index); // Reutilizamos el índice temporalmente
-    const item = this.carrito()[index];
-    this.valorTecladoEnConstruccion.set(item?.notasReparacion || '');
-  } else {
-    this.indiceLineaDescuentoActual.set(null);
-    
-    if (objetivo === 'ARTICULO') this.valorTecladoEnConstruccion.set(this.busquedaArticulo());
-    if (objetivo === 'CLIENTE') this.valorTecladoEnConstruccion.set(this.busquedaCliente());
-    if (objetivo === 'DESCUENTO') this.valorTecladoEnConstruccion.set(this.descuentoGlobal().toString());
-
-    if (objetivo === 'NUMERO_TICKET') { 
-      this.numeroTicketBuscarInput = ''; // O el valor que corresponda
-      this.valorTecladoEnConstruccion.set(this.numeroTicketBuscarInput || '');
-    }
-
-  if (objetivo === 'NUMERO_CANTIDAD') {
-      this.idLineaDevolucionActual = index; // Guardamos la clave de la línea (idClave)
-      this.maxUnidadesLineaActual = maxCantidad; // Guardamos el tope máximo permitido
-      const control = this.lineasSeleccionadasParaDevolver.get(index);
-      this.valorTecladoEnConstruccion.set(control ? control.cantidadADevolver.toString() : '1');
-    }
-  }
-  
-  this.mostrarTecladoGeneral.set(true);
-}
-
-// NUEVO MÉTODO PUENTE PARA EL CLIC DEL BOTÓN EN EL HTML
-alternarMayusculasGeneral() {
-  this.mayusculasGeneral.update(estado => !estado);
-}
-
-pulsarTeclaGeneral(tecla: string) {
-  const actual = this.valorTecladoEnConstruccion();
-  const objetivo = this.inputObjetivoTeclado();
-
-  if ((objetivo === 'NUMERO_TICKET' || objetivo === 'NUMERO_CANTIDAD') && tecla === '.') {
-    return;
-  }
-
-  // Filtro estricto para campos de dinero o porcentajes
-  if (objetivo === 'DESCUENTO' || objetivo === 'DESCUENTO_MANUAL' || objetivo === 'CANTIDAD_ANTICIPO' || objetivo === 'APERTURA_CAJA' || objetivo === 'NUMERO_TICKET' || objetivo === 'NUMERO_CANTIDAD') {
-    if (tecla === '.' && actual.includes('.')) return;
-    if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
-    if (tecla !== '.' && isNaN(Number(tecla))) return;
-  }
-
-  // LÓGICA DE TRATAMIENTO DE CARACTERES SEGÚN SEÑAL DE MAYÚSCULAS
-  // Si no es un número ni un punto, aplicamos la transformación de caja de texto
-  let teclaProcesada = tecla;
-  if (tecla !== '.' && isNaN(Number(tecla))) {
-    teclaProcesada = this.mayusculasGeneral() ? tecla.toUpperCase() : tecla.toLowerCase();
-  }
-
-  this.valorTecladoEnConstruccion.set(actual + tecla);
-  this.aplicarValorEnTiempoReal();
-}
-
-borrarUltimoCaracterGeneral() {
-  const actual = this.valorTecladoEnConstruccion();
-  if (actual.length > 0) {
-    this.valorTecladoEnConstruccion.set(actual.slice(0, -1));
-    this.aplicarValorEnTiempoReal();
-  }
-}
-
-limpiarTecladoGeneral() {
-  this.valorTecladoEnConstruccion.set('');
-  this.aplicarValorEnTiempoReal();
-}
-
-insertarEspacioGeneral() {
-  this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + ' ');
-}
-
-cerrarTecladoGeneral() {
-  this.mostrarTecladoGeneral.set(false);
-  this.inputObjetivoTeclado.set(null);
-  this.valorTecladoEnConstruccion.set('');
-  this.indiceLineaDescuentoActual.set(null);
-  this.mayusculasGeneral.set(false);
-}
-
-private aplicarValorEnTiempoReal() {
-  const valor = this.valorTecladoEnConstruccion();
-  const objetivo = this.inputObjetivoTeclado();
-
-  if (objetivo === 'ARTICULO') {
-    this.busquedaArticulo.set(valor);
-  } else if (objetivo === 'CLIENTE') {
-    this.buscarClientes(valor); 
-  } else if (objetivo === 'DESCUENTO') {
-    let num = parseFloat(valor) || 0;
-    if (num > 100) num = 100; 
-    this.descuentoGlobal.set(num);
-  } else if (objetivo === 'DESCUENTO_MANUAL') {
-    let num = parseFloat(valor) || 0;
-    if (num > 100) num = 100; 
-    
-    const index = this.indiceLineaDescuentoActual();
-    if (index !== null) {
-      const listaCarrito = [...this.carrito()];
-      if (listaCarrito[index]) {
-        listaCarrito[index] = {
-          ...listaCarrito[index],
-          porcentajeDescuento: num
-        };
-        this.carrito.set(listaCarrito);
-      }
-    }
-  } else if (objetivo === 'NOTAS_REPARACION') {
-    // Mapeamos los caracteres que escribe el zapatero directamente al carrito
-    const index = this.indiceLineaDescuentoActual();
-    if (index !== null) {
-      const listaCarrito = [...this.carrito()];
-      if (listaCarrito[index]) {
-        listaCarrito[index] = {
-          ...listaCarrito[index],
-          notasReparacion: valor
-        };
-        this.carrito.set(listaCarrito);
-      }
-    }
-  }
-  // CANTIDAD_ANTICIPO no se ejecuta aquí para evitar llamadas a la API o validaciones a medio escribir.
-
-  // Teclado para el numero de ticket en devoluciones
-  if (objetivo === 'NUMERO_TICKET') {
-    this.numeroTicketBuscarInput = valor;
-  }
-
-  /* Volcado en tiempo real de la cantidad del artículo */
-  if (objetivo === 'NUMERO_CANTIDAD' && this.idLineaDevolucionActual !== null) {
-    let num = parseInt(valor, 10) || 0;
-    
-    // Controlamos que no se pase del máximo disponible en el ticket original
-    if (num > this.maxUnidadesLineaActual) {
-      num = this.maxUnidadesLineaActual;
-      this.valorTecladoEnConstruccion.set(num.toString()); // Reajustamos el buffer del teclado
-    }
-
-    const control = this.lineasSeleccionadasParaDevolver.get(this.idLineaDevolucionActual);
-    if (control) {
-      control.cantidadADevolver = num;
-    }
-  }
-
- }
-
-aplicarAccionTeclado() {
-  const objetivo = this.inputObjetivoTeclado();
-  const resultado = this.valorTecladoEnConstruccion();
-
-  if (objetivo === 'ARTICULO') this.busquedaArticulo.set(resultado);
-  if (objetivo === 'CLIENTE') this.buscarClientes(resultado);
-  if (objetivo === 'DESCUENTO') {
-    let num = parseFloat(resultado) || 0;
-    if (num > 100) num = 100;
-    this.descuentoGlobal.set(num);
-  }
-  if (objetivo === 'CANTIDAD_ANTICIPO') {
-    this.aplicarCantidadAnticipo();
-  }
-  if (objetivo === 'APERTURA_CAJA') {
-    this.saldoInicialInput = parseFloat(resultado) || 0;
-    this.ejecutarAperturaCaja();
-  }
-  if (objetivo === 'NUMERO_TICKET') {
-    this.numeroTicketBuscarInput = resultado;
-    // Opcional: Cometa o Descomenta si quieres que lance la búsqueda directa tras darle a Aceptar en tu teclado virtual
-    this.confirmarTicketIntroducido();
-  }
-  if (objetivo === 'NOTAS_REPARACION') {
-    // 3. SITIO CORREGIDO: Aseguramos el guardado de la nota al pulsar "Aceptar"
-    const index = this.indiceLineaDescuentoActual();
-    if (index !== null) {
-      const listaCarrito = [...this.carrito()];
-      if (listaCarrito[index]) {
-        listaCarrito[index].notasReparacion = resultado;
-        this.carrito.set(listaCarrito);
-      }
-    }
-  }
-  /* Confirmación de la cantidad del artículo */
-  if (objetivo === 'NUMERO_CANTIDAD' && this.idLineaDevolucionActual !== null) {
-    let num = parseInt(resultado, 10) || 1;
-    if (num < 1) num = 1;
-    if (num > this.maxUnidadesLineaActual) num = this.maxUnidadesLineaActual;
-
-    const control = this.lineasSeleccionadasParaDevolver.get(this.idLineaDevolucionActual);
-    if (control) {
-      control.cantidadADevolver = num;
-    }
-    // Reseteamos el puntero de control de línea
-    this.idLineaDevolucionActual = null;
-  }
-
-  this.cerrarTecladoGeneral();
-}
-
 // === FLUJO DE ANTICIPOS (MODAL CENTRADO INTERACTIVO) ===
 
 responderSiAnticipo() {
@@ -1094,7 +991,7 @@ responderSiAnticipo() {
   }
 
   // 2. Cambiamos inmediatamente el estado para mutar la interfaz al teclado numérico
-  this.abrirTecladoGeneral('CANTIDAD_ANTICIPO');
+  this.abrirTeclado('CANTIDAD_ANTICIPO');
 }
 
 responderNoAnticipo() {
@@ -1104,7 +1001,7 @@ responderNoAnticipo() {
     const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
     // Cobro de 0€ para imprimir el resguardo físico directo de taller sin pagos previos
     this.cobrarAnticipoTicket(id, 0, metodoPagoSeguro);
-    this.cerrarTecladoGeneral();
+    this.cerrarTeclado();
     this.idOrdenPendienteAnticipo.set(null);
   } else {
     this.uiService.mostrarToast('No hay ninguna orden pendiente para procesar.', 'error');
@@ -1119,7 +1016,7 @@ aplicarCantidadAnticipo() {
   if (id !== null && numImporte > 0 && numImporte <= this.totalTicket()) {
     const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
     this.cobrarAnticipoTicket(id, numImporte, metodoPagoSeguro);
-    this.cerrarTecladoGeneral();
+    this.cerrarTeclado();
     this.idOrdenPendienteAnticipo.set(null);
   } else {
     this.uiService.mostrarToast(`Importe no válido. El máximo permitido es ${this.totalTicket()}€.`, 'warning');
@@ -1318,5 +1215,200 @@ confirmarTicketIntroducido() {
     this.buscarTicketOriginal();
   }
  }
+
+ // Método para limpiar el carrito y resetear estados después de finalizar una venta o reparación
+  private limpiarCarrito() {
+    this.carrito.set([]);
+    this.fechaRecogida.set('');
+    this.sinFechaRecogida.set(false);
+    this.descuentoGlobal.set(0);
+    this.tipoOrdenSeleccionada.set('VENTA_DIRECTA');
+    this.metodoPagoSeleccionado.set('EFECTIVO');
+    this.numeroTicketActual.set('TKT-PROVISIONAL');
+    this.horaTicketActual.set('');
+  }
+
+  // === GESTIÓN DEL TECLADO VIRTUAL ===
+
+abrirTeclado(objetivo: 'PRODUCTO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' | 'NOTAS_REPARACION' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'APERTURA_CAJA' | 'CANTIDAD_ANTICIPO' | 'PREGUNTA_ANTICIPO', index: number | null = null, maxCantidad: number = 1) {
+    // Si estás en tablet y no es la pregunta de anticipo, nos saltamos el teclado virtual
+    if (objetivo !== 'PREGUNTA_ANTICIPO' && isMobileOrTablet()) return;
+
+    this.inputActivo.set(objetivo);
+    this.indiceLineaTemporal.set(index);
+    this.maxUnidadesPermitidas = maxCantidad;
+    this.mayusculas.set(objetivo !== 'DESCUENTO' && objetivo !== 'DESCUENTO_MANUAL' && objetivo !== 'NUMERO_CANTIDAD' && objetivo !== 'APERTURA_CAJA');
+
+    // Inicializamos el buffer con el valor que ya tenga el campo
+    if (objetivo === 'PRODUCTO') this.valorTecladoEnConstruccion.set(this.busquedaArticulo());
+    else if (objetivo === 'CLIENTE') this.valorTecladoEnConstruccion.set(this.busquedaCliente());
+    else if (objetivo === 'DESCUENTO') this.valorTecladoEnConstruccion.set(this.descuentoGlobal().toString());
+    else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
+      const item = this.carrito()[index];
+      this.valorTecladoEnConstruccion.set(item ? item.porcentajeDescuento.toString() : '');
+    } else if (objetivo === 'NOTAS_REPARACION' && index !== null) {
+      const item = this.carrito()[index];
+      this.valorTecladoEnConstruccion.set(item?.notasReparacion || '');
+    } else if (objetivo === 'NUMERO_TICKET') this.valorTecladoEnConstruccion.set(this.numeroTicketBuscarInput);
+    else if (objetivo === 'NUMERO_CANTIDAD' && index !== null) {
+      const control = this.lineasSeleccionadasParaDevolver.get(index);
+      this.valorTecladoEnConstruccion.set(control ? control.cantidadADevolver.toString() : '1');
+    } else {
+      this.valorTecladoEnConstruccion.set(''); // Para anticipos o aperturas de caja vacíos
+    }
+
+    this.mostrarTeclado.set(true);
+  }
+
+  escribirTeclado(tecla: string) {
+    const actual = this.valorTecladoEnConstruccion();
+    const objetivo = this.inputActivo();
+
+    // Filtros numéricos para dinero o porcentajes
+    if (['DESCUENTO', 'DESCUENTO_MANUAL', 'CANTIDAD_ANTICIPO', 'APERTURA_CAJA', 'NUMERO_TICKET', 'NUMERO_CANTIDAD'].includes(objetivo)) {
+      if (tecla === '.' && actual.includes('.')) return;
+      if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
+      if (tecla !== '.' && isNaN(Number(tecla))) return;
+    }
+
+    // Procesar mayúsculas/minúsculas si es texto
+    let teclaProcesada = tecla;
+    if (tecla !== '.' && isNaN(Number(tecla))) {
+      teclaProcesada = this.mayusculas() ? tecla.toUpperCase() : tecla.toLowerCase();
+    }
+
+    this.valorTecladoEnConstruccion.set(actual + teclaProcesada);
+    this.actualizarCamposEnTiempoReal();
+  }
+
+  borrarUltimoCaracter() {
+    const actual = this.valorTecladoEnConstruccion();
+    if (actual.length > 0) {
+      this.valorTecladoEnConstruccion.set(actual.slice(0, -1));
+      this.actualizarCamposEnTiempoReal();
+    }
+  }
+
+  limpiarTeclado() {
+    this.valorTecladoEnConstruccion.set('');
+    this.actualizarCamposEnTiempoReal();
+  }
+
+  insertarEspacio() { // Mapeado a (click)="insertarEspacio()" en tu HTML
+    this.valorTecladoEnConstruccion.set(this.valorTecladoEnConstruccion() + ' ');
+    this.actualizarCamposEnTiempoReal();
+  }
+
+  alternarMayusculas() {
+    this.mayusculas.update(m => !m);
+  }
+
+  cerrarTeclado() {
+    const objetivo = this.inputActivo();
+    const resultado = this.valorTecladoEnConstruccion();
+
+    // Acciones especiales al pulsar "ACEPTAR" o cerrar
+    if (objetivo === 'CANTIDAD_ANTICIPO') {
+      this.aplicarCantidadAnticipo();
+    } else if (objetivo === 'APERTURA_CAJA') {
+      this.saldoInicialInput = parseFloat(resultado) || 0;
+      this.ejecutarAperturaCaja();
+    } else if (objetivo === 'NUMERO_TICKET') {
+      this.numeroTicketBuscarInput = resultado;
+      this.confirmarTicketIntroducido();
+    }
+
+    // Resetear estados del teclado
+    this.mostrarTeclado.set(false);
+    this.inputActivo.set('');
+    this.valorTecladoEnConstruccion.set('');
+    this.indiceLineaTemporal.set(null);
+  }
+
+  private actualizarCamposEnTiempoReal() {
+    const valor = this.valorTecladoEnConstruccion();
+    const objetivo = this.inputActivo();
+    const index = this.indiceLineaTemporal();
+
+    if (objetivo === 'PRODUCTO') this.busquedaArticulo.set(valor);
+    else if (objetivo === 'CLIENTE') this.buscarClientes(valor);
+    else if (objetivo === 'NUMERO_TICKET') this.numeroTicketBuscarInput = valor;
+    else if (objetivo === 'DESCUENTO') {
+      let num = parseFloat(valor) || 0;
+      this.descuentoGlobal.set(num > 100 ? 100 : num);
+    } 
+    // Volcado directo al Carrito (Descuentos y Notas de Reparación del zapatero)
+    else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
+      let num = parseFloat(valor) || 0;
+      this.carrito.update(items => items.map((item, i) => i === index ? { ...item, porcentajeDescuento: num > 100 ? 100 : num } : item));
+    } else if (objetivo === 'NOTAS_REPARACION') {
+    const index = this.indiceLineaTemporal();
+    if (index !== null) {
+      this.carrito.update(items => items.map((item, i) => i === index ? { ...item, notasReparacion: valor } : item));
+    } else {
+      // Actualiza el estado temporal del modal unificado para que se vea reflejado en el textarea
+      this.notaLineaEnConstruccion.set(valor);
+      }
+    }
+    // Volcado de Cantidades para Devoluciones Parciales
+    else if (objetivo === 'NUMERO_CANTIDAD' && index !== null) {
+      let num = parseInt(valor, 10) || 0;
+      if (num > this.maxUnidadesPermitidas) {
+        num = this.maxUnidadesPermitidas;
+        this.valorTecladoEnConstruccion.set(num.toString());
+      }
+      const control = this.lineasSeleccionadasParaDevolver.get(index);
+      if (control) control.cantidadADevolver = num;
+    }
+  }
+
+  pulsarNumpadAnticipo(digito: string): void {
+  const actual = this.valorAnticipoFijo();
+
+  // Evitar meter más de un punto decimal
+  if (digito === '.' && actual.includes('.')) return;
+  // Limitar a un máximo de 2 decimales para dinero (céntimos)
+  if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
+
+  // Evitar meter números ridículamente grandes que superen el total del ticket
+  const nuevoValor = actual + digito;
+  if (parseFloat(nuevoValor) > this.totalTicket()) {
+    this.uiService.mostrarToast(`El anticipo no puede superar el total del ticket (${this.totalTicket()}€).`, 'warning');
+    return;
+  }
+
+  this.valorAnticipoFijo.set(nuevoValor);
+}
+
+borrarNumpadAnticipo(): void {
+  const actual = this.valorAnticipoFijo();
+  if (actual.length > 0) {
+    this.valorAnticipoFijo.set(actual.slice(0, -1));
+  }
+}
+
+limpiarNumpadAnticipo(): void {
+  this.valorAnticipoFijo.set('');
+}
+
+// Acción del botón verde "CONFIRMAR ANTICIPO"
+confirmarAnticipoConNumpad(): void {
+  const id = this.idOrdenPendienteAnticipo();
+  const importe = parseFloat(this.valorAnticipoFijo() || '0');
+
+  if (id !== null && importe > 0) {
+    const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
+    
+    // Procesamos el cobro real hacia Java
+    this.cobrarAnticipoTicket(id, importe, metodoPagoSeguro);
+    
+    // Reseteamos y cerramos todo
+    this.mostrarModalPreguntaAnticipo.set(false);
+    this.valorAnticipoFijo.set('');
+    this.idOrdenPendienteAnticipo.set(null);
+  } else {
+    this.uiService.mostrarToast('Por favor, introduce un importe válido.', 'warning');
+  }
+}
 
 }
