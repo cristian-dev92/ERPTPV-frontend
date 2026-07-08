@@ -111,6 +111,7 @@ export class TpvComponent implements OnInit {
   fechaRecogida = signal<string>('');
   sinFechaRecogida = signal<boolean>(false);
   descuentoGlobal = signal<number>(0);
+  notasGenerales = signal<string>('');
   metodoPagoSeleccionado = signal<MetodoPago>('EFECTIVO');
   mostrarModalMetodosPago = false;
   mostrarModalPreguntaAnticipo = signal<boolean>(false);
@@ -412,6 +413,7 @@ export class TpvComponent implements OnInit {
       tipo: tipoActual,
       fechaPrometidaRecogida: tipoActual === 'REPARACION' && !this.sinFechaRecogida() ? this.fechaRecogida() : null,
       descuentoGlobal: this.descuentoGlobal() || 0,
+      notasGenerales: this.notasGenerales() || '',
       lineas: this.carrito().map(item => ({
         articuloId: item.articuloId,
         cantidad: item.cantidad,
@@ -739,7 +741,7 @@ export class TpvComponent implements OnInit {
     });
   }
 
-  /* 🔥 MANDA EL TICKET DIRECTAMENTE A LA IMPRESORA SIN SALIR DEL TPV */
+  /* MANDA EL TICKET DIRECTAMENTE A LA IMPRESORA SIN SALIR DEL TPV */
   imprimirIframeTicket(): void {
     const iframe = document.getElementById('iframeTicketPdf') as HTMLIFrameElement;
     if (iframe && iframe.contentWindow) {
@@ -1222,6 +1224,7 @@ confirmarTicketIntroducido() {
     this.fechaRecogida.set('');
     this.sinFechaRecogida.set(false);
     this.descuentoGlobal.set(0);
+    this.notasGenerales.set('');
     this.tipoOrdenSeleccionada.set('VENTA_DIRECTA');
     this.metodoPagoSeleccionado.set('EFECTIVO');
     this.numeroTicketActual.set('TKT-PROVISIONAL');
@@ -1230,7 +1233,7 @@ confirmarTicketIntroducido() {
 
   // === GESTIÓN DEL TECLADO VIRTUAL ===
 
-abrirTeclado(objetivo: 'PRODUCTO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL' | 'NOTAS_REPARACION' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'APERTURA_CAJA' | 'CANTIDAD_ANTICIPO' | 'PREGUNTA_ANTICIPO', index: number | null = null, maxCantidad: number = 1) {
+abrirTeclado(objetivo: 'PRODUCTO' | 'CLIENTE' | 'DESCUENTO' | 'NOTAS_GENERALES' | 'DESCUENTO_MANUAL' | 'NOTAS_REPARACION' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'APERTURA_CAJA' | 'CANTIDAD_ANTICIPO' | 'PREGUNTA_ANTICIPO', index: number | null = null, maxCantidad: number = 1) {
     // Si estás en tablet y no es la pregunta de anticipo, nos saltamos el teclado virtual
     if (objetivo !== 'PREGUNTA_ANTICIPO' && isMobileOrTablet()) return;
 
@@ -1243,6 +1246,7 @@ abrirTeclado(objetivo: 'PRODUCTO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL'
     if (objetivo === 'PRODUCTO') this.valorTecladoEnConstruccion.set(this.busquedaArticulo());
     else if (objetivo === 'CLIENTE') this.valorTecladoEnConstruccion.set(this.busquedaCliente());
     else if (objetivo === 'DESCUENTO') this.valorTecladoEnConstruccion.set(this.descuentoGlobal().toString());
+    else if (objetivo === 'NOTAS_GENERALES') this.valorTecladoEnConstruccion.set(this.notasGenerales());
     else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
       const item = this.carrito()[index];
       this.valorTecladoEnConstruccion.set(item ? item.porcentajeDescuento.toString() : '');
@@ -1332,6 +1336,7 @@ abrirTeclado(objetivo: 'PRODUCTO' | 'CLIENTE' | 'DESCUENTO' | 'DESCUENTO_MANUAL'
 
     if (objetivo === 'PRODUCTO') this.busquedaArticulo.set(valor);
     else if (objetivo === 'CLIENTE') this.buscarClientes(valor);
+    else if (objetivo === 'NOTAS_GENERALES') this.notasGenerales.set(valor);
     else if (objetivo === 'NUMERO_TICKET') this.numeroTicketBuscarInput = valor;
     else if (objetivo === 'DESCUENTO') {
       let num = parseFloat(valor) || 0;

@@ -25,17 +25,19 @@ export class ClientesComponent implements OnInit {
   filtroBusqueda = signal<string>('');
   cargando = signal<boolean>(false);
 
-  nuevoCliente = signal<NuevoClienteRequest>({
+  nuevoCliente = signal<NuevoClienteRequest & { activo?: boolean }>({
     nombre: '',
     telefono: '',
     email: '',
     documentoIdentidad: '',
     direccion: '',
     codigoPostal: '',
-    ciudad: ''
+    ciudad: '',
+    lopdAceptada: false, // Cumplimiento LOPD Obligatorio
+    activo: true        // Borrado lógico inicial por defecto
   });
 
-  // 🎯 FILTRADO AUTOMÁTICO EN TIEMPO REAL (Client-side con Signals)
+  // FILTRADO AUTOMÁTICO EN TIEMPO REAL (Client-side con Signals)
   clientesFiltrados = computed(() => {
     const filtro = this.filtroBusqueda().toLowerCase().trim();
     if (!filtro) return this.clientes();
@@ -202,7 +204,9 @@ export class ClientesComponent implements OnInit {
       documentoIdentidad: '',
       direccion: '',
       codigoPostal: '',
-      ciudad: ''
+      ciudad: '',
+      lopdAceptada: false, // Reseteo LOPD obligatorio al dar de alta
+      activo: true
     });
     this.mostrarModalRegistro.set(true);
   }
@@ -212,6 +216,11 @@ export class ClientesComponent implements OnInit {
   }
 
   seleccionarCliente(cliente: ClienteDTO) {
+    // Evitamos vincular clientes inactivos por borrado lógico
+    if (cliente.activo === false) {
+      this.uiService.mostrarToast('No puedes asociar un cliente dado de baja', 'error');
+      return;
+    }
     this.onClienteSeleccionado.emit(cliente); // Mandamos el objeto completo al TPV
     this.uiService.mostrarToast(`👤 Cliente "${cliente.nombre}" vinculado a la venta`, 'success');
   }
@@ -226,6 +235,12 @@ export class ClientesComponent implements OnInit {
 
     if (!datos.telefono.trim()) {
       this.uiService.mostrarToast('El teléfono es obligatorio para avisar de las reparaciones', 'warning');
+      return;
+    }
+
+    // CONTROL DE LOPD EN CREACIÓN: Bloquear si no se marca el Checkbox obligatorio
+    if (!this.modoEdicion() && !datos.lopdAceptada) {
+      this.uiService.mostrarToast('Debe aceptar la cláusula LOPD/RGPD para registrar al cliente', 'warning');
       return;
     }
 
@@ -275,7 +290,9 @@ export class ClientesComponent implements OnInit {
       documentoIdentidad: cliente.documentoIdentidad || '',
       direccion: cliente.direccion || '',
       codigoPostal: cliente.codigoPostal || '',
-      ciudad: cliente.ciudad || ''
+      ciudad: cliente.ciudad || '',
+      lopdAceptada: cliente.lopdAceptada || false, 
+      activo: cliente.activo ?? true // Respetamos el borrado lógico que traiga el DTO
     });
 
     this.mostrarModalRegistro.set(true);
@@ -321,6 +338,7 @@ export class ClientesComponent implements OnInit {
       this.clienteService.eliminarCliente(id).subscribe({
         next: () => {
           this.uiService.mostrarToast(`👤 Cliente eliminado con éxito`, 'success');
+          // Al ser borrado lógico, actualizamos la lista local cambiando el flag activo a false  o eliminando de la vista según prefieras. Aquí lo marcamos inactivo:
           this.clientes.update(list => list.filter(c => c.id !== id));
           this.cerrarModalBorrar();
         },

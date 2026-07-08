@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 
 export interface NuevaEmpresaRequest {
   nombreComercial: string;
-  cif: string;
+  nif: string;
   direccion: string;
   ciudad: string;
   codigoPostal: string;

@@ -60,6 +60,7 @@ export interface NuevaOrdenDTO {
   tipo?: TipoOrden;          // Opcional, por defecto VENTA_DIRECTA
   fechaPrometidaRecogida?: string | null; // Mapea el LocalDate (YYYY-MM-DD)
   descuentoGlobal: number;
+  notasGenerales?: string;
 }
 
 export interface LineaDevolucionDTO {

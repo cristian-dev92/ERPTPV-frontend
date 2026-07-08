@@ -6,6 +6,7 @@ export interface LineaOrden {
   precioUnitario: number;
   subtotal: number;
   notasReparacion?: string;
+  porcentajeDescuento?: number;
 }
 
 export interface Orden {
@@ -20,6 +21,7 @@ export interface Orden {
   totalIva?: number;
   importePagado: number;
   importePendiente?: number;
+  descuentoGlobal?: number;
 
   /** ID del cliente (opcional para tickets anónimos) */
   clienteId?: number;
@@ -27,6 +29,7 @@ export interface Orden {
   clienteTelefono?: string;
   empleadoNombre?: string;  
   notasReparacion?: string;  
+  notasGenerales?: string;
   detalles?: any[];
   // Mantén esta propiedad temporal SOLO para que los botones viejos del HTML no rompan el tipado
   cliente?: {

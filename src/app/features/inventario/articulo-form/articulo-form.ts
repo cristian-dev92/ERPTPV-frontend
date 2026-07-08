@@ -6,7 +6,7 @@ import { UiService } from '../../../core/services/ui.service';
 import { CommonModule } from "@angular/common";
 import { ProveedorDTO, ProveedorService } from '../../../core/services/proveedor.service';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
-import { FamiliaDTO, FamiliaService } from '../../../core/services/familia.service';
+import { FamiliaDTO, FamiliaService, NuevaFamiliaRequest } from '../../../core/services/familia.service';
 
 @Component({
   selector: 'app-articulo-form',
@@ -16,7 +16,7 @@ import { FamiliaDTO, FamiliaService } from '../../../core/services/familia.servi
   styleUrl: './articulo-form.scss'
 })
 export class ArticuloFormComponent implements OnInit {
-  // 1. Definición de señales para el formulario
+  // Definición de señales para el formulario
   nombre = signal<string>('');
   tipo = signal<'PRODUCTO' | 'SERVICIO'>('PRODUCTO');
   stockInicial = signal<number | null>(null);
@@ -31,8 +31,16 @@ export class ArticuloFormComponent implements OnInit {
   familiaSeleccionadaId = signal<number | null>(null);
   subfamiliaSeleccionadaId = signal<number | null>(null);
 
+  // === ESTADOS PARA CREAR NUEVA FAMILIA ===
+  mostrarModalNuevaFamilia = signal<boolean>(false);
+  nuevoNombreFamilia = signal<string>('');
+  nuevaFamiliaEsSubfamilia = signal<boolean>(false); // Para saber si se crea como hija
+
   // === Señal para las notas internas del artículo ===
   notasReparacion = signal<string>('');
+
+  // SEÑAL PARA EL BORRADO LÓGICO (Obligatorio en producción)
+  activo = signal<boolean>(true);
 
   // Identificador para saber si estamos editando o creando
   idArticuloEdicion = signal<number | null>(null);
@@ -105,6 +113,8 @@ export class ArticuloFormComponent implements OnInit {
           this.porcentajeIva.set(articulo.porcentajeIva);
           this.notasReparacion.set(articulo.notas || '');
           this.codigoBarras.set(articulo.codigoBarras || '');
+          // Guardamos el estado del borrado lógico traído del backend
+          this.activo.set(articulo.activo ?? true);
           // Lógica de asignación de familias al editar
           if (articulo.familiaId) {
             // Buscamos la familia en la lista cargada para saber si es padre o subfamilia
@@ -227,6 +237,7 @@ export class ArticuloFormComponent implements OnInit {
     if (objetivo === 'IVA') return this.porcentajeIva().toString();
     if (objetivo === 'STOCK_INICIAL') return this.stockInicial()?.toString() || '';
     if (objetivo === 'STOCK_MINIMO') return this.stockMinimo()?.toString() || '';
+    if (objetivo === 'NUEVA_FAMILIA') return this.nuevoNombreFamilia();
     return '';
   }
 
@@ -235,6 +246,7 @@ export class ArticuloFormComponent implements OnInit {
     if (objetivo === 'CODIGO_BARRAS') this.codigoBarras.set(valor);
     if (objetivo === 'NOTAS') this.notasReparacion.set(valor);
     if (objetivo === 'BUSCAR_PROVEEDOR') this.filtroProveedor.set(valor);
+    if (objetivo === 'NUEVA_FAMILIA') this.nuevoNombreFamilia.set(valor);
     
     if (objetivo === 'PRECIO') {
       const num = parseFloat(valor);
@@ -271,6 +283,7 @@ export class ArticuloFormComponent implements OnInit {
       ? Number(this.subfamiliaSeleccionadaId()) 
       : (this.familiaSeleccionadaId() ? Number(this.familiaSeleccionadaId()) : null);
 
+    // Sincronizado con los contratos exactos del backend
     const articuloPayload = {
       nombre: this.nombre(),
       tipo: this.tipo(),
@@ -282,7 +295,7 @@ export class ArticuloFormComponent implements OnInit {
       notas: this.notasReparacion().trim(),
       codigoBarras: this.codigoBarras().trim() || null,
       familiaId: idFamiliaFinal,
-      activo: true
+      activo: this.activo()
     };
 
     const idEdicion = this.idArticuloEdicion();
@@ -313,8 +326,7 @@ export class ArticuloFormComponent implements OnInit {
     this.mostrarTeclado.set(false);
     this.router.navigate(['/inventario']);
   }
-  
-  // 🎯 Cálculo de la Base Imponible en tiempo real (Solo Visual)
+  // Cálculo de la Base Imponible en tiempo real (Solo Visual)
   precioBaseVisual = computed(() => {
     const pvp = this.precioFinal();
     const iva = this.porcentajeIva();
@@ -324,5 +336,62 @@ export class ArticuloFormComponent implements OnInit {
     // Lo devolvemos formateado a 2 decimales para la vista
     return baseImponible.toFixed(2);
   });
+
+  // === MÉTODO PARA GUARDAR LA NUEVA FAMILIA ===
+  crearNuevaFamilia(): void {
+    const nombre = this.nuevoNombreFamilia().trim();
+    if (!nombre) {
+      this.uiService.mostrarToast('El nombre de la familia no puede estar vacío.', 'error');
+      return;
+    }
+
+    // Si el check de subfamilia está activo, le metemos como padre la familia que tenga seleccionada en el select principal
+    const padreId = this.nuevaFamiliaEsSubfamilia() ? this.familiaSeleccionadaId() : null;
+
+    const nuevaFamiliaPayload: NuevaFamiliaRequest = {
+      nombre: nombre,
+      descripcion: '',
+      familiaPadreId: padreId
+    };
+
+    // Llamamos a tu servicio del backend
+    this.familiaService.crearFamilia(nuevaFamiliaPayload).subscribe({
+      next: (res: any) => {
+        this.uiService.mostrarToast(`Familia "${nombre}" creada con éxito`, 'success');
+        // Recargamos todas las familias para que se actualicen los select y computeds automáticamente
+        this.cargarFamilias();
+        // Estrategia de autoselección: intentamos leer el ID si el back lo devuelve en la respuesta
+        if (res && res.id) {
+          if (res.familiaPadreId) {
+            this.subfamiliaSeleccionadaId.set(res.id);
+          } else {
+            this.familiaSeleccionadaId.set(res.id);
+            this.subfamiliaSeleccionadaId.set(null);
+          }
+        } else {
+          // Si el back devuelve un mensaje genérico, simplemente dejamos que el zapatero la busque en el select
+          this.familiaSeleccionadaId.set(padreId);
+        }
+        // Limpiamos y cerramos
+        this.cerrarModalNuevaFamilia();
+      },
+      error: () => this.uiService.mostrarToast('Error al crear la categoría', 'error')
+    });
+  }
+
+  abrirModalFamilia(): void {
+    this.nuevoNombreFamilia.set('');
+    this.nuevaFamiliaEsSubfamilia.set(false);
+    this.inputActivo.set('NUEVA_FAMILIA');
+    this.mostrarModalNuevaFamilia.set(true);
+    if (!isMobileOrTablet()) {
+      this.mostrarTeclado.set(true);
+    }
+  }
+
+  cerrarModalNuevaFamilia(): void {
+    this.mostrarModalNuevaFamilia.set(false);
+    this.mostrarTeclado.set(false);
+  }
 
 }

@@ -42,7 +42,10 @@
     </div>
 
     <div class="form-group">
-      <label for="familiaPadre">Familia</label>
+      <div class="label-with-action">
+       <label for="familiaPadre">Familia</label>
+       <button type="button" class="btn-mini-add" (click)="abrirModalFamilia()" title="Añadir nueva familia">➕ Nueva</button>
+      </div>
       <select id="familiaPadre" [value]="familiaSeleccionadaId() ?? ''"
         (change)="onFamiliaPadreChange(+$any($event.target).value)">
         <option value="">Sin Familia (Raíz)</option>
@@ -139,6 +142,40 @@
 
   </form>
 </div>
+
+@if (mostrarModalNuevaFamilia()) {
+    <div class="modal-backdrop-blur">
+      <div class="modal-sheet-tactil quick-add-modal">
+        <div class="sheet-header">
+          <h3>📁 Nueva Categoría de Inventario</h3>
+          <button type="button" class="close-tactil" (click)="cerrarModalNuevaFamilia()">✕</button>
+        </div>
+        
+        <div class="tactil-form">
+          <div class="input-field-tactil">
+            <label>Nombre de la Familia / Sección *</label>
+            <input type="text" 
+                   [value]="nuevoNombreFamilia()"
+                   (click)="abrirTecladoGeneralForm('NUEVA_FAMILIA')"
+                   (input)="sincronizarTecladoFisico('NUEVA_FAMILIA', $any($event.target).value)">
+          </div>
+
+          @if (familiaSeleccionadaId()) {
+            <div class="checkbox-tactil-wrapper" (click)="nuevaFamiliaEsSubfamilia.set(!nuevaFamiliaEsSubfamilia())">
+              <input type="checkbox" [checked]="nuevaFamiliaEsSubfamilia()" readonly>
+              <label>Crear como Subfamilia dentro de la categoría seleccionada</label>
+            </div>
+          }
+
+          <div class="modal-actions-tactil-grid">
+            <button type="button" class="btn-confirm-tactil-action success" (click)="crearNuevaFamilia()">
+              💾 Guardar Categoría
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 
 @if (mostrarTeclado()) {
   <div class="tpv-teclado-virtual">

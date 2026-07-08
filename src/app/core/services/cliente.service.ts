@@ -10,6 +10,7 @@ export interface NuevoClienteRequest {
   direccion?: string;
   codigoPostal?: string;
   ciudad?: string;
+  lopdAceptada: boolean;
 }
 
 export interface ClienteDTO {
@@ -22,7 +23,8 @@ export interface ClienteDTO {
   codigoPostal?: string;
   ciudad?: string;
   empresaId?: number;
-  activo?: boolean;
+  activo: boolean;
+  lopdAceptada: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -46,7 +48,7 @@ export class ClienteService {
     return this.http.post<ClienteDTO>(this.API_URL, nuevo);
   }
 
-  actualizarCliente(id: number, cliente: NuevoClienteRequest): Observable<ClienteDTO> {
+  actualizarCliente(id: number, cliente: NuevoClienteRequest & { activo?: boolean }): Observable<ClienteDTO> {
     return this.http.put<ClienteDTO>(`${this.API_URL}/${id}`, cliente);
   }
 

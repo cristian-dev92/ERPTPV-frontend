@@ -33,7 +33,7 @@ export class CajaResumenComponent implements OnInit {
   idCajaCerrada = signal<number | null>(null); // 🚀 Corregido a Signal
   montoMovimiento: number = 0;
   descripcionMovimiento: string = '';
-  tipoMovimientoSeleccionado: 'INGRESO_MANUAL' | 'GASTO' = 'INGRESO_MANUAL';
+  tipoMovimientoSeleccionado: 'INGRESO_EXTRA' | 'GASTO_EXTRA' = 'INGRESO_EXTRA';
   
   saldoFinalRealContado: number = 0;
   montoApertura: number = 0;
@@ -44,9 +44,10 @@ export class CajaResumenComponent implements OnInit {
   // Mapeamos los contadores contra datosInforme() para que persistan al cerrar o recargar
   totalVentasEfectivo = computed(() => this.datosInforme()?.totalVentasEfectivo ?? 0);
   totalVentasTarjeta = computed(() => this.datosInforme()?.totalVentasTarjeta ?? 0);
+  totalVentasBizum = computed(() => this.datosInforme()?.totalVentasBizum ?? 0);
   totalAnticipos = computed(() => this.datosInforme()?.totalAnticipos ?? 0);
-  totalIngresos = computed(() => this.datosInforme()?.totalIngresosManuales ?? 0);
-  totalGastos = computed(() => this.datosInforme()?.totalGastos ?? 0);
+  totalIngresos = computed(() => this.datosInforme()?.totalIngresoExtra ?? 0);
+  totalGastos = computed(() => this.datosInforme()?.totalGastoExtra ?? 0);
   totalDevoluciones = computed(() => this.datosInforme()?.totalDevoluciones ?? 0);
   descuadre = computed(() => this.datosInforme()?.descuadre ?? 0);
 
@@ -68,12 +69,19 @@ export class CajaResumenComponent implements OnInit {
   textoSaldoTmp = '';
   textoAperturaTmp = '';
 
+  // Si queremos abrir caja desde esta terminal
+  abrirModalApertura() {
+  this.montoApertura = 0;
+  this.textoAperturaTmp = '';
+  this.mostrarModalApertura.set(true);
+}
+
   claseMovimiento(tipo: string): string {
-    return tipo === 'INGRESO_MANUAL' ? 'badge-ingreso' : 'badge-gasto';
+    return tipo === 'INGRESO_EXTRA' ? 'badge-ingreso' : 'badge-gasto';
   }
 
   iconoMovimiento(tipo: string): string {
-    return tipo === 'INGRESO_MANUAL' ? '📥' : '📤';
+    return tipo === 'INGRESO_EXTRA' ? '📥' : '📤';
   }
 
   ngOnInit(): void {
@@ -82,8 +90,7 @@ export class CajaResumenComponent implements OnInit {
 
  cargarCaja() {
     this.cargando.set(true);
-    
-    // 1. Comprobamos si hay turno activo en el TPV
+    // Comprobamos si hay turno activo en el TPV
     this.cajaService.checkEstadoCaja().subscribe({
       next: (res) => {
         if (res) {
@@ -99,10 +106,8 @@ export class CajaResumenComponent implements OnInit {
               }
               this.cargando.set(false);
             },
-            error: () => {
-              // Si falla o no hay histórico (caso de base de datos vacía de prueba), cerramos carga sin romper nada
-              this.cargando.set(false);
-            }
+            // Si falla o no hay histórico (caso de base de datos vacía de prueba), cerramos carga sin romper nada
+            error: () => this.cargando.set(false)
           });
         }
       },
@@ -149,11 +154,9 @@ export class CajaResumenComponent implements OnInit {
         this.idCajaCerrada.set(cajaCerrada.id);
         // Guardamos el snapshot completo devuelto por el backend con el descuadre calculado
         this.ultimaCajaCerrada.set(cajaCerrada);
-
         this.mostrarModalCierre.set(false);
         this.uiService.mostrarToast('Turno de caja cerrado correctamente.', 'success');
         this.mostrarModalPdf.set(true); // Abre el selector del reporte post-cierre
-        
         // Sincroniza el estado (pasará a null en cajaActual, pero mantendremos el informe por el snapshot)
         this.cargarCaja();
       },

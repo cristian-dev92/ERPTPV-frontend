@@ -28,7 +28,7 @@ export class GestionEmpresasComponent implements OnInit {
   // Molde del formulario de alta rápida
   nuevaEmpresa: NuevaEmpresaRequest = {
     nombreComercial: '',
-    cif: '',
+    nif: '',
     direccion: '',
     ciudad: '',
     codigoPostal: '',
@@ -106,7 +106,7 @@ export class GestionEmpresasComponent implements OnInit {
   resetFormularioAlta(): void {
     this.nuevaEmpresa = { 
       nombreComercial: '',
-      cif: '',
+      nif: '',
       direccion: '', 
       ciudad: '', 
       codigoPostal: '',

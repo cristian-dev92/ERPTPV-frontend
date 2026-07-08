@@ -24,6 +24,7 @@
   </div>
 }
 
+<!-- CATALOGO SUPERIOR -->
 <div class="tpv-container">
   
   <div class="catalogo-container">
@@ -90,6 +91,7 @@
     </div>
   </div>
 
+  <!-- CARRITO(TICKET ACTUAL) -->
   <div class="columna-derecha-mostrador">
 
     <div class="ticket-section">
@@ -168,9 +170,15 @@
                       style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;">+</button>
             </div>
 
+            <!-- Bloque de valores modificado para pintar el descuento aplicado por línea -->
             <div class="bloque-valores-finales" style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 85px; margin-right: 12px;">
               <span class="total-multiplicado" style="font-weight: 700; color: #0f172a; font-size: 1.05rem;">{{ item.precio * item.cantidad | currency:'EUR' }}</span>
-              <span class="precio-unitario-mutado" style="font-size: 0.75rem; color: #64748b; margin-top: 1px;">({{ item.precio | currency:'EUR' }}/ud)</span>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+                <span class="precio-unitario-mutado" style="font-size: 0.75rem; color: #64748b;">({{ item.precio | currency:'EUR' }}/ud)</span>
+                @if (item.porcentajeDescuento > 0) {
+                  <span style="font-size: 0.7rem; color: #dc2626; font-weight: 600;">(Rebajado -{{ item.porcentajeDescuento }}%)</span>
+                }
+              </div>
             </div>
 
             <div class="acciones-linea-tactil" style="display: flex; gap: 6px;">
@@ -190,6 +198,7 @@
         }
       </div>
 
+      <!-- SELECCION DE FECHAS -->
       <div class="configuracion-pedido">
        @if (tieneServicioEnCarrito()) {
           <div class="form-group animacion-input container-fecha-taller">
@@ -211,6 +220,22 @@
       </div>
 
       <div class="footer-ticket">
+        <!-- NUEVO: Bloque táctil de Observaciones Generales del Ticket -->
+        <div class="observaciones-ticket-row" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+          <label for="notasGeneralesTicket" style="font-size: 0.85rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 4px;">
+            📝 Observaciones Generales del Ticket:
+          </label>
+          <textarea 
+            id="notasGeneralesTicket"
+            style="width: 100%; min-height: 48px; height: 52px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.3; background: #f8fafc; font-family: inherit;"
+            placeholder="Añadir notas globales impresas en ticket (Ej: Entregar envuelto para regalo...)"
+            [value]="notasGenerales()"
+            (click)="abrirTeclado('NOTAS_GENERALES')"
+            (input)="notasGenerales.set($any($event.target).value)">
+          </textarea>
+        </div>
+
+        <!-- DESCUENTO GLOBAL -->
         <div class="descuento-global-row">
           <label for="descGlobalManual"> Descuento Global (%):</label>
           <input 
@@ -223,6 +248,7 @@
              class="input-descuento-global">
         </div>
 
+        <!-- FORMA DE PAGO -->
         <div class="metodo-pago-inline-row">
           <label>Forma de Pago:   </label>
           <button type="button" class="btn-selector-pago-tactil" (click)="abrirModalMetodosPago()">
@@ -231,17 +257,20 @@
           </button>
         </div>
         
+        <!-- TOTAL -->
         <div class="total-row">
           <span>TOTAL:</span>
           <span class="total-amount">{{ totalTicket() | currency:'EUR' }}</span>
         </div>
         
+        <!-- PROCESAR OPERACION -->
         <button class="btn-cobrar" [disabled]="carrito().length === 0" (click)="ejecutarProcesarYFacturar()">
           💰 PROCESAR OPERACIÓN
         </button>
       </div>
     </div> 
 
+    <!-- BARRA HISTORIAL INFERIOR(ULTIMAS VENTAS DEL TURNO) -->
     <div class="panel-historial-wrapper" [class.historial-expandido]="mostrarHistorial()">
       <div class="historial-header" (click)="toggleHistorial()">
         <div class="header-info">
@@ -325,6 +354,7 @@
   </div> 
 </div>
 
+<!-- VENTANA DEL MODO EDITAR ARTICULO -->
 @if (indiceItemEditandoLinea() !== null) {
   <div class="modal-keypad-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
     
@@ -390,6 +420,7 @@
   </div> 
 }
 
+<!-- VENTANA DEL MODAL DE PAGO -->
 @if (mostrarModalSeleccionPago()) {
   <div class="modal-keypad-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.4); display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(4px);">
     <div class="modal-keypad-content" style="background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 390px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid #f1f5f9;">
@@ -429,6 +460,7 @@
   </div>
 }
 
+<!-- VENTANA MODAL PREGUNTA ANTICIPO-->
 @if (mostrarModalPreguntaAnticipo()) {
   <div class="modal-pregunta-overlay">
     <div class="modal-pregunta-content unificado-numpad">
@@ -482,6 +514,7 @@
   </div>
 }
 
+<!-- TECLADO VIRTUAL -->
 @if (mostrarTeclado() && !mostrarModalPreguntaAnticipo() && inputActivo() !== 'PREGUNTA_ANTICIPO') {
   <div class="tpv-teclado-virtual">
     <div class="teclado-header">
@@ -547,6 +580,7 @@
   </div>
 }
 
+<!-- PREVISUALIZACION DEL TICKET-->
 @if (isTicketVisible() ) {
   <div class="modal-ticket-overlay">
     <div class="modal-ticket-content">
@@ -583,6 +617,7 @@
   </div>
 }
 
+<!-- MODAL MODO DEVOLUCION-->
 @if (mostrarModalSeleccionDevolucion) {
   <div class="modal-overlay-tpv">
     <div class="modal-card-tpv modal-card-seleccion animate-fade-in">
@@ -645,6 +680,7 @@
   </div>
 }
 
+<!-- VENTANA MODAL MODO DEVOLCUION CUANDO BUSCAMOS EL NUMERO DE TICKET -->
 @if (mostrarModalPedirTicket) {
   <div class="modal-overlay-tpv">
     <div class="modal-card-tpv modal-card-busqueda animate-fade-in">
@@ -714,6 +750,7 @@
   </div>
 }
 
+<!-- USO SOLO PARA REGISTRO DE CLIENTES Y LO TAPAMOS PARA QUE EL TPV NO LO MUESTRE -->
 <div style="display: contents;">
   <app-clientes [modoModalSolo]="true" (onClienteSeleccionado)="seleccionarCliente($event)"></app-clientes>
 </div>

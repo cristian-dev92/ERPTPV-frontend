@@ -1,35 +1,35 @@
 /**
  * Interfaz que define un Artículo dentro del sistema (El Catálogo).
- * Según las reglas del backend, un artículo puede ser un PRODUCTO físico 
- * o un SERVICIO (como una reparación).
+ * Sincronizado con el nuevo ArticuloCatalogoDTO del backend de producción.
  */
 export interface Articulo {
-  /** * ID único del artículo. Es opcional (?) porque cuando creamos un zapato nuevo en el frontend, aún no tiene ID hasta que el backend lo guarda y nos lo devuelve. */
+  /** ID único. Opcional solo en creación local antes de persistir en BD */
   id?: number;
   /** Nombre comercial del producto o servicio (ej: "Suela de Goma", "Mocasín") */
   nombre: string;
-  /** Discriminador estricto del backend. PRODUCTO: Se le aplica control de stock.SERVICIO: No tiene stock, es mano de obra. */
+  /** Discriminador estricto del backend. PRODUCTO: Control de stock. SERVICIO: Mano de obra */
   tipo: 'PRODUCTO' | 'SERVICIO';
-  /** Cantidad disponible en la tienda. Solo es relevante si el tipo es 'PRODUCTO'. */
+  /** Cantidad disponible en la tienda. Solo relevante si tipo es 'PRODUCTO' */
   stock?: number | null;
   stockMinimo?: number | null;
   /** Descripción ampliada de los materiales o el trabajo a realizar */
   descripcion?: string;
-  // --- NÚCLEO FINANCIERO (B2C Top-Down) Precio Final de venta al público (PVP con IVA incluido) */
+  // --- NÚCLEO FINANCIERO (PVP con IVA incluido) ---
   precioFinal: number;      
   /** Porcentaje de IVA aplicado al artículo (Ej: 21, 10, 4, 0) */
   porcentajeIva: number; 
-  /** Campo imprescindible para las chapitas del catálogo */
+  /** Porcentaje de descuento por defecto del catálogo */
   porcentajeDescuento?: number;
-  // --- DATOS DE CONTROL INTERNO
-  activo?: boolean;
+  // --- DATOS DE CONTROL INTERNO Y PRODUCCIÓN ---
+  activo: boolean; // 🚫 Borrado lógico global (Obligatorio en producción)
   empresaId?: number;
-  // --- CAMPOS ADICIONALES PARA REPARACIONES 
+  // --- CAMPOS ADICIONALES PARA REPARACIONES ---
   notasReparacion?: string | null;
-  // --- NOTAS INTERNAS DE INVENTARIO/ALMACÉN 
+  // --- NOTAS INTERNAS DE INVENTARIO/ALMACÉN ---
   notas?: string | null;
-  // --- CAMPOS PARA FAMILIA Y SUBFAMILIA
+  // --- CAMPOS PARA ASOCIACIÓN DE CATEGORÍAS ---
   familiaId?: number | null;
-  // --- LECTURA DE CODIGO DE BARRAS
-  codigoBarras?: string | null;
+  familiaNombre?: string | null; // 🏷️ Nuevo: Traído del backend para optimizar lecturas/selects
+  // --- LECTURA DE CÓDIGO DE BARRAS ---
+  codigoBarras?: string | null;   // Ya integrado en el DTO oficial de producción
 }

@@ -133,6 +133,16 @@
         </div>
       </div>
 
+      <div class="form-group checkbox-lopd-group">
+        <label class="checkbox-label">
+          <input 
+            type="checkbox" 
+            [(ngModel)]="nuevoCliente().lopdAceptada"
+            [disabled]="modoEdicion()"> 
+          <span>Acepto la cláusula LOPD / RGPD para la gestión de clientes y facturación VeriFactu *</span>
+        </label>
+      </div>
+      
       <div class="modal-footer">
         <button type="button" class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
         <button type="button" class="btn-guardar" (click)="guardarCliente()">Guardar Ficha</button>

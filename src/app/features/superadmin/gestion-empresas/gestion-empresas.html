@@ -91,11 +91,11 @@
               <h3>Datos de la Empresa</h3>
               <div class="field">
                 <label>Nombre Comercial</label>
-                <input type="text" [(ngModel)]="nuevaEmpresa.nombreComercial" name="nombre" required />
+                <input type="text" [(ngModel)]="nuevaEmpresa.nombreComercial" name="nombreComercial" required />
               </div>
               <div class="field">
                 <label>NIF / CIF</label>
-                <input type="text" [(ngModel)]="nuevaEmpresa.cif" name="cif" required />
+                <input type="text" [(ngModel)]="nuevaEmpresa.nif" name="nif" required />
               </div>
               <div class="field">
                 <label>Dirección</label>
@@ -109,21 +109,17 @@
                 <label>Código Postal</label>
                 <input type="text" [(ngModel)]="nuevaEmpresa.codigoPostal" name="codigoPostal" required />
               </div>
-            </div>
-
-            <div>
-              <h3>Credenciales del Dueño (Admin)</h3>
               <div class="field">
                 <label>Nombre Completo</label>
-                <input type="text" [(ngModel)]="nuevaEmpresa.nombreAdmin" name="nombreAd" required />
+                <input type="text" [(ngModel)]="nuevaEmpresa.nombreAdmin" name="nombreAdmin" required />
               </div>
               <div class="field">
                 <label>Email Corporativo</label>
-                <input type="email" [(ngModel)]="nuevaEmpresa.emailAdmin" name="emailAd" required />
+                <input type="email" [(ngModel)]="nuevaEmpresa.emailAdmin" name="emailAdmin" required />
               </div>
               <div class="field">
                 <label>Contraseña Inicial</label>
-                <input type="password" [(ngModel)]="nuevaEmpresa.passwordAdmin" name="passAd" required />
+                <input type="password" [(ngModel)]="nuevaEmpresa.passwordAdmin" name="passwordAdmin" required />
               </div>
               <div class="field">
                 <label>Teléfono de Contacto</label>

@@ -10,7 +10,7 @@
       <div class="icon-lock">🔒</div>
       <h2>Turno de Caja Cerrado</h2>
       <p>Es necesario declarar el fondo de caja inicial para operar el TPV.</p>
-      <button class="btn-reapertura-directa" (click)="mostrarModalApertura.set(true)">
+      <button class="btn-reapertura-directa" (click)="abrirModalApertura()">
         🔓 Abrir Turno de Caja
       </button>
     </div>
@@ -52,6 +52,10 @@
           <span class="val">{{ datosInforme()?.totalVentasTarjeta | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-neutral">
+          <span class="lbl">Ventas Bizum</span>
+          <span class="val">{{ totalVentasBizum() | currency:'EUR' }}</span>
+        </div>
+        <div class="tile-caja bg-neutral">
           <span class="lbl">Transferencias</span>
           <span class="val">{{ datosInforme()?.totalVentasTransferencia | currency:'EUR' }}</span>
         </div>
@@ -64,12 +68,12 @@
           <span class="val">+ {{ datosInforme()?.totalAnticipos | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-positivo">
-          <span class="lbl">Ingresos Manuales</span>
-          <span class="val">+ {{ datosInforme()?.totalIngresosManuales | currency:'EUR' }}</span>
+          <span class="lbl">Ingresos Extra</span>
+          <span class="val">+ {{ totalIngresos() | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-negativo">
-          <span class="lbl">Gastos / Compras</span>
-          <span class="val">- {{ datosInforme()?.totalGastos | currency:'EUR' }}</span>
+          <span class="lbl">Gastos Extra</span>
+          <span class="val">- {{ totalGastos() | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-negativo">
           <span class="lbl">Devoluciones</span>
@@ -100,7 +104,7 @@
       <div class="caja-action-pad">
         @if (cajaActual() !== null) {
           <button class="pad-btn btn-grey" (click)="mostrarModalMovimiento.set(true)">
-            <span class="icon">💸</span> Movimiento Manual
+            <span class="icon">💸</span> Movimiento Extra
           </button>
         }
 
@@ -117,7 +121,7 @@
             <span class="icon">🔒</span> Cerrar Caja
           </button>
         } @else {
-          <button class="pad-btn btn-green" (click)="mostrarModalApertura.set(true)">
+          <button class="pad-btn btn-green" (click)="abrirModalApertura()">
             <span class="icon">🔓</span> Abrir Nueva Caja
           </button>
         }
@@ -125,24 +129,24 @@
 
     </div>
 
-    @if (mostrarModalMovimiento()) {
+   } @if (mostrarModalMovimiento()) {
       <div class="modal-backdrop-blur" [class.teclado-abierto]="mostrarTeclado()">
         <div class="modal-sheet-tactil">
           <div class="sheet-header">
-            <h3>Registrar Caja Manual</h3>
+            <h3>Registrar Ajuste de Caja</h3>
             <button class="close-tactil" (click)="mostrarModalMovimiento.set(false)">✕</button>
           </div>
           
           <div class="tactil-form">
             <div class="selector-tactil-grid">
               <button type="button" class="select-opt positivo" 
-                      [class.active]="tipoMovimientoSeleccionado === 'INGRESO_MANUAL'"
-                      (click)="tipoMovimientoSeleccionado = 'INGRESO_MANUAL'">
+                      [class.active]="tipoMovimientoSeleccionado === 'INGRESO_EXTRA'"
+                      (click)="tipoMovimientoSeleccionado = 'INGRESO_EXTRA'">
                 🟢 INGRESO
               </button>
               <button type="button" class="select-opt negativo" 
-                      [class.active]="tipoMovimientoSeleccionado === 'GASTO'"
-                      (click)="tipoMovimientoSeleccionado = 'GASTO'">
+                      [class.active]="tipoMovimientoSeleccionado === 'GASTO_EXTRA'"
+                      (click)="tipoMovimientoSeleccionado = 'GASTO_EXTRA'">
                 🔴 GASTO
               </button>
             </div>
@@ -175,7 +179,7 @@
       </div>
     }
 
-    @if (mostrarModalCierre()) { 
+  @if (mostrarModalCierre()) { 
   <div class="modal-backdrop-blur" [class.teclado-abierto]="mostrarTeclado()">
     <div class="modal-sheet-tactil modal-cierre-wide">
       <div class="sheet-header">
@@ -200,16 +204,20 @@
               <span class="concepto-lbl">💳 Ventas en Tarjeta:</span>
               <span class="monto-val font-mono">{{ totalVentasTarjeta() | currency:'EUR' }}</span>
             </div>
+            <div class="resumen-fila-item texto-neutral">
+              <span class="concepto-lbl">📱 Ventas en Bizum:</span>
+              <span class="monto-val font-mono">{{ totalVentasBizum() | currency:'EUR' }}</span>
+            </div>
             <div class="resumen-fila-item texto-positivo">
               <span class="concepto-lbl">💰 Anticipos Recibidos:</span>
               <span class="monto-val font-mono">+{{ totalAnticipos() | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-positivo">
-              <span class="concepto-lbl">🟢 Entradas Manuales:</span>
+              <span class="concepto-lbl">🟢 Entradas Extra:</span>
               <span class="monto-val font-mono">+{{ totalIngresos() | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-negativo">
-              <span class="concepto-lbl">🔴 Gastos / Pagos Caja:</span>
+              <span class="concepto-lbl">🔴 Gastos Extra:</span>
               <span class="monto-val font-mono">-{{ totalGastos() | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-negativo">
@@ -240,7 +248,6 @@
             🔒 Ejecutar Arqueo y Cerrar Turno
           </button>
         </div>
-
       </div>
     </div>
   </div>
@@ -258,7 +265,7 @@
             <div class="input-field-tactil unique-huge">
               <label>FONDO DE CAJA INICIAL (€)</label>
               <input type="text" 
-                     [(ngModel)]="textoAperturaTmp"
+                     [value]="inputActivo() === 'montoApertura' ? textoAperturaTmp : (montoApertura || '')"
                      inputmode="decimal"
                      (input)="sincronizarTecladoFisicoCaja('montoApertura', $any($event.target).value)"
                      (click)="activarTeclado('montoApertura')">
@@ -307,9 +314,6 @@
       </div>
     }
 
-  }
-}
-
 @if (mostrarTeclado()) {
   <div class="tpv-teclado-virtual">
     <div class="teclado-header">
@@ -357,4 +361,5 @@
       </div>
     </div>
   </div>
+ }
 }

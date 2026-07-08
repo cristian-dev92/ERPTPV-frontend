@@ -25,6 +25,7 @@ export class InventarioListComponent implements OnInit {
   todasLasFamilias = signal<FamiliaDTO[]>([]);
 
   // Filtros activos en pantalla
+  filtroBusqueda = signal<string>('');
   terminoBusqueda = signal<string>('');
   familiaFiltroId = signal<number | null>(null);
   subfamiliaFiltroId = signal<number | null>(null);
@@ -59,9 +60,9 @@ export class InventarioListComponent implements OnInit {
     return this.todasLasFamilias().filter(f => f.familiaPadreId === padreId);
   });
 
-  // 🎯 COMPUTED MOTOR DE FILTRADO UNIFICADO (Filtra por Texto, Código de Barras y Familias)
+  // COMPUTED MOTOR DE FILTRADO UNIFICADO (Filtra por Texto, Código de Barras y Familias)
   articulosFiltrados = computed(() => {
-    let resultado = this.articulos();
+    let resultado = this.articulos().filter(item => item.activo !== false);
     const buscar = this.terminoBusqueda().toLowerCase().trim();
     const famId = this.familiaFiltroId();
     const subId = this.subfamiliaFiltroId();
@@ -183,8 +184,10 @@ export class InventarioListComponent implements OnInit {
     this.articuloService.eliminarArticulo(articulo.id).subscribe({
       next: () => {
         this.uiService.mostrarToast('📦 Artículo eliminado del catálogo correctamente', 'success');
-        // Actualizamos la señal reactiva eliminando el ítem de la lista al instante
-        this.articulos.update(listaActual => listaActual.filter(item => item.id !== articulo.id));
+        // En vez de destruir el registro, actualizamos su flag a false reactivamente. Como el computed "articulosFiltrados" excluye los inactivos, desaparecerá visualmente al instante.
+        this.articulos.update(listaActual => 
+          listaActual.map(item => item.id === articulo.id ? { ...item, activo: false } : item)
+        );
         this.cerrarModalConfirmar();
       },
       error: (err) => {

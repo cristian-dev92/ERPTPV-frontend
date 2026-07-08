@@ -12,9 +12,12 @@ export interface TurnoCajaResponseDTO {
   saldoInicial: number;
   totalVentasEfectivo: number;
   totalVentasTarjeta: number;
+  totalVentasBizum: number;
   totalVentasTransferencia: number;
   totalVentasOtros: number;
   totalAnticipos: number;
+  totalIngresoExtra: number;
+  totalGastoExtra: number;
   totalIngresosManuales: number;
   totalGastos: number;
   totalDevoluciones: number;
@@ -25,7 +28,7 @@ export interface TurnoCajaResponseDTO {
 }
 
 export interface MovimientoManualRequest {
-  tipoMovimiento: 'INGRESO_MANUAL' | 'GASTO';
+  tipoMovimiento: 'INGRESO_EXTRA' | 'GASTO_EXTRA';
   importe: number;
   descripcion: string;
 }

@@ -1,9 +1,11 @@
+// VARIABLES GLOBALES DEL TEMA CLARO (INVENTARIO)
 $primary: #1e293b;
 $secondary: #3b82f6;
 $border: #e2e8f0;
 $bg-light: #f8fafc;
 $danger: #ef4444;
 
+// 1. CABECERA Y SECCIÓN PRINCIPAL
 .header-section {
   display: flex;
   justify-content: space-between;
@@ -31,7 +33,7 @@ $danger: #ef4444;
   &:hover { background-color: #059669; }
 }
 
-// Estructura Flexbox de la barra de búsqueda y filtros combinados
+// 2. BARRA DE BÚSQUEDA Y FILTROS COMBINADOS (FLEXBOX)
 .search-bar-zone {
   display: flex;
   gap: 12px;
@@ -86,6 +88,7 @@ $danger: #ef4444;
   }
 }
 
+// 3. LA TABLA DEL INVENTARIO ZAPATERO
 .zapatero-table {
   width: 100%;
   margin: 0 auto 140px auto; 
@@ -166,6 +169,7 @@ $danger: #ef4444;
   }
 }
 
+// 4. BADGES, ALERTAS Y CONTENEDORES INTERNOS
 .badge {
   display: inline-block;
   padding: 0.3rem 0.7rem;
@@ -259,7 +263,7 @@ $danger: #ef4444;
   }
 }
 
-// CONFIRM MODAL BACKDROP
+// 5. MODAL DE CONFIRMACIÓN DE ACCIONES (BORRADO)
 .confir-backdrop {
   position: fixed;
   top: 0;
@@ -326,7 +330,7 @@ $danger: #ef4444;
 }
 
 // =========================================================================
-// ⌨️ TECLADO VIRTUAL TÁCTIL RESPONSIVE
+// 6. ⌨️ TECLADO VIRTUAL TÁCTIL RESPONSIVE
 // =========================================================================
 .tpv-teclado-virtual {
   position: fixed;
@@ -423,7 +427,7 @@ $danger: #ef4444;
   to { transform: translateY(0); }
 }
 
-// Responsividad para Tablets y Móviles
+// 📱 7. MEDIAS QUERIES RESPONSIVAS (TABLET / MÓVIL)
 @media (max-width: 768px) {
   .search-bar-zone {
     flex-direction: column;

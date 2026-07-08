@@ -211,6 +211,258 @@
   }
 }
 
+// ==========================================
+// 1. BOTÓN "+" (NUEVA FAMILIA) EN FORMULARIO
+// ==========================================
+.label-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0.5rem;
+  width: 100%;
+
+  label {
+    margin-bottom: 0 !important;
+    color: #334155;
+  }
+
+  .btn-mini-add {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+}
+
+// ==========================================
+// 2. ESTRUCTURA Y HOJA DEL MODAL TÁCTIL
+// ==========================================
+.modal-backdrop-blur {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(22, 28, 44, 0.75); // Fondo oscuro semi-transparente
+  backdrop-filter: blur(10px); // Difuminado de fondo premium
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 1rem;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.modal-sheet-tactil {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(48, 32, 32, 0.25);
+  width: 100%;
+  max-width: 400px;
+  padding: 1.75rem;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #f8fafc;
+
+  &.quick-add-modal {
+    max-width: 520px !important; // Tamaño compacto controlado
+  }
+
+  // Cabecera del Modal
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: none;
+    margin-bottom: 1rem;
+    h3 { color: #1e2736; }
+  }
+
+  .close-tactil {
+      background: #ebe6e6;
+      color: #e90b0b;
+      border: none;
+      border-radius: 50%; // Totalmente redondo
+      width: 36px;
+      height: 36px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #fee2e2; // Rojo muy suave al pasar el ratón
+        color: #ef4444;      // Color rojo activo
+      }
+    }
+}
+
+// ==========================================
+// 3. INTERIOR DEL FORMULARIO DEL MODAL
+// ==========================================
+.tactil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  // El campo de entrada de texto táctil
+  .input-field-tactil {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #bac1ca;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input[type="text"] {
+      background-color: #ced2da;
+      border: 2px solid #1b2431;
+      border-radius: 12px;
+      color: #000000;
+      padding: 1.1rem;
+      font-size: 1.1rem;
+      font-weight: 500;
+      width: 90%;
+      transition: all 0.2s ease;
+
+      &:focus, &:class-teclado-activo {
+        border-color: #38bdf8;
+        background-color: #0f172a;
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        outline: none;
+      }
+
+      &::placeholder {
+        color: #475569;
+      }
+    }
+  }
+
+  // Caja clicable extendida del Checkbox
+  .checkbox-tactil-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    background-color: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 14px;
+    padding: 1.1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #1e293b;
+      border-color: #475569;
+    }
+
+    input[type="checkbox"] {
+      width: 26px;
+      height: 26px;
+      cursor: pointer;
+      accent-color: #38bdf8;
+    }
+
+    label {
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fbfbfc;
+      margin: 0;
+      flex: 1;
+      line-height: 1.4;
+    }
+  }
+
+  // Botón de Confirmar Guardado Completo
+  .modal-actions-tactil-grid {
+    margin-top: 0.5rem;
+
+    .btn-confirm-tactil-action {
+      width: 100%;
+      padding: 1.25rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+      transition: all 0.2s ease;
+
+      &.success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #ffffff;
+
+        &:hover {
+          background: linear-gradient(135deg, #059669, #047857);
+          box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        &:active {
+          transform: scale(0.98);
+        }
+      }
+    }
+  }
+}
+
+// Animaciones de transición
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+// Estructura base del Backdrop (por si acaso no la tenías definida globalmente)
+.modal-backdrop-blur {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.6); // Desenfoque oscuro elegante
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
 // =========================================================================
 // Estilos del teclado nativo replicados con diseño Responsive total
 // =========================================================================
