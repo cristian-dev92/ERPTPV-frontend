@@ -45,7 +45,6 @@ export interface ResetPasswordResponse {
 })
 export class SuperAdminService {
   private http = inject(HttpClient);
-  // Ajusta esta URL base según la configuración de tu proxy o entorno
   private baseUrl = '/api/superadmin';
 
   // ==========================================
@@ -71,7 +70,7 @@ export class SuperAdminService {
    * Botón del Pánico: Alterna el bloqueo/activación total de una empresa en el SaaS.
    */
   alternarBloqueoEmpresa(empresaId: number): Observable<{ mensaje: string }> {
-    return this.http.patch<{ mensaje: string }>(`${this.baseUrl}/empresas/${empresaId}/estado`, {});
+    return this.http.post<{ mensaje: string }>(`${this.baseUrl}/empresas/${empresaId}/estado`, {});
   }
 
   // ==========================================
@@ -101,4 +100,5 @@ export class SuperAdminService {
   generarPasswordTemporalAdmin(empresaId: number): Observable<ResetPasswordResponse> {
     return this.http.post<ResetPasswordResponse>(`${this.baseUrl}/empresas/${empresaId}/admin/reset-password`, {});
   }
+
 }

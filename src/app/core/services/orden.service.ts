@@ -59,7 +59,6 @@ export interface NuevaOrdenDTO {
   lineas: NuevaLineaDTO[];   // El carrito de la compra
   tipo?: TipoOrden;          // Opcional, por defecto VENTA_DIRECTA
   fechaPrometidaRecogida?: string | null; // Mapea el LocalDate (YYYY-MM-DD)
-  descuentoGlobal: number;
   notasGenerales?: string;
 }
 

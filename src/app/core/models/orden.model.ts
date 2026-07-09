@@ -21,7 +21,6 @@ export interface Orden {
   totalIva?: number;
   importePagado: number;
   importePendiente?: number;
-  descuentoGlobal?: number;
 
   /** ID del cliente (opcional para tickets anónimos) */
   clienteId?: number;

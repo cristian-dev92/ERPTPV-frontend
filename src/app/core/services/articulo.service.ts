@@ -24,6 +24,11 @@ export class ArticuloService {
     return this.http.get<Articulo>(`${this.apiUrl}/${id}`);
   }
 
+  // BUSQUEDA EN TIEMPO REAL PARA EL TPV (Por nombre, código de barras o código interno)
+  buscarPorTermino(termino: string): Observable<Articulo[]> {
+    return this.http.get<Articulo[]>(`${this.apiUrl}/buscar?query=${encodeURIComponent(termino)}`);
+  }
+
   // Crea un nuevo artículo en el backend
   crearArticulo(articulo: Articulo): Observable<Articulo> {
     return this.http.post<Articulo>(this.apiUrl, articulo);

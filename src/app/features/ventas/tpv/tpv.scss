@@ -682,38 +682,6 @@ $border-color: #cbd5e1;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0 0 14px 14px;
 
-  .descuento-global-row {
-    display: flex;
-    justify-content: flex-start; 
-    align-items: center;
-    gap: 10px;                 
-    margin-bottom: 0.6rem;     
-
-    label {
-      font-size: 0.9rem;     
-      font-weight: 600;        
-      color: #000000;
-    }
-
-    .input-descuento-global {
-      width: 70px;            
-      height: 36px;            
-      background-color: #ffffff;
-      border: 2px solid #cbd5e1;
-      color: #ea580c;
-      padding: 0.25rem;        
-      border-radius: 6px;    
-      text-align: center;
-      font-size: 1rem;         
-      font-weight: 700;
-
-      &:focus {
-        outline: none;
-        border-color: #ea580c; 
-      }
-    }
-  }
-
   .metodo-pago-inline-row {
     display: flex;
     justify-content: space-between;
@@ -1445,45 +1413,6 @@ app-clientes {
   }
 }
 
-.descuento-global-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  margin-bottom: 12px;
-  border-bottom: 1px dashed #e2e8f0;
-
-  label {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #475569;
-  }
-
-  .input-descuento-global {
-    width: 80px;
-    height: 48px;
-    padding: 6px 8px;
-    border: 2px solid #cbd5e1;
-    border-radius: 6px;
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #d97706;
-    outline: none;
-
-    &:focus {
-      border-color: #d97706;
-      background-color: #fffbeb;
-    }
-
-    &::-webkit-outer-spin-button,
-    &::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-  }
-}
-
 /* BARRA ALERTA CAJA CERRADA */
 .alerta-caja-tpv {
   background-color: #fff3cd;
@@ -1990,45 +1919,6 @@ app-clientes {
       background-color: #f8fafc;
     }
     
-    &::-webkit-outer-spin-button,
-    &::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-  }
-}
-
-.descuento-global-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  margin-bottom: 12px;
-  border-bottom: 1px dashed #e2e8f0;
-
-  label {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #475569;
-  }
-
-  .input-descuento-global {
-    width: 80px;
-    height: 48px;
-    padding: 6px 8px;
-    border: 2px solid #cbd5e1;
-    border-radius: 6px;
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #d97706;
-    outline: none;
-
-    &:focus {
-      border-color: #d97706;
-      background-color: #fffbeb;
-    }
-
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {
       -webkit-appearance: none;

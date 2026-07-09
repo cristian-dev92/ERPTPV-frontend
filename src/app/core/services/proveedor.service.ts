@@ -13,11 +13,11 @@ export interface NuevoProveedorRequest {
 export interface ProveedorDTO {
   id: number;
   nombre: string;
-  cif: string;
-  direccion: string;
-  emailPedidos: string;
-  telefono: string;
-  empresaId: number;
+  cif?: string;
+  direccion?: string;
+  emailPedidos?: string;
+  telefono?: string;
+  activo: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,12 +29,12 @@ export class ProveedorService {
     return this.http.get<ProveedorDTO[]>(this.API_URL);
   }
 
-  crearProveedor(nuevo: NuevoProveedorRequest): Observable<ProveedorDTO> {
-    return this.http.post<ProveedorDTO>(this.API_URL, nuevo);
+  crearProveedor(request: NuevoProveedorRequest): Observable<ProveedorDTO> {
+    return this.http.post<ProveedorDTO>(this.API_URL, request);
   }
 
-  actualizarProveedor(id: number, proveedor: NuevoProveedorRequest): Observable<ProveedorDTO> {
-    return this.http.put<ProveedorDTO>(`${this.API_URL}/${id}`, proveedor);
+  actualizarProveedor(id: number, request: NuevoProveedorRequest): Observable<ProveedorDTO> {
+    return this.http.put<ProveedorDTO>(`${this.API_URL}/${id}`, request);
   }
 
   eliminarProveedor(id: number): Observable<void> {

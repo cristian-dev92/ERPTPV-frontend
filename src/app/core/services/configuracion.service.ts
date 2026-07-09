@@ -10,60 +10,33 @@ export class ConfiguracionService {
   private baseUrl = '/api';
 
   // =========================================================================
-  // 1. ENDPOINTS DE SUPER_ADMIN
+  // 1. CONFIGURACIÓN INTERNA DE LA EMPRESA (ADMIN)
   // =========================================================================
 
-  crearInquilino(datosEmpresa: any): Observable<string> {
-    return this.http.post(`${this.baseUrl}/superadmin/crear-inquilino`, datosEmpresa, { responseType: 'text' });
-  }
-
-  obtenerEstadoHacienda(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/superadmin/empresas/estado-hacienda`);
-  }
-
-  alternarBotonPanico(empresaId: number): Observable<any> {
-    return this.http.patch(`${this.baseUrl}/superadmin/empresas/${empresaId}/estado`, {});
-  }
-
-  cambiarEmailPropietario(empresaId: number, nuevoEmail: string): Observable<any> {
-    return this.http.patch(`${this.baseUrl}/superadmin/empresas/${empresaId}/admin/email`, { nuevoEmail });
-  }
-
-  resetearPasswordPropietario(empresaId: number): Observable<{ mensaje: string, passwordTemporal: string }> {
-    return this.http.post<{ mensaje: string, passwordTemporal: string }>(
-      `${this.baseUrl}/superadmin/empresas/${empresaId}/admin/reset-password`, {}
-    );
-  }
-
-  // =========================================================================
-  // 2. ENDPOINTS DE CONFIGURACIÓN DE EMPRESA (ADMIN)
-  // =========================================================================
-
-  actualizarDatosEmpresa(datos: any): Observable<any> {
-    return this.http.put(`${this.baseUrl}/admin/empresa`, datos);
+  actualizarDatosEmpresa(datos: any): Observable<{ mensaje: string }> {
+    return this.http.put<{ mensaje: string }>(`${this.baseUrl}/admin/empresa`, datos);
   }
 
   listarEmpleados(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/admin/empleados`);
   }
 
-  crearEmpleado(empleado: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/admin/empleados`, empleado);
+  crearEmpleado(empleado: any): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(`${this.baseUrl}/admin/empleados`, empleado);
   }
 
-  resetearPasswordEmpleado(empleadoId: number): Observable<any> {
-    // LLama a @PatchMapping("/empleados/{id}/reset-password") -> /api/admin/empleados/{id}/reset-password
+  resetearPasswordEmpleado(empleadoId: number): Observable<{ mensaje: string, passwordTemporal: string }> {
     return this.http.patch<{ mensaje: string, passwordTemporal: string }>(
       `${this.baseUrl}/admin/empleados/${empleadoId}/reset-password`, {}
     );
   }
 
-  eliminarEmpleado(id: number): Observable<any> {
-  return this.http.delete<any>(`/api/admin/empleados/${id}`);
+  eliminarEmpleado(id: number): Observable<{ mensaje: string }> {
+  return this.http.delete<{ mensaje: string }>(`${this.baseUrl}/admin/empleados/${id}`);
 }
 
   // =========================================================================
-  // 3. ENDPOINTS DE MI PERFIL (UNIVERSAL) Y SUBIDA DE ARCHIVOS
+  // 2. MI PERFIL Y SUBIDA DE ARCHIVOS (MULTITENANT SEGURO)
   // =========================================================================
 
   cambiarMiPassword(payload: any): Observable<any> {

@@ -39,14 +39,14 @@ export class ContabilidadService {
   /**
    * 2. Obtiene las órdenes reales (OrdenDTO[]) para rellenar la tabla inferior
    */
-  obtenerTicketsContables(fechaInicio: string, fechaFin: string, filtro?: string): Observable<any[]> {
+  obtenerTicketsContables(fechaInicio: string, fechaFin: string, filtro?: string): Observable<OrdenDTO[]> {
     let params = new HttpParams().set('fechaInicio', fechaInicio).set('fechaFin', fechaFin);
     
     if (filtro && filtro !== 'TODOS') {
       params = params.set('filtro', filtro);
     }
     
-    return this.http.get<any[]>(`${this.API_ORDENES}/contabilidad`, { params });
+    return this.http.get<OrdenDTO[]>(`${this.API_ORDENES}/contabilidad`, { params });
   }
 
   /**

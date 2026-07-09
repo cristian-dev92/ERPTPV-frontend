@@ -235,19 +235,6 @@
           </textarea>
         </div>
 
-        <!-- DESCUENTO GLOBAL -->
-        <div class="descuento-global-row">
-          <label for="descGlobalManual"> Descuento Global (%):</label>
-          <input 
-             type="number" 
-             id="descGlobalManual"
-             [value]="descuentoGlobal()" 
-             min="0" max="100"
-             (input)="actualizarDescuentoGlobal($event)"
-             (click)="abrirTeclado('DESCUENTO')"
-             class="input-descuento-global">
-        </div>
-
         <!-- FORMA DE PAGO -->
         <div class="metodo-pago-inline-row">
           <label>Forma de Pago:   </label>
