@@ -53,7 +53,7 @@
         </div>
         <div class="tile-caja bg-neutral">
           <span class="lbl">Ventas Bizum</span>
-          <span class="val">{{ totalVentasBizum() | currency:'EUR' }}</span>
+          <span class="val">{{ datosInforme()?.totalVentasBizum | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-neutral">
           <span class="lbl">Transferencias</span>
@@ -69,11 +69,11 @@
         </div>
         <div class="tile-caja bg-positivo">
           <span class="lbl">Ingresos Extra</span>
-          <span class="val">+ {{ totalIngresos() | currency:'EUR' }}</span>
+          <span class="val">+ {{ datosInforme()?.totalIngresoExtra | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-negativo">
           <span class="lbl">Gastos Extra</span>
-          <span class="val">- {{ totalGastos() | currency:'EUR' }}</span>
+          <span class="val">- {{ datosInforme()?.totalGastoExtra | currency:'EUR' }}</span>
         </div>
         <div class="tile-caja bg-negativo">
           <span class="lbl">Devoluciones</span>
@@ -198,31 +198,31 @@
             </div>
             <div class="resumen-fila-item texto-positivo">
               <span class="concepto-lbl">📥 Ventas en Efectivo:</span>
-              <span class="monto-val font-mono">+{{ totalVentasEfectivo() | currency:'EUR' }}</span>
+              <span class="monto-val font-mono">+{{ datosInforme()?.totalVentasEfectivo | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-neutral">
               <span class="concepto-lbl">💳 Ventas en Tarjeta:</span>
-              <span class="monto-val font-mono">{{ totalVentasTarjeta() | currency:'EUR' }}</span>
+              <span class="monto-val font-mono">{{ datosInforme()?.totalVentasTarjeta | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-neutral">
               <span class="concepto-lbl">📱 Ventas en Bizum:</span>
-              <span class="monto-val font-mono">{{ totalVentasBizum() | currency:'EUR' }}</span>
+              <span class="monto-val font-mono">{{ datosInforme()?.totalVentasBizum | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-positivo">
               <span class="concepto-lbl">💰 Anticipos Recibidos:</span>
-              <span class="monto-val font-mono">+{{ totalAnticipos() | currency:'EUR' }}</span>
+              <span class="monto-val font-mono">+{{ datosInforme()?.totalAnticipos | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-positivo">
               <span class="concepto-lbl">🟢 Entradas Extra:</span>
-              <span class="monto-val font-mono">+{{ totalIngresos() | currency:'EUR' }}</span>
+              <span class="monto-val font-mono">+{{ datosInforme()?.totalIngresoExtra | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-negativo">
               <span class="concepto-lbl">🔴 Gastos Extra:</span>
-              <span class="monto-val font-mono">-{{ totalGastos() | currency:'EUR' }}</span>
+              <span class="monto-val font-mono">-{{ datosInforme()?.totalGastoExtra | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item texto-negativo">
               <span class="concepto-lbl">⏪ Devoluciones Emitidas:</span>
-              <span class="monto-val font-mono">-{{ totalDevoluciones() | currency:'EUR' }}</span>
+              <span class="monto-val font-mono">-{{ datosInforme()?.totalDevoluciones | currency:'EUR' }}</span>
             </div>
             <div class="resumen-fila-item fila-esperado-destacada">
               <span class="concepto-lbl font-bold">Efectivo Teórico Esperado:</span>

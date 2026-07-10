@@ -128,6 +128,7 @@ export class TpvComponent implements OnInit {
   private rawBlobUrl: string | null = null; // Para liberar memoria
 
   // Modales y Flujos Especiales
+  mostrarModalCliente = signal<boolean>(false);
   mostrarModalPedirTicket = false;
   mostrarModalSeleccionDevolucion = false;
   mostrarModalSeleccionPago = signal<boolean>(false); // Modificado para casar con el HTML
@@ -202,6 +203,18 @@ export class TpvComponent implements OnInit {
     // Para notas de taller, buscadores o cantidades
     return ['@', ',', '.', '_', '/', '%', '&', '"', '(', ')', '¡', '!', '¿', '?'];
   }
+
+  // Añade este método específico para abrirlo
+  abrirModalNuevoCliente() {
+  this.mostrarModalCliente.set(true);
+  }
+
+  // Método que se ejecutará cuando el componente de clientes termine de guardar
+  // e inserte automáticamente el nuevo cliente en el TPV
+  onClienteRegistradoDelModal(cliente: any) {
+  this.seleccionarCliente(cliente); // Lo dejas ya seleccionado en el ticket
+  this.mostrarModalCliente.set(false); // Cierras el modal
+  }
  
   // === COMPUTED: TOTALIZADOR INTELIGENTE DEL CARRO
   totalTicket = computed(() => {
@@ -228,6 +241,16 @@ export class TpvComponent implements OnInit {
   }
 
   ajustarCantidad(index: number, cambio: number): void {
+  // Obtenemos el artículo actual del carrito
+  const item = this.carrito()[index]; 
+  
+  if (!item) return;
+
+  // Si la cantidad actual es 1 y el usuario pulsa el menos (-1)
+  if (item.cantidad === 1 && cambio === -1) {
+    this.quitarDelCarrito(index);
+    return; // Cortamos la ejecución aquí para que no reste a 0 o números negativos
+  }
     this.carrito.update(items => items.map((item, i) => {
       if (i === index) {
         const nuevaCant = item.cantidad + cambio;
@@ -536,7 +559,7 @@ export class TpvComponent implements OnInit {
           qr: '',
           ref: res.numeroTicket,
           total: importe,
-          fecha: new Date().toISOString() // 🟢 Mejora 3: ISO Estricto para AEAT
+          fecha: new Date().toISOString() // Mejora 3: ISO Estricto para AEAT
         });
         this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
           next: (ticketsActualizados: any) => this.historialTickets.set(ticketsActualizados)
@@ -1234,7 +1257,7 @@ confirmarTicketIntroducido() {
 
   // === GESTIÓN DEL TECLADO VIRTUAL ===
 
-abrirTeclado(objetivo: 'PRODUCTO' | 'CLIENTE' | 'DESCUENTO' | 'NOTAS_GENERALES' | 'DESCUENTO_MANUAL' | 'NOTAS_REPARACION' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'APERTURA_CAJA' | 'CANTIDAD_ANTICIPO' | 'PREGUNTA_ANTICIPO', index: number | null = null, maxCantidad: number = 1) {
+  abrirTeclado(objetivo: 'PRODUCTO' | 'CLIENTE' | 'DESCUENTO' | 'NOTAS_GENERALES' | 'DESCUENTO_MANUAL' | 'NOTAS_REPARACION' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'APERTURA_CAJA' | 'CANTIDAD_ANTICIPO' | 'PREGUNTA_ANTICIPO', index: number | null = null, maxCantidad: number = 1) {
    // Si estás en tablet y no es la pregunta de anticipo, nos saltamos el teclado virtual
    if (objetivo !== 'PREGUNTA_ANTICIPO' && isMobileOrTablet()) return;
 

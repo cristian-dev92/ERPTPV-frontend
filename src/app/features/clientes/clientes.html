@@ -88,7 +88,7 @@
    </div>
   }
 
-@if (!modoModalSolo() && mostrarModalRegistro()) {
+@if (mostrarModalRegistro()) {
   <div class="modal-overlay" [class.teclado-abierto]="mostrarTeclado()">
     <div class="modal-box">
       <div class="modal-header">

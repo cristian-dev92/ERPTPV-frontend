@@ -5,7 +5,7 @@ import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from "@angular/router";
 import { UiService } from "../../../core/services/ui.service";
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
-import { FamiliaDTO, FamiliaService } from '../../../core/services/familia.service';
+import { FamiliaDTO, FamiliaService, NuevaFamiliaRequest } from '../../../core/services/familia.service';
 
 @Component({
   selector: 'app-inventario-list',
@@ -35,6 +35,11 @@ export class InventarioListComponent implements OnInit {
   inputActivo = signal<string>('');
   mayusculas = signal<boolean>(true);
   valorTecladoEnConstruccion = signal<string>('');
+
+  // Gestión del nuevo modal de creación de familias y subfamilias
+  mostrarModalNuevaFamilia = signal<boolean>(false);
+  nuevoNombreFamilia = signal<string>('');
+  padreFamiliaIdSeleccionada = signal<number | null>(null);
 
   // Listas de caracteres fijas para el renderizado consistente del teclado
   lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -134,24 +139,48 @@ export class InventarioListComponent implements OnInit {
     this.terminoBusqueda.set(valor);
   }
 
+  // Sincroniza la entrada del teclado físico de PC en el modal de familias
+  sincronizarTecladoFisicoFamily(objetivo: string, valor: string) {
+    if (objetivo === 'NUEVA_FAMILIA') {
+      this.nuevoNombreFamilia.set(valor);
+    }
+  }
+
   escribirTeclado(caracter: string) {
     let letraFormateada = caracter;
     if (/^[a-zA-ZÑñÁÉÍÓÚÜáéíóúü]$/.test(caracter)) {
       letraFormateada = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
     }
-    this.terminoBusqueda.update(actual => actual + letraFormateada);
+    // Comprueba de forma reactiva cuál es el input activo en pantalla
+    if (this.inputActivo() === 'BUSCADOR') {
+      this.terminoBusqueda.update(actual => actual + letraFormateada);
+    } else if (this.inputActivo() === 'NUEVA_FAMILIA') {
+      this.nuevoNombreFamilia.update(actual => actual + letraFormateada);
+    }
   }
 
   insertarEspacio() {
-    this.terminoBusqueda.update(actual => actual + ' ');
+    if (this.inputActivo() === 'BUSCADOR') {
+      this.terminoBusqueda.update(actual => actual + ' ');
+    } else if (this.inputActivo() === 'NUEVA_FAMILIA') {
+      this.nuevoNombreFamilia.update(actual => actual + ' ');
+    }
   }
 
   borrarUltimoCaracter() {
-    this.terminoBusqueda.update(actual => actual.slice(0, -1));
+    if (this.inputActivo() === 'BUSCADOR') {
+      this.terminoBusqueda.update(actual => actual.slice(0, -1));
+    } else if (this.inputActivo() === 'NUEVA_FAMILIA') {
+      this.nuevoNombreFamilia.update(actual => actual.slice(0, -1));
+    }
   }
 
   limpiarTeclado() {
-    this.terminoBusqueda.set('');
+    if (this.inputActivo() === 'BUSCADOR') {
+      this.terminoBusqueda.set('');
+    } else if (this.inputActivo() === 'NUEVA_FAMILIA') {
+      this.nuevoNombreFamilia.set('');
+    }
   }
 
   alternarMayusculas() {
@@ -169,6 +198,64 @@ export class InventarioListComponent implements OnInit {
   buscarArticulos() {
     // Se mantiene por compatibilidad si se quita el readonly para PC físico
   }
+
+  // Acciones y ciclo de vida de la ventana de familias
+  abrirModalNuevaFamilia(): void {
+    this.nuevoNombreFamilia.set('');
+    this.padreFamiliaIdSeleccionada.set(null);
+    this.mostrarModalNuevaFamilia.set(true);
+  }
+
+  cerrarModalNuevaFamilia(): void {
+    this.mostrarModalNuevaFamilia.set(false);
+    this.cerrarTeclado();
+  }
+
+  crearNuevaFamilia(): void {
+    const nombre = this.nuevoNombreFamilia().trim();
+    if (!nombre) {
+      this.uiService.mostrarToast('El nombre de la categoría no puede estar vacío', 'error');
+      return;
+    }
+
+    // VALIDACIÓN PREVENTIVA: Comprobamos si ya existe una categoría con ese nombre exacto
+    const nombreExiste = this.todasLasFamilias().some(
+      f => f.nombre.toLowerCase().trim() === nombre.toLowerCase()
+    );
+
+    if (nombreExiste) {
+      this.uiService.mostrarToast(`Ya existe una categoría llamada "${nombre}"`, 'error');
+      return;
+    }
+
+    // 1. Forzamos la obtención del id del padre limpiando cualquier residuo del DOM
+    const idPadreRaw: any = this.padreFamiliaIdSeleccionada();
+    let idPadreFormateado: number | null = null;
+    
+    if (idPadreRaw !== null && idPadreRaw !== undefined && idPadreRaw !== '') {
+      idPadreFormateado = Number(idPadreRaw);
+    }
+
+    // 2. Construimos el JSON mapeando explícitamente cada campo que el DTO de Spring espera
+    const payload: NuevaFamiliaRequest = {
+      nombre: nombre,
+      descripcion: 'Categoría autogenerada desde TPV', // Mandamos un string por si el backend valida vacíos
+      familiaPadreId: idPadreFormateado // Enviará el número entero limpio o un null explícito para ramas raíz
+    };
+
+    this.familiaService.crearFamilia(payload).subscribe({
+      next: (nuevaFam) => {
+        this.uiService.mostrarToast('📁 Nueva categoría guardada correctamente', 'success');
+        // Actualizamos de forma reactiva la lista de familias para refrescar los selectores al instante
+        this.todasLasFamilias.update(lista => [...lista, nuevaFam]);
+        this.cerrarModalNuevaFamilia();
+      },
+      error: (err) => {
+        console.error('Error al guardar la nueva categoría:', err);
+        this.uiService.mostrarToast('No se pudo guardar la familia. Inténtalo de nuevo.', 'error');
+      }
+    });
+  }
   
   // Función para borrar un artículo de forma segura
   eliminarProducto(id: number, nombre: string): void {
@@ -176,7 +263,7 @@ export class InventarioListComponent implements OnInit {
     this.mostrarModalConfirmar.set(true);
   }
 
-  // 🔑 3. Añade la función que se ejecutará cuando el usuario pulse "SÍ, ELIMINAR"
+  //  Añade la función que se ejecutará cuando el usuario pulse "SÍ, ELIMINAR"
   confirmarEliminacionDefinitiva(): void {
   const articulo = this.articuloAAnticipar();
   if (!articulo) return;

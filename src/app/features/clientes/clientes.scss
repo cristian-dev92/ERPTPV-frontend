@@ -138,8 +138,14 @@ $warning: #f59e0b;
     justify-content: center;
     align-items: center;
     button {
-      border: 1px solid $border; background: white; padding: 6px 10px;
-      border-radius: 6px; cursor: pointer; transition: all 0.15s;
+      border: 1px solid $border; 
+      background: white; 
+      padding: 6px 10px;
+      border-radius: 6px; 
+      cursor: pointer; 
+      transition: all 0.15s;
+      font-weight: 600;
+      font-size: 0.8rem;
     }
     .btn-accion-editar { background-color: #eff6ff; color: $secondary; border-color: #bfdbfe; &:hover { background-color: $secondary; color: white; } }
     .btn-accion-eliminar { background-color: #fef2f2; color: $danger; border-color: #fca5a5; &:hover { background-color: $danger; color: white; } }

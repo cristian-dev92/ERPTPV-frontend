@@ -55,11 +55,11 @@ export interface NuevaLineaDTO {
 export interface NuevaOrdenDTO {
   empresaId: number;
   empleadoId: number;
-  clienteId: number | null; // null si es venta anónima
+  clienteId: number | null;  // null si es venta anónima
   lineas: NuevaLineaDTO[];   // El carrito de la compra
   tipo?: TipoOrden;          // Opcional, por defecto VENTA_DIRECTA
   fechaPrometidaRecogida?: string | null; // Mapea el LocalDate (YYYY-MM-DD)
-  notasGenerales?: string;
+  notasGenerales?: string; // Notas generales para el cliente
 }
 
 export interface LineaDevolucionDTO {

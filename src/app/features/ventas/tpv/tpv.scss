@@ -9,7 +9,7 @@ $border-color: #cbd5e1;
 /* Contenedor principal: Ocupa todo el alto disponible */
 .tpv-container {
   display: grid;
-  grid-template-columns: 1fr 480px; // El catálogo es flexible, el ticket fijo
+  grid-template-columns: 1fr 420px; // El catálogo es flexible, el ticket fijo
   gap: 20px;
   height: calc(100vh - 120px); // Ajusta según tu header
   padding: 10px;
@@ -58,7 +58,7 @@ $border-color: #cbd5e1;
   .buscador-articulo-wrap input {
     width: 100%;
     box-sizing: border-box;
-    height: 55px;
+    height: 50px;
     padding: 12px;
     border-radius: 12px;
     border: 2px solid #cbd5e1;
@@ -211,6 +211,8 @@ $border-color: #cbd5e1;
   height: auto !important;           // Altura totalmente libre hacia abajo
   min-height: 100vh;
   overflow-y: visible !important;    // Permite que la página crezca de forma infinita si hace falta
+  width: 450px !important;  /* Ajusta este número (350px, 400px...) a tu gusto */
+  flex-shrink: 0 !important; /* Evita que la pantalla lo aplaste si hay muchos productos a la izquierda */
 }
 
 .ticket-section {
@@ -762,7 +764,7 @@ $border-color: #cbd5e1;
 
     .total-amount {
       font-size: 2.2rem;
-      color: #28a745;
+      color: #000000;
       font-weight: 800;
     }
 
@@ -1057,19 +1059,23 @@ $border-color: #cbd5e1;
 .buscador-cliente-wrapper {
   position: relative;
   width: 100%;
+  display: flex;
+  justify-content: flex-start; // Alinea todo a la izquierda
 
-  // ⚡ LA FILA FLEX: Controla que TODO vaya en la misma línea
+  // LA FILA FLEX: Controla que todo vaya pegado a la izquierda sin flotar a la derecha
   .buscador-fila-tactil {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 10px !important; /* Espacio de separación limpio que querías */
-    width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    width: auto !important; /* Cambiado a auto para que no obligue a rellenar el 100% del carrito */
     box-sizing: border-box;
 
-    // 🚀 El input metido DENTRO del flexbox para que se estire al máximo al lado del botón
     input {
-      flex: 1 !important; 
+      flex: none !important; // Desactiva que el motor flexbox lo estire
+      width: 240px !important; // Tamaño acortado ideal
+      max-width: 240px !important;
       display: block !important;
       box-sizing: border-box !important;
       height: 46px !important;
@@ -1081,17 +1087,17 @@ $border-color: #cbd5e1;
       transition: border-color 0.2s ease;
       
       &:focus {
-        border-color: #740aca !important; /* Foco con tu morado corporativo */
+        border-color: #740aca !important;
       }
     }
 
-    // El botón metido DENTRO del flexbox para mantenerse en paralelo con su color morado
     .btn-nuevo-cliente {
-      display: flex !important;
+      display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
       height: 46px !important;
-      width: auto !important; /* Ancho automático para ajustarse al contenido */              
+      width: auto !important; 
+      flex-shrink: 0 !important;             
       padding: 0 0.75rem !important;         
       background-color: #740aca !important;   
       color: white !important;
@@ -1639,9 +1645,8 @@ app-clientes {
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
   transition: margin-left 0.25s ease-in-out, width 0.25s ease-in-out, box-shadow 0.25s ease; 
-  z-index: 5;
+  z-index: 10;
 
   // SÓLO PARA PC / MONITORES TÁCTILES GRANDES
   @media (min-width: 1200px) {
@@ -1653,10 +1658,11 @@ app-clientes {
   // EFECTO SUPERPUESTO HACIA LA IZQUIERDA CUANDO SE ABRE
   &.historial-expandido {
     @media (min-width: 1024px) {
-      width: 300%;          // Se vuelve un 75% más ancho de lo que es su columna
-      margin-left: -200%;    // Se desplaza exactamente esa misma cantidad hacia la izquierda
-      box-shadow: -15px 15px 25px rgba(15, 23, 42, 0.12); // Sombra lateral para dar profundidad sobre los productos
-      z-index: 99;          // Se superpone levemente a la columna de la izquierda si coinciden en altura
+      position: absolute !important; /* Se independiza de los overflows del carrito */
+      right: 0 !important;           /* Se alinea con el borde derecho del mostrador */
+      width: 1500px !important;       /* Le damos un ancho generoso fijo para ver todas las columnas */
+      box-shadow: -10px 10px 30px rgba(15, 23, 42, 0.3) !important; 
+      z-index: 999999 !important;    /* Prioridad absoluta en la pantalla */
     }
   }
 

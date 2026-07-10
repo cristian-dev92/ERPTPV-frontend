@@ -1,6 +1,9 @@
 <div class="header-section">
   <h1>📦 Inventario</h1>
-  <button class="btn-primary" routerLink="nuevo">+ Nuevo Artículo</button>
+  <div class="header-actions-group" style="display: flex; gap: 10px;">
+    <button class="btn-purple-action" (click)="abrirModalNuevaFamilia()">📂 + Nueva Familia</button>
+    <button class="btn-primary" routerLink="nuevo">+ Nuevo Artículo</button>
+  </div>
 </div>
 
 <div class="search-bar-zone">
@@ -109,6 +112,46 @@
       }
     </tbody>
   </table>
+}
+
+@if (mostrarModalNuevaFamilia()) {
+  <div class="modal-backdrop-blur">
+    <div class="modal-sheet-tactil family-management-sheet">
+      <div class="sheet-header">
+        <h3>📁 Configuración de Categorías</h3>
+        <button type="button" class="close-tactil" (click)="cerrarModalNuevaFamilia()">✕</button>
+      </div>
+      
+      <div class="tactil-form">
+        <p class="instruction-modal">Introduce el nombre y decide si será una familia raíz o colgará de otra existente.</p>
+
+        <div class="input-field-tactil unique-huge">
+          <label>NOMBRE DE LA CATEGORÍA *</label>
+          <input type="text" 
+                 [value]="nuevoNombreFamilia()"
+                 (click)="abrirTecladoBusqueda('NUEVA_FAMILIA')"
+                 (input)="sincronizarTecladoFisicoFamily('NUEVA_FAMILIA', $any($event.target).value)">
+        </div>
+
+        <div class="input-field-tactil">
+          <label>Estructura / Jerarquía</label>
+          <select [value]="padreFamiliaIdSeleccionada() ?? ''" 
+                  (change)="padreFamiliaIdSeleccionada.set($any($event.target).value || null)">
+            <option value="">📂 Crear como Familia Principal (Raíz)</option>
+            @for (fam of familiasPadre(); track fam.id) {
+              <option [value]="fam.id">↳ Colgar dentro de: {{ fam.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="modal-actions-tactil-grid" style="margin-top: 20px;">
+          <button type="button" class="btn-confirm-tactil-action success" (click)="crearNuevaFamilia()">
+            💾 Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 }
 
 @if (mostrarModalConfirmar()) {

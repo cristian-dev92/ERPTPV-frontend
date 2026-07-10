@@ -91,171 +91,140 @@
     </div>
   </div>
 
-  <!-- CARRITO(TICKET ACTUAL) -->
-  <div class="columna-derecha-mostrador">
+  <!--SECCION CARRITO (TICKET ACTUAL)-->
+  <div class="columna-derecha-mostrador" style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
 
-    <div class="ticket-section">
-      
-      <div class="header-ticket-dinamico">
-        <h2>📋 Ticket Actual</h2>
-        <button type="button" class="btn-toggle-devolucion" (click)="pedirNumeroTicketDevolucion()">
-          🔄 Devolución
-        </button>
-      </div>
+  <div class="ticket-section" style="flex: 1; display: flex; flex-direction: column; background: #fff; border-radius: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden;">
+    
+    <div class="header-ticket-dinamico" style="padding: 14px 18px 10px; flex-shrink: 0;">
+      <h2 style="margin: 0; font-size: 1.2rem;">📋 Ticket Actual</h2>
+      <button type="button" class="btn-toggle-devolucion" (click)="pedirNumeroTicketDevolucion()">
+        🔄 Devolución
+      </button>
+    </div>
 
-      <div class="seccion-cliente-ticket">
-        @if (!clienteSeleccionado()) {
-          <div class="buscador-cliente-wrapper">
-            <div class="buscador-fila-tactil">
-              <input type="text" 
-                     [value]="busquedaCliente()" 
-                     (input)="buscarClientes($any($event.target).value)"
-                     (click)="abrirTeclado('CLIENTE')"
-                     placeholder="👤 Buscar cliente por nombre o tel...">
-                     
-              <button (click)="abrirModal()" class="btn-nuevo-cliente" type="button">
-                ➕ <span class="txt-btn">Registrar Cliente</span>
-              </button>
-            </div>
-            
-            @if (clientesEncontrados().length > 0) {
-              <ul class="dropdown-clientes">
-                @for (cliente of clientesEncontrados(); track cliente.id) {
-                  <li (click)="seleccionarCliente(cliente)">
-                    <span class="c-nombre">{{ cliente.nombre }}</span>
-                    <span class="c-tel">📱 {{ cliente.telefono }}</span>
-                  </li>
-                }
-              </ul>
-            }
-          </div>
-        } @else {
-          <div class="tarjeta-cliente-activo">
-            <div class="info-cliente">
-              <span class="avatar">👤</span>
-              <div>
-                <span class="nombre">{{ clienteSeleccionado()?.nombre }}</span>
-                <span class="telefono">Tel: {{ clienteSeleccionado()?.telefono }}</span>
-              </div>
-            </div>
-            <button type="button" class="btn-quitar-cliente" (click)="deseleccionarCliente()" title="Quitar cliente">
-              ✕
+    <div class="seccion-cliente-ticket">
+      @if (!clienteSeleccionado()) {
+        <div class="buscador-cliente-wrapper">
+          <div class="buscador-fila-tactil" style="display: flex !important; justify-content: flex-start !important; width: 100% !important;">
+            <input type="text" 
+                   [value]="busquedaCliente()" 
+                   (input)="buscarClientes($any($event.target).value)"
+                   (click)="abrirTeclado('CLIENTE')"
+                   placeholder="👤 Buscar cliente por nombre o tel..."
+                   style="width: 240px !important; max-width: 240px !important; flex: none !important;">
+                   
+            <button (click)="abrirModalNuevoCliente()" class="btn-nuevo-cliente" type="button">
+              ➕ <span class="txt-btn">Registrar Cliente</span>
             </button>
           </div>
-        }
-      </div>
-        
-      <div class="lineas-ticket">
-        @for (item of carrito(); track $index) {
-          <div class="linea-ticket-simplificada" [class.linea-taller]="item.tipo === 'SERVICIO'" 
-               style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background: #fff; margin-bottom: 6px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-            
-            <div class="detalles-articulo-linea" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
-              <span class="nombre-producto" style="font-weight: 600; color: #1e293b; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.nombre }}</span>
-              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                @if (item.notasReparacion) {
-                  <span class="badge-nota-taller" style="background: #eff6ff; color: #2563eb; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 500;">📝 Con Nota</span>
-                }
-                @if (item.porcentajeDescuento > 0) {
-                  <span class="badge-dto-linea" style="background: #fef2f2; color: #dc2626; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">-%{{ item.porcentajeDescuento }} Dto.</span>
-                }
-              </div>
-            </div>
-
-            <div class="controles-cantidad" style="display: flex; align-items: center; gap: 10px; margin: 0 10px; background: #f1f5f9; padding: 4px 8px; border-radius: 20px;">
-              <button (click)="ajustarCantidad($index, -1)" class="btn-qty" type="button" 
-                      style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;">-</button>
-              <span class="cantidad-numero" style="font-weight: 700; color: #0f172a; min-width: 22px; text-align: center; font-size: 0.95rem;">{{ item.cantidad }}</span>
-              <button (click)="ajustarCantidad($index, 1)" class="btn-qty" type="button" 
-                      style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;">+</button>
-            </div>
-
-            <!-- Bloque de valores modificado para pintar el descuento aplicado por línea -->
-            <div class="bloque-valores-finales" style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 85px; margin-right: 12px;">
-              <span class="total-multiplicado" style="font-weight: 700; color: #0f172a; font-size: 1.05rem;">{{ item.precio * item.cantidad | currency:'EUR' }}</span>
-              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
-                <span class="precio-unitario-mutado" style="font-size: 0.75rem; color: #64748b;">({{ item.precio | currency:'EUR' }}/ud)</span>
-                @if (item.porcentajeDescuento > 0) {
-                  <span style="font-size: 0.7rem; color: #dc2626; font-weight: 600;">(Rebajado -{{ item.porcentajeDescuento }}%)</span>
-                }
-              </div>
-            </div>
-
-            <div class="acciones-linea-tactil" style="display: flex; gap: 6px;">
-              <button type="button" (click)="abrirModalEdicionLinea($index)" class="btn-accion-linea btn-editar-linea" title="Editar precio, descuento o notas"
-                      style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: background 0.2s;">
-                ✏️
-              </button>
-              <button (click)="quitarDelCarrito($index)" class="btn-accion-linea btn-borrar-linea" title="Eliminar artículo"
-                      style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #fee2e2; background: #fff5f5; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: background 0.2s;">
-                🗑️
-              </button>
-            </div>
-
-          </div>
-        } @empty {
-          <p class="empty-msg">El carrito está vacío</p>
-        }
-      </div>
-
-      <!-- SELECCION DE FECHAS -->
-      <div class="configuracion-pedido">
-       @if (tieneServicioEnCarrito()) {
-          <div class="form-group animacion-input container-fecha-taller">
-            <div class="header-fecha-recogida">
-              <label>🛠️ Fecha Estimada de Recogida (Taller)</label>
-              <button type="button" 
-                      class="btn-toggle-sin-fecha" 
-                      [class.activo]="sinFechaRecogida()" 
-                      (click)="toggleSinFechaRecogida()">
-                <span class="icono-toggle"></span> Sin fecha fija
-              </button>
-            </div>
-            <input type="date" 
-                   [disabled]="sinFechaRecogida()"
-                   [value]="sinFechaRecogida() ? '' : fechaRecogida()"
-                   (change)="onFechaRecogidaChange($event)" />
-          </div>
-        }
-      </div>
-
-      <div class="footer-ticket">
-        <!-- NUEVO: Bloque táctil de Observaciones Generales del Ticket -->
-        <div class="observaciones-ticket-row" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-          <label for="notasGeneralesTicket" style="font-size: 0.85rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 4px;">
-            📝 Observaciones Generales del Ticket:
-          </label>
-          <textarea 
-            id="notasGeneralesTicket"
-            style="width: 100%; min-height: 48px; height: 52px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.3; background: #f8fafc; font-family: inherit;"
-            placeholder="Añadir notas globales impresas en ticket (Ej: Entregar envuelto para regalo...)"
-            [value]="notasGenerales()"
-            (click)="abrirTeclado('NOTAS_GENERALES')"
-            (input)="notasGenerales.set($any($event.target).value)">
-          </textarea>
+          
+          @if (clientesEncontrados().length > 0) {
+            <ul class="dropdown-clientes">
+              @for (cliente of clientesEncontrados(); track cliente.id) {
+                <li (click)="seleccionarCliente(cliente)">
+                  <span class="c-nombre">{{ cliente.nombre }}</span>
+                  <span class="c-tel">📱 {{ cliente.telefono }}</span>
+                </li>
+              }
+            </ul>
+          }
         </div>
-
-        <!-- FORMA DE PAGO -->
-        <div class="metodo-pago-inline-row">
-          <label>Forma de Pago:   </label>
-          <button type="button" class="btn-selector-pago-tactil" (click)="abrirModalMetodosPago()">
-            <span>{{ obtenerIconoPago(metodoPagoSeleccionado()) }} {{ metodoPagoSeleccionado() }}</span>
-            <span class="flecha-cambio"> 🔄 Cambiar</span>
+      } @else {
+        <div class="tarjeta-cliente-activo">
+          <div class="info-cliente">
+            <span class="avatar">👤</span>
+            <div>
+              <span class="nombre">{{ clienteSeleccionado()?.nombre }}</span>
+              <span class="telefono">Tel: {{ clienteSeleccionado()?.telefono }}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-quitar-cliente" (click)="deseleccionarCliente()" title="Quitar cliente">
+            ✕
           </button>
         </div>
-        
-        <!-- TOTAL -->
-        <div class="total-row">
-          <span>TOTAL:</span>
-          <span class="total-amount">{{ totalTicket() | currency:'EUR' }}</span>
+      }
+    </div>
+      
+    <div class="lineas-ticket" style="flex: 1; overflow-y: auto; padding: 0 18px; max-height: calc(100vh - 360px);">
+      @for (item of carrito(); track $index) {
+        <div class="linea-ticket-simplificada" [class.linea-taller]="item.tipo === 'SERVICIO'" 
+             style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background: #fff; margin-bottom: 6px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+          
+          <div class="detalles-articulo-linea" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+            <span class="nombre-producto" style="font-weight: 600; color: #1e293b; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.nombre }}</span>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              @if (item.notasReparacion) {
+                <span class="badge-nota-taller" style="background: #eff6ff; color: #2563eb; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 500;">📝 Con Nota</span>
+              }
+              @if (item.porcentajeDescuento > 0) {
+                <span class="badge-dto-linea" style="background: #fef2f2; color: #dc2626; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">-%{{ item.porcentajeDescuento }} Dto.</span>
+              }
+            </div>
+          </div>
+
+          <div class="controles-cantidad" style="display: flex; align-items: center; gap: 10px; margin: 0 10px; background: #f1f5f9; padding: 4px 8px; border-radius: 20px;">
+            <button (click)="ajustarCantidad($index, -1)" class="btn-qty" type="button" 
+                    style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;">-</button>
+            <span class="cantidad-numero" style="font-weight: 700; color: #0f172a; min-width: 22px; text-align: center; font-size: 0.95rem;">{{ item.cantidad }}</span>
+            <button (click)="ajustarCantidad($index, 1)" class="btn-qty" type="button" 
+                    style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;">+</button>
+          </div>
+
+          <div class="bloque-valores-finales" style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 85px; margin-right: 12px;">
+            <span class="total-multiplicado" style="font-weight: 700; color: #0f172a; font-size: 1.05rem;">{{ item.precio * item.cantidad | currency:'EUR' }}</span>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+              <span class="precio-unitario-mutado" style="font-size: 0.75rem; color: #64748b;">({{ item.precio | currency:'EUR' }}/ud)</span>
+              @if (item.porcentajeDescuento > 0) {
+                <span style="font-size: 0.7rem; color: #dc2626; font-weight: 600;">(Rebajado -{{ item.porcentajeDescuento }}%)</span>
+              }
+            </div>
+          </div>
+
+          <div class="acciones-linea-tactil" style="display: flex; gap: 6px;">
+            <button type="button" (click)="abrirModalEdicionLinea($index)" class="btn-accion-linea btn-editar-linea" title="Editar precio, descuento o notas"
+                    style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: background 0.2s;">
+              ✏️
+            </button>
+            <button (click)="quitarDelCarrito($index)" class="btn-accion-linea btn-borrar-linea" title="Eliminar artículo"
+                    style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #fee2e2; background: #fff5f5; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: background 0.2s;">
+              🗑️
+            </button>
+          </div>
+
         </div>
-        
-        <!-- PROCESAR OPERACION -->
-        <button class="btn-cobrar" [disabled]="carrito().length === 0" (click)="ejecutarProcesarYFacturar()">
-          💰 PROCESAR OPERACIÓN
-        </button>
+      } @empty {
+        <p class="empty-msg" style="text-align: center; padding: 20px; color: #64748b;">El carrito está vacío</p>
+      }
+    </div>
+
+    <div class="configuracion-pedido" style="padding: 10px 18px 4px; flex-shrink: 0;">
+     @if (tieneServicioEnCarrito()) {
+        <div class="form-group animacion-input container-fecha-taller" style="margin-bottom: 6px;">
+          <div class="header-fecha-recogida" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: #475569;">🛠️ Fecha Estimada de Recogida</label>
+            <button type="button" class="btn-toggle-sin-fecha" [class.activo]="sinFechaRecogida()" (click)="toggleSinFechaRecogida()">
+              <span class="icono-toggle"></span> Sin fecha fija
+            </button>
+          </div>
+          <input type="date" [disabled]="sinFechaRecogida()" [value]="sinFechaRecogida() ? '' : fechaRecogida()" (change)="onFechaRecogidaChange($event)" style="width:100%; height: 36px; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box;"/>
+        </div>
+      }
+    </div>
+    
+    <div class="footer-ticket" style="flex-shrink: 0;">
+      
+      <div class="total-row">
+        <span>TOTAL:</span>
+        <span class="total-amount">{{ totalTicket() | currency:'EUR' }}</span>
       </div>
-    </div> 
+      
+      <button class="btn-cobrar" [disabled]="carrito().length === 0" (click)="ejecutarProcesarYFacturar()">
+        💰 PROCESAR OPERACIÓN
+      </button>
+    </div>
+
+  </div>
 
     <!-- BARRA HISTORIAL INFERIOR(ULTIMAS VENTAS DEL TURNO) -->
     <div class="panel-historial-wrapper" [class.historial-expandido]="mostrarHistorial()">
@@ -341,67 +310,82 @@
   </div> 
 </div>
 
-<!-- VENTANA DEL MODO EDITAR ARTICULO -->
 @if (indiceItemEditandoLinea() !== null) {
   <div class="modal-keypad-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
     
-    <div class="modal-keypad-content unificado-linea-content" style="max-width: 700px; width: 90%; max-height: 88vh; background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); margin: auto; display: flex; flex-direction: column; overflow: hidden;">
+    <div class="modal-keypad-content unificado-linea-content" style="max-width: 750px; width: 95%; max-height: 90vh; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); margin: auto; display: flex; flex-direction: column; overflow: hidden;">
       
-      <div class="modal-header-linea" style="margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; flex-shrink: 0;">
-        <h3 style="margin: 0; font-size: 1.1rem; color: #0b2286;">⚙️ Panel de Artículo</h3>
-        <p class="nombre-articulo-editar" style="margin: 4px 0 0 0; color: #000000; font-size: 1.5rem; font-weight: 500;">{{ carrito()[indiceItemEditandoLinea()!].nombre }}</p>
+      <div class="modal-header-linea" style="margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; flex-shrink: 0;">
+        <h3 style="margin: 0; font-size: 1.1rem; color: #0b2286;">⚙️ Edición de precio, descuento y notas</h3>
+        <p class="nombre-articulo-editar" style="margin: 4px 0 0 0; color: #000000; font-size: 1.4rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ carrito()[indiceItemEditandoLinea()!].nombre }}</p>
       </div>
 
-      <div class="cuerpo-edicion-linea-grid" style="flex: 1; overflow-y: auto; padding-right: 4px; display: grid; gap: 16px;">
+      <div class="cuerpo-edicion-linea-grid" style="flex: 1; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; overflow: hidden;">
         
-        <div class="seccion-teclado-valores" style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="seccion-teclado-valores" style="display: flex; flex-direction: column; gap: 12px; justify-content: center;">
           
           <div class="tabs-valores-input" style="display: flex; gap: 8px;">
-            
             <div class="campo-edicion-box" [class.activo]="modoCampoEdicionActivo() === 'PRECIO'" (click)="modoCampoEdicionActivo.set('PRECIO')" 
                  style="flex: 1; padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; text-align: center;">
-              <label style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 2px;">Precio Unitario</label>
-              <div class="pantalla-keypad-precio" style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">{{ precioLineaEnConstruccion() || '0' }} €</div>
+              <label style="font-size: 0.72rem; color: #64748b; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 2px;">Precio Unitario</label>
+              <div class="pantalla-keypad-precio" style="font-size: 1.35rem; font-weight: 700; color: #0f172a;">{{ precioLineaEnConstruccion() || '0' }} €</div>
             </div>
             
             <div class="campo-edicion-box" [class.activo]="modoCampoEdicionActivo() === 'DESCUENTO'" (click)="modoCampoEdicionActivo.set('DESCUENTO')"
                  style="flex: 1; padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; text-align: center;">
-              <label style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 2px;">Descuento Especial</label>
-              <div class="pantalla-keypad-precio" style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">{{ descuentoLineaEnConstruccion() || '0' }} %</div>
+              <label style="font-size: 0.72rem; color: #64748b; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 2px;">Descuento Especial</label>
+              <div class="pantalla-keypad-precio" style="font-size: 1.35rem; font-weight: 700; color: #0f172a;">{{ descuentoLineaEnConstruccion() || '0' }} %</div>
             </div>
-            
           </div>
 
-          <div class="grid-keypad" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 320px; margin: 0 auto; width: 100%;">
+          <div class="grid-keypad" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;">
             @for (tecla of ['1','2','3','4','5','6','7','8','9','.', '0']; track tecla) {
               <button type="button" (click)="pulsarTeclaEdicionLinea(tecla)" 
-                      style="height: 42px; font-size: 1.15rem; font-weight: 600; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                      style="height: 44px; font-size: 1.2rem; font-weight: 600; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
                 {{ tecla }}
               </button>
             }
             <button type="button" class="btn-keypad-backspace" (click)="borrarUltimoDigitoEdicionLinea()"
-                    style="height: 42px; font-size: 1.15rem; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                    style="height: 44px; font-size: 1.2rem; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
               ⌫
             </button>
           </div>
         </div>
 
-        <div class="seccion-notas-taller-linea" style="display: flex; flex-direction: column; gap: 6px;">
-          <label for="notaTallerLinea" style="font-weight: 600; color: #050505; font-size: 1rem;">📝 Notas de Reparación:</label>
-          <textarea 
-            id="notaTallerLinea"
-            style="width: 100%; min-height: 90px; height: 100px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; font-size: 0.88rem; resize: none; box-sizing: border-box; line-height: 1.4; background: #fafafa;"
-            placeholder="Introduce detalles del zapato, tipo de costura, color de tinte, etc..."
-            [value]="notaLineaEnConstruccion()"
-            (click)="abrirTeclado('NOTAS_REPARACION')"
-            (input)="notaLineaEnConstruccion.set($any($event.target).value)">
-          </textarea>
-        </div> 
+        <div class="seccion-bloques-notas" style="display: flex; flex-direction: column; gap: 14px; justify-content: center;">
+          
+          <div class="seccion-notas-taller-linea" style="display: flex; flex-direction: column; gap: 4px;">
+            <label for="notaTallerLinea" style="font-weight: 600; color: #334155; font-size: 0.9rem; display: flex; align-items: center; gap: 4px;">📋 Notas de Reparación Internas Taller(Para Tickets):</label>
+            <textarea 
+              id="notaTallerLinea"
+              style="width: 100%; height: 95px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.4; background: #fafafa; font-family: inherit;"
+              placeholder="Introduce detalles del zapato, tipo de costura, color de tinte, etc..."
+              [value]="notaLineaEnConstruccion()"
+              (click)="abrirTeclado('NOTAS_REPARACION')"
+              (input)="notaLineaEnConstruccion.set($any($event.target).value)">
+            </textarea>
+          </div> 
+
+          <div class="observaciones-ticket-row" style="display: flex; flex-direction: column; gap: 4px;">
+            <label for="notasGeneralesTicket" style="font-size: 0.9rem; font-weight: 600; color: #334155; display: flex; align-items: center; gap: 4px;">
+              📝 Notas Generales del Ticket (Apuntes):
+            </label>
+            <textarea 
+              id="notasGeneralesTicket"
+              style="width: 100%; height: 95px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.4; background: #f8fafc; font-family: inherit;"
+              placeholder="Añadir notas globales impresas en ticket (Ej: Entregar envuelto para regalo...)"
+              [value]="notasGenerales()"
+              (click)="abrirTeclado('NOTAS_GENERALES')"
+              (input)="notasGenerales.set($any($event.target).value)">
+            </textarea>
+          </div>
+
+        </div>
       </div> 
 
-      <div class="acciones-keypad" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #f1f5f9; flex-shrink: 0;">
-        <button type="button" class="btn-cancelar-keypad" (click)="cerrarModalEdicionLinea()">Cancelar</button>
-        <button type="button" class="btn-aceptar-keypad" (click)="guardarCambiosLineaUnificada()">Aplicar Cambios</button>
+      <div class="acciones-keypad" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; flex-shrink: 0; display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" class="btn-cancelar-keypad" (click)="cerrarModalEdicionLinea()" style="padding: 10px 20px; background: #b41515; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: 600; color: #ffffff;">Cancelar</button>
+        <button type="button" class="btn-aceptar-keypad" (click)="guardarCambiosLineaUnificada()" style="padding: 10px 24px; background: #199915; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; color: #fff;">Aplicar Cambios</button>
       </div>
     </div> 
   </div> 
@@ -667,7 +651,7 @@
   </div>
 }
 
-<!-- VENTANA MODAL MODO DEVOLCUION CUANDO BUSCAMOS EL NUMERO DE TICKET -->
+<!-- VENTANA MODAL MODO DEVOLUCION CUANDO BUSCAMOS EL NUMERO DE TICKET -->
 @if (mostrarModalPedirTicket) {
   <div class="modal-overlay-tpv">
     <div class="modal-card-tpv modal-card-busqueda animate-fade-in">
@@ -738,6 +722,9 @@
 }
 
 <!-- USO SOLO PARA REGISTRO DE CLIENTES Y LO TAPAMOS PARA QUE EL TPV NO LO MUESTRE -->
-<div style="display: contents;">
-  <app-clientes [modoModalSolo]="true" (onClienteSeleccionado)="seleccionarCliente($event)"></app-clientes>
-</div>
+@if (mostrarModalCliente()) {
+  <app-clientes 
+    [modoModalSolo]="true" 
+    (onClienteSeleccionado)="onClienteRegistradoDelModal($event)">
+  </app-clientes>
+}

@@ -91,6 +91,10 @@ export class ClientesComponent implements OnInit {
 
   ngOnInit() {
     this.cargarClientes();
+    // Si se invoca exclusivamente desde el TPV para registrar, forzamos la apertura del formulario
+    if (this.modoModalSolo()) {
+    this.abrirModal();
+  }
   }
 
   // ⌨️ MÉTODOS DEL TECLADO TÁCTIL

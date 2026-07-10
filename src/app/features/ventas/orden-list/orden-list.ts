@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { UiService } from '../../../core/services/ui.service';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
 
-type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'OTRO';
+type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO';
 
 @Component({
   selector: 'app-orden-list',
@@ -21,9 +21,11 @@ export class OrdenListComponent implements OnInit {
   // Signals para el estado de los filtros
   filtroTipo = signal<string>('TALLER');           
   filtroEstado = signal<string>('TODOS');       
-
   terminoBusqueda = signal<string>('');
   ordenes = signal<any[]>([]);
+
+  // Añadimos notas personales
+  notasGenerales = signal<string>('');
 
   // --- CONFIGURACIÓN TECLADO TÁCTIL ---
   mostrarTeclado = signal<boolean>(false);
@@ -135,7 +137,9 @@ export class OrdenListComponent implements OnInit {
     });
   }
 
- verDetalle(orden: any) {
+  verDetalle(orden: any) {
+  // Cargar la nota general existente del ticket (ajusta el nombre del campo si en tu JSON se llama distinto)
+  this.notasGenerales.set(orden.notasGenerales || orden.observaciones || '');
   this.ordenSeleccionada.set(orden);
   this.idDetalleDesplegado = null;
 
@@ -511,7 +515,10 @@ export class OrdenListComponent implements OnInit {
   
   if (campo === 'busqueda') {
     this.terminoBusqueda.set(this.terminoBusqueda() + caracterProcesado);
-  } else if (campo === 'notas-linea' && idx !== null) {
+    } else if (campo === 'notas-generales') {
+      // Escribir en las notas generales del ticket
+      this.notasGenerales.set(this.notasGenerales() + caracterProcesado);
+    } else if (campo === 'notas-linea' && idx !== null) {
     // Inicializamos con string vacío tanto 'notas' como 'notasReparacion' para curarnos en salud
     if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
     if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
@@ -531,6 +538,10 @@ borrarUltimoCaracter() {
   if (campo === 'busqueda') {
     const actual = this.terminoBusqueda();
     this.terminoBusqueda.set(actual.slice(0, -1));
+  } else if (campo === 'notas-generales') {
+    // Borrar en las notas del ticket
+    const actual = this.notasGenerales();
+    this.notasGenerales.set(actual.slice(0, -1));
   } else if (campo === 'notas-linea' && idx !== null) {
     const actualRep = this.detallesEditados[idx].notasReparacion || '';
     this.detallesEditados[idx].notasReparacion = actualRep.slice(0, -1);
@@ -549,8 +560,10 @@ insertarEspacio() {
   
   if (campo === 'busqueda') {
     this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
+  } else if (campo === 'notas-generales') {
+    //Espacio en las notas del ticket
+    this.notasGenerales.set(this.notasGenerales() + ' ');
   } else if (campo === 'notas-linea' && idx !== null) {
-    // 🚀 CORREGIDO: Arreglada la 'e' intrusa que rompía el método
     if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
     if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
 

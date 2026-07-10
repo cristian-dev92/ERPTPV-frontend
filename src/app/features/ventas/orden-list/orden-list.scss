@@ -370,8 +370,8 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
     flex-shrink: 0;
 
     .txt-cliente { font-size: 1.1rem; margin-bottom: 5px; }
-    .txt-telefono { color: #dcdfe4; font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
-    .txt-registrado { font-size: 1.1rem; color: #c7cbd1; }
+    .txt-telefono { color: #f0ebeb; font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
+    .txt-registrado { font-size: 1.1rem; color: #ffffff; }
   }
 
   .tabla-desglose-tpv {
@@ -656,7 +656,7 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
   background-color: $bg-modal;
   border-radius: 10px;
   width: 90%;
-  max-width: 400px; 
+  max-width: 500px; 
   padding: 0.85rem 1rem;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -681,7 +681,7 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
 
 .payment-methods {
   display: grid; 
-  grid-template-columns: repeat(4, 1fr); 
+  grid-template-columns: repeat(5, 1fr); 
   gap: 8px; 
   margin-bottom: 10px;
 

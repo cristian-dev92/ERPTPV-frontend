@@ -21,7 +21,7 @@ export class CajaResumenComponent implements OnInit {
   cargando = signal<boolean>(true);
 
   // Almacena el reporte final tras el cierre para seguir mostrándolo en pantalla
-  ultimaCajaCerrada = signal<any | null>(null);
+  ultimaCajaCerrada = signal<TurnoCajaResponseDTO | null>(null);
 
   // Modales táctiles (Signals)
   mostrarModalMovimiento = signal<boolean>(false);
@@ -39,16 +39,9 @@ export class CajaResumenComponent implements OnInit {
   montoApertura: number = 0;
 
   // Computado unificado para saber qué datos pintar en el informe (activa o recién cerrada)
-  datosInforme = computed(() => this.cajaActual() ?? this.ultimaCajaCerrada());
+  datosInforme = computed<TurnoCajaResponseDTO | null>(() => this.cajaActual() ?? this.ultimaCajaCerrada());
 
-  // Mapeamos los contadores contra datosInforme() para que persistan al cerrar o recargar
-  totalVentasEfectivo = computed(() => this.datosInforme()?.totalVentasEfectivo ?? 0);
-  totalVentasTarjeta = computed(() => this.datosInforme()?.totalVentasTarjeta ?? 0);
-  totalVentasBizum = computed(() => this.datosInforme()?.totalVentasBizum ?? 0);
-  totalAnticipos = computed(() => this.datosInforme()?.totalAnticipos ?? 0);
-  totalIngresos = computed(() => this.datosInforme()?.totalIngresoExtra ?? 0);
-  totalGastos = computed(() => this.datosInforme()?.totalGastoExtra ?? 0);
-  totalDevoluciones = computed(() => this.datosInforme()?.totalDevoluciones ?? 0);
+  // DEJAMOS EL DESCUADRE (Porque lleva lógica condicional de fallback)
   descuadre = computed(() => this.datosInforme()?.descuadre ?? 0);
 
   // --- CONTROL DEL TECLADO TÁCTIL INTEGRADO ---

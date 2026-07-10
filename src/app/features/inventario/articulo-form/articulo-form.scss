@@ -212,47 +212,6 @@
 }
 
 // ==========================================
-// 1. BOTÓN "+" (NUEVA FAMILIA) EN FORMULARIO
-// ==========================================
-.label-with-action {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 0.5rem;
-  width: 100%;
-
-  label {
-    margin-bottom: 0 !important;
-    color: #334155;
-  }
-
-  .btn-mini-add {
-    background: #eff6ff;
-    color: #2563eb;
-    border: 1px solid #bfdbfe;
-    border-radius: 8px;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.85rem;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: linear-gradient(135deg, #1d4ed8, #1e40af);
-      box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
-    }
-
-    &:active {
-      transform: scale(0.95);
-    }
-  }
-}
-
-// ==========================================
 // 2. ESTRUCTURA Y HOJA DEL MODAL TÁCTIL
 // ==========================================
 .modal-backdrop-blur {

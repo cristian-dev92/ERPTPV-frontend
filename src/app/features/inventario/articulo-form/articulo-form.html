@@ -42,10 +42,7 @@
     </div>
 
     <div class="form-group">
-      <div class="label-with-action">
-       <label for="familiaPadre">Familia</label>
-       <button type="button" class="btn-mini-add" (click)="abrirModalFamilia()" title="Añadir nueva familia">➕ Nueva</button>
-      </div>
+      <label for="familiaPadre">Familia</label>
       <select id="familiaPadre" [value]="familiaSeleccionadaId() ?? ''"
         (change)="onFamiliaPadreChange(+$any($event.target).value)">
         <option value="">Sin Familia (Raíz)</option>

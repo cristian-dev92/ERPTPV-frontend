@@ -111,6 +111,20 @@
               📅 Registrado: {{ (orden.fecha || orden['createdAt'] || orden['fechaCreacion']) | date:'dd/MM/yyyy HH:mm' }}
             </p>
           </div>
+
+        <!-- Bloque táctil de Observaciones Generales del Ticket -->
+        <div class="observaciones-ticket-row" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+          <label for="notasGeneralesTicket" style="font-size: 0.85rem; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 4px;">
+            📝 NOTAS PARA ASUNTOS PROPIOS:
+          </label>
+          <textarea 
+            id="notasGeneralesTicket"
+            style="width: 100%; min-height: 48px; height: 52px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.3; background: #f8fafc; font-family: inherit;"
+            [value]="notasGenerales()"
+            (click)="activarTeclado('notas-generales', null)"
+            (input)="notasGenerales.set($any($event.target).value)">
+          </textarea>
+        </div>
           
           <hr class="separator-ticket">
 
@@ -167,7 +181,7 @@
 
                 @if (item.esServicio) {
                   <div class="config-group">
-                    <label>📝 Nota específica del trabajo:</label>
+                    <label>📝 Nota específica del trabajo(Ticket y Factura):</label>
                     <textarea [(ngModel)]="item.notasReparacion" (click)="activarTeclado('notas-linea', idx)"></textarea>
                   </div>
             
@@ -273,6 +287,7 @@
           <button [ngClass]="{'selected': metodoPago() === 'EFECTIVO'}" (click)="seleccionarMetodoPago('EFECTIVO')">💵 Efectivo</button>
           <button [ngClass]="{'selected': metodoPago() === 'TARJETA'}" (click)="seleccionarMetodoPago('TARJETA')">💳 Tarjeta</button>
           <button [ngClass]="{'selected': metodoPago() === 'TRANSFERENCIA'}" (click)="seleccionarMetodoPago('TRANSFERENCIA')">🏦 Transf.</button>
+          <button [ngClass]="{'selected': metodoPago() === 'BIZUM'}" (click)="seleccionarMetodoPago('BIZUM')">💸 Bizum</button>
           <button [ngClass]="{'selected': metodoPago() === 'OTRO'}" (click)="seleccionarMetodoPago('OTRO')">📦 Otro</button>
         </div>
 
