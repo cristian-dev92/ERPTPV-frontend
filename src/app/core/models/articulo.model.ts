@@ -1,35 +1,61 @@
 /**
  * Interfaz que define un Artículo dentro del sistema (El Catálogo).
- * Sincronizado con el nuevo ArticuloCatalogoDTO del backend de producción.
+ * Sincronizado al 100% con el DTO de producción ArticuloCatalogoDTO del backend.
  */
 export interface Articulo {
-  /** ID único. Opcional solo en creación local antes de persistir en BD */
+  /** ID único del artículo en el catálogo */
   id?: number;
-  /** Nombre comercial del producto o servicio (ej: "Suela de Goma", "Mocasín") */
+  /** Código interno de referencia o SKU (ej: "CRE-TAR-NE") */
+  codigoReferencia: string;
+  /** Nombre comercial del producto o servicio (ej: "Suela de Goma") */
   nombre: string;
-  /** Discriminador estricto del backend. PRODUCTO: Control de stock. SERVICIO: Mano de obra */
-  tipo: 'PRODUCTO' | 'SERVICIO';
+  /** Precio base con IVA ya incluido (PVP final en mostrador) */
+  precioFinal: number;      
+  /** Porcentaje de IVA aplicado al artículo (Ej: 21.00, 10.00) */
+  porcentajeIva: number; 
+  /** Precio de compra / coste para la empresa (opcional) */
+  precioCompra?: number;
+  /** ID del proveedor asociado (opcional) */
+  proveedorId?: number | null;
+  /** Nombre del proveedor asociado (opcional) */
+  proveedorNombre?: string | null;
   /** Cantidad disponible en la tienda. Solo relevante si tipo es 'PRODUCTO' */
   stock?: number | null;
+  /** Stock mínimo para alertas de reposición */
   stockMinimo?: number | null;
-  /** Descripción ampliada de los materiales o el trabajo a realizar */
-  descripcion?: string;
-  // --- NÚCLEO FINANCIERO (PVP con IVA incluido) ---
-  precioFinal: number;      
-  /** Porcentaje de IVA aplicado al artículo (Ej: 21, 10, 4, 0) */
-  porcentajeIva: number; 
+  /** Indica si el artículo está activo para su uso en el sistema (Borrado lógico) */
+  activo: boolean; 
+  /** Notas internas de inventario/almacén (ej: ubicación de estantería) */
+  notas?: string | null;
   /** Porcentaje de descuento por defecto del catálogo */
   porcentajeDescuento?: number;
-  // --- DATOS DE CONTROL INTERNO Y PRODUCCIÓN ---
-  activo: boolean; // 🚫 Borrado lógico global (Obligatorio en producción)
-  empresaId?: number;
-  // --- CAMPOS ADICIONALES PARA REPARACIONES ---
-  notasReparacion?: string | null;
-  // --- NOTAS INTERNAS DE INVENTARIO/ALMACÉN ---
-  notas?: string | null;
-  // --- CAMPOS PARA ASOCIACIÓN DE CATEGORÍAS ---
+  
+  // --- ASOCIACIÓN DE CATEGORÍAS / FAMILIAS ---
+  /** ID de la familia a la que pertenece */
   familiaId?: number | null;
-  familiaNombre?: string | null; // 🏷️ Nuevo: Traído del backend para optimizar lecturas/selects
+  /** Mapeado directo del backend para usar como categorías en el TPV */
+  familiaNombre?: string | null; 
+  
   // --- LECTURA DE CÓDIGO DE BARRAS ---
-  codigoBarras?: string | null;   // Ya integrado en el DTO oficial de producción
+  /** Código de barras para escáner integrado */
+  codigoBarras?: string | null;   
+}
+
+/**
+ * Payload específico para la creación de nuevos artículos.
+ * Clona exactamente la estructura del NuevoArticuloRequest de Java.
+ */
+export interface NuevoArticuloRequest {
+  nombre: string;
+  codigoReferencia: string;
+  precioFinal: number;
+  porcentajeIva: number;
+  precioCompra?: number;
+  proveedorId?: number | null;
+  stock?: number | null;
+  stockMinimo?: number | null;
+  notas?: string | null;
+  porcentajeDescuento?: number;
+  familiaId?: number | null;
+  codigoBarras?: string | null;
 }

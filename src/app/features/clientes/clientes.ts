@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ClienteService, ClienteDTO, NuevoClienteRequest } from '../../core/services/cliente.service';
 import { UiService } from '../../core/services/ui.service';
 import { isMobileOrTablet } from '../../core/utils/device-utils';
+import { ComponentePaginado } from '../../core/utils/paginado-base';
 
 @Component({
   selector: 'app-clientes',
@@ -12,7 +13,7 @@ import { isMobileOrTablet } from '../../core/utils/device-utils';
   templateUrl: './clientes.html',
   styleUrl: './clientes.scss'
 })
-export class ClientesComponent implements OnInit {
+export class ClientesComponent extends ComponentePaginado implements OnInit {
   private clienteService = inject(ClienteService);
   private uiService = inject(UiService);
 
@@ -89,12 +90,35 @@ export class ClientesComponent implements OnInit {
   clienteABorrarId = signal<number | null>(null);
   clienteABorrarNombre = signal<string>('');
 
+  constructor() {
+    super(); // Llama al constructor de la clase base
+  }
+
   ngOnInit() {
-    this.cargarClientes();
+    this.cargarDatos();
     // Si se invoca exclusivamente desde el TPV para registrar, forzamos la apertura del formulario
     if (this.modoModalSolo()) {
     this.abrirModal();
+   }
   }
+
+  // Obligatorio implementar este método (lo pide la clase base)
+  cargarDatos(): void {
+    this.cargando.set(true);
+    this.clienteService.getClientesPaginados(this.paginaActual(), this.itemsPorPagina)
+      .subscribe({
+        next: (data: any) => {
+          // data.content trae los 20 registros de la página actual
+          this.clientes.set(data.content);
+          this.totalElementos = data.totalElements;
+          this.totalPaginas = data.totalPages;
+          this.cargando.set(false);
+        },
+        error: (err) => {
+          this.uiService.mostrarToast('Error al cargar clientes paginados: ' + (err.error || err.message), 'error');
+          this.cargando.set(false);
+        }
+      });
   }
 
   // ⌨️ MÉTODOS DEL TECLADO TÁCTIL
@@ -168,7 +192,7 @@ export class ClientesComponent implements OnInit {
   buscarClientes() {
     const termino = this.filtroBusqueda().trim();
     if (!termino) {
-      this.cargarClientes();
+      this.cargarDatos();
       return;
     }
 

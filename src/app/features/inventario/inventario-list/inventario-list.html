@@ -1,3 +1,4 @@
+<div class="inventario-container">
 <div class="header-section">
   <h1>📦 Inventario</h1>
   <div class="header-actions-group" style="display: flex; gap: 10px;">
@@ -49,7 +50,6 @@
     <thead>
       <tr>
         <th>Nombre</th>
-        <th>Tipo</th>
         <th>Código de Barras</th>
         <th>Precio</th>
         <th>Stock</th>
@@ -65,33 +65,28 @@
               <span class="nota-interna-badge" [title]="item.notas">📝 Con notas</span>
             }
           </td>
-          <td>
-            <span class="badge" [class.badge-serv]="item.tipo === 'SERVICIO'">
-              {{ item.tipo }}
-            </span>
-          </td>
           <td class="txt-barcode">{{ item.codigoBarras || '—' }}</td>
           <td class="txt-precio">{{ item.precioFinal | currency:'EUR' }}</td>
           <td>
-            @if (item.tipo === 'PRODUCTO') {
+            <!-- ⚡ Cambiado: Evaluamos si tiene stock asignado en lugar de depender del tipo antiguo -->
+            @if (item.stock !== undefined && item.stock !== null) {
               <div class="stock-container">
-                <span class="cantidad-stock">{{ item.stock ?? 0 }} u.</span>
+                <span class="cantidad-stock">{{ item.stock }} u.</span>
                 
-                @if (item.stock !== undefined && item.stock !== null && item.stock <= 0) {
+                @if (item.stock <= 0) {
                   <span class="badge-alert sin-material" title="¡Urgente! Reponer existencias">
                     🚫 No hay material
                   </span>
                 }
-                @else if (item.stock !== undefined && item.stock !== null && 
-                     item.stockMinimo !== undefined && item.stockMinimo !== null && 
-                     item.stock <= item.stockMinimo) {
+                @else if (item.stockMinimo !== undefined && item.stockMinimo !== null && item.stock <= item.stockMinimo) {
                   <span class="badge-alert" title="Stock mínimo: {{ item.stockMinimo }}">
                     ⚠️ Va faltando material
                   </span>
                 }
               </div>
             } @else {
-              <span class="txt-servicio-na">🛠️ Incalculable</span>
+              <!-- 🛠️ En caso de ser un servicio del taller (sin stock definido) -->
+              <span class="txt-servicio-na">🛠️ Servicio / Taller</span>
             }
           </td>
           <td>
@@ -107,12 +102,27 @@
         </tr>
       } @empty {
         <tr>
-          <td colspan="6" class="txt-vacio">No se encontraron artículos que coincidan con los filtros aplicados.</td>
+          <td colspan="5" class="txt-vacio">No se encontraron artículos que coincidan con los filtros aplicados.</td>
         </tr>
       }
     </tbody>
   </table>
+
+  <!-- FOOTER DE PAGINACIÓN: Siempre abajo del todo -->
+  <footer class="paginacion-footer">
+    <button [disabled]="paginaActual()" (click)="paginaAnterior()">
+      Anterior
+    </button>
+    
+    <span class="info-paginas">Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+    
+    <button [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
+      Siguiente
+    </button>
+  </footer>
+  
 }
+</div>
 
 @if (mostrarModalNuevaFamilia()) {
   <div class="modal-backdrop-blur">

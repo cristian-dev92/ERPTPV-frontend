@@ -6,6 +6,7 @@ import { RouterLink } from "@angular/router";
 import { UiService } from "../../../core/services/ui.service";
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
 import { FamiliaDTO, FamiliaService, NuevaFamiliaRequest } from '../../../core/services/familia.service';
+import { ComponentePaginado } from '../../../core/utils/paginado-base';
 
 @Component({
   selector: 'app-inventario-list',
@@ -14,7 +15,7 @@ import { FamiliaDTO, FamiliaService, NuevaFamiliaRequest } from '../../../core/s
   templateUrl: './inventario-list.html',
   styleUrl: './inventario-list.scss'
 })
-export class InventarioListComponent implements OnInit {
+export class InventarioListComponent extends ComponentePaginado implements OnInit {
   private articuloService = inject(ArticuloService);
   private uiService = inject(UiService);
   private familiaService = inject(FamiliaService);
@@ -53,12 +54,12 @@ export class InventarioListComponent implements OnInit {
   mostrarModalConfirmar = signal<boolean>(false);
   articuloAAnticipar = signal<{ id: number, nombre: string } | null>(null);
 
-  // 🎯 COMPUTED: Filtra familias principales para el selector del buscador
+  // COMPUTED: Filtra familias principales para el selector del buscador
   familiasPadre = computed(() => {
     return this.todasLasFamilias().filter(f => !f.familiaPadreId);
   });
 
-  // 🎯 COMPUTED: Filtra subfamilias según la familia padre seleccionada en el filtro
+  // COMPUTED: Filtra subfamilias según la familia padre seleccionada en el filtro
   subfamiliasFiltradas = computed(() => {
     const padreId = this.familiaFiltroId();
     if (!padreId) return [];
@@ -98,8 +99,32 @@ export class InventarioListComponent implements OnInit {
     return resultado;
   });
 
+  constructor() {
+    super(); // Llama al constructor de la clase base
+  }
+
   ngOnInit(): void {
+    this.cargarDatos();
     this.cargarDatosIniciales();
+  }
+
+  // Obligatorio implementar este método (lo pide la clase base)
+  cargarDatos(): void {
+    this.loading.set(true);
+    this.articuloService.getArticulosPaginados(this.paginaActual(), this.itemsPorPagina)
+      .subscribe({
+        next: (data: any) => {
+          // data.content contiene la lista de artículos para la página actual
+          this.articulos.set(data.content);
+          this.totalElementos = data.totalElements;
+          this.totalPaginas = data.totalPages;
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.uiService.mostrarToast('Error al cargar artículos paginados: ' + (err.error || err.message), 'error');
+          this.loading.set(false);
+        }
+      });
   }
 
   cargarDatosIniciales(): void {

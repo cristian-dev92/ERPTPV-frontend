@@ -20,28 +20,6 @@
     </div>
 
     <div class="form-group">
-      <label for="tipo">Tipo</label>
-      <select id="tipo" [value]="tipo()" (change)="tipo.set($any($event.target).value)">
-        <option value="PRODUCTO">📦 PRODUCTO</option>
-        <option value="SERVICIO">🛠️ SERVICIO</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label for="proveedor">Proveedor</label>
-      <select id="proveedor" [value]="idProveedor() ?? ''" 
-        class="search-input"
-        (change)="idProveedor.set(+$any($event.target).value)">
-        <option value="" disabled selected>Selecciona un proveedor</option>
-        @for (prov of proveedores(); track prov.id) {
-          <option [value]="prov.id">{{ prov.nombre }}</option>
-        } @empty {
-          <option value="" disabled>⚠️ No hay proveedores asignados</option>
-        }
-      </select>
-    </div>
-
-    <div class="form-group">
       <label for="familiaPadre">Familia</label>
       <select id="familiaPadre" [value]="familiaSeleccionadaId() ?? ''"
         (change)="onFamiliaPadreChange(+$any($event.target).value)">
@@ -71,14 +49,14 @@
       </select>
     </div>
 
-    @if (tipo() === 'PRODUCTO') {
-      <div class="form-group animacion-fade">
-        <label for="stockInicial">Stock Inicial</label>
-        <input type="text" id="stockInicial" 
-          [value]="stockInicial() !== null ? stockInicial() : ''" 
-          (click)="abrirTecladoGeneralForm('STOCK_INICIAL')"
-          (input)="sincronizarTecladoFisico('STOCK_INICIAL', $any($event.target).value)" />
-      </div>
+    <!-- Los campos de Stock ahora se muestran siempre de manera directa -->
+    <div class="form-group animacion-fade">
+      <label for="stockInicial">Stock Inicial</label>
+      <input type="text" id="stockInicial" 
+        [value]="stockInicial() !== null ? stockInicial() : ''" 
+        (click)="abrirTecladoGeneralForm('STOCK_INICIAL')"
+        (input)="sincronizarTecladoFisico('STOCK_INICIAL', $any($event.target).value)" />
+    </div>
 
       <div class="form-group animacion-fade">
         <label for="stockMinimo">Stock Mínimo</label>
@@ -87,7 +65,6 @@
           (click)="abrirTecladoGeneralForm('STOCK_MINIMO')" 
           (input)="sincronizarTecladoFisico('STOCK_MINIMO', $any($event.target).value)" />
       </div>
-    }
 
     <div class="form-group">
       <label for="precioFinal">Precio (PVP con IVA) *</label>
@@ -113,6 +90,20 @@
         </div>
       </div>
 
+      <div class="form-group">
+      <label for="proveedor">Proveedor</label>
+      <select id="proveedor" [value]="idProveedor() ?? ''" 
+        class="search-input"
+        (change)="idProveedor.set(+$any($event.target).value)">
+        <option value="" disabled selected>Selecciona un proveedor</option>
+        @for (prov of proveedores(); track prov.id) {
+          <option [value]="prov.id">{{ prov.nombre }}</option>
+        } @empty {
+          <option value="" disabled>⚠️ No hay proveedores asignados</option>
+        }
+      </select>
+    </div>
+
     <div class="form-group full-width info-base-imponible">
       <label>Precio Base (Sin IVA - Calculado para gestión)</label>
       <div class="display-solo-lectura">
@@ -126,7 +117,7 @@
       <textarea 
         id="notasReparacion" 
         rows="3" 
-        [value]="notasReparacion()" 
+        [value]="notas()" 
         (click)="abrirTecladoGeneralForm('NOTAS')"
         (input)="sincronizarTecladoFisico('NOTAS', $any($event.target).value)" 
       ></textarea>

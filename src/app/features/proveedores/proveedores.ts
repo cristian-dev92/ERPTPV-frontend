@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ProveedorService, ProveedorDTO, NuevoProveedorRequest } from '../../core/services/proveedor.service';
 import { UiService } from '../../core/services/ui.service';
 import { isMobileOrTablet } from '../../core/utils/device-utils';
+import { ComponentePaginado } from '../../core/utils/paginado-base';
 
 @Component({
   selector: 'app-proveedores',
@@ -12,7 +13,7 @@ import { isMobileOrTablet } from '../../core/utils/device-utils';
   templateUrl: './proveedores.html',
   styleUrl: './proveedores.scss'
 })
-export class ProveedoresComponent implements OnInit {
+export class ProveedoresComponent extends ComponentePaginado implements OnInit { 
   private proveedorService = inject(ProveedorService);
   private uiService = inject(UiService);
 
@@ -21,6 +22,7 @@ export class ProveedoresComponent implements OnInit {
   mostrarModalRegistro = signal<boolean>(false);
   modoEdicion = signal<boolean>(false);                
   proveedorSeleccionadoId = signal<number | null>(null);
+  cargando = signal<boolean>(false);
 
   // ESTADOS DE BÚSQUEDA Y TECLADO
   filtroBusqueda = signal<string>('');
@@ -57,8 +59,32 @@ export class ProveedoresComponent implements OnInit {
     );
   });
 
+  constructor() {
+    super(); // Llama al constructor de la clase base
+  }
+
   ngOnInit() {
+    this.cargarDatos();
     this.cargarProveedores();
+  }
+
+  // Obligatorio implementar este método (lo pide la clase base)
+  cargarDatos(): void {
+    this.cargando.set(true);
+    this.proveedorService.getProveedoresPaginados(this.paginaActual(), this.itemsPorPagina)
+      .subscribe({
+        next: (data: any) => {
+          // data.content trae los 20 registros de la página actual
+          this.proveedores.set(data.content);
+          this.totalElementos = data.totalElements;
+          this.totalPaginas = data.totalPages;
+          this.cargando.set(false);
+        },
+        error: (err) => {
+          this.uiService.mostrarToast('Error al cargar clientes paginados: ' + (err.error || err.message), 'error');
+          this.cargando.set(false);
+        }
+      });
   }
 
   cargarProveedores() {

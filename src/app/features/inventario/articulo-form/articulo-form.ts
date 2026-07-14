@@ -7,6 +7,7 @@ import { CommonModule } from "@angular/common";
 import { ProveedorDTO, ProveedorService } from '../../../core/services/proveedor.service';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
 import { FamiliaDTO, FamiliaService, NuevaFamiliaRequest } from '../../../core/services/familia.service';
+import { Articulo } from '../../../core/models/articulo.model';
 
 @Component({
   selector: 'app-articulo-form',
@@ -18,13 +19,14 @@ import { FamiliaDTO, FamiliaService, NuevaFamiliaRequest } from '../../../core/s
 export class ArticuloFormComponent implements OnInit {
   // Definición de señales para el formulario
   nombre = signal<string>('');
-  tipo = signal<'PRODUCTO' | 'SERVICIO'>('PRODUCTO');
+  codigoReferencia = signal<string>('');
   stockInicial = signal<number | null>(null);
   stockMinimo = signal<number | null>(null);
   idProveedor = signal<number | null>(null);
   
   precioFinal = signal<number | null>(null); // El PVP con IVA que teclea el usuario
   porcentajeIva = signal<number>(21);       // 21% seleccionado por defecto
+  porcentajeDescuento = signal<number>(0);
 
   // === Nuevas señales codigo barras y familias ===
   codigoBarras = signal<string>('');
@@ -37,7 +39,7 @@ export class ArticuloFormComponent implements OnInit {
   nuevaFamiliaEsSubfamilia = signal<boolean>(false); // Para saber si se crea como hija
 
   // === Señal para las notas internas del artículo ===
-  notasReparacion = signal<string>('');
+  notas = signal<string>('');
 
   // SEÑAL PARA EL BORRADO LÓGICO (Obligatorio en producción)
   activo = signal<boolean>(true);
@@ -102,16 +104,16 @@ export class ArticuloFormComponent implements OnInit {
       this.idArticuloEdicion.set(id);
       
       this.articuloService.getArticuloById(id).subscribe({
-        next: (articulo: any ) => {
+        next: (articulo: Articulo ) => {
           // Rellenamos las señales con la información recuperada del backend
           this.nombre.set(articulo.nombre);
-          this.tipo.set(articulo.tipo);
+          this.codigoReferencia.set(articulo.codigoReferencia || '');
           this.stockInicial.set(articulo.stock ?? null);
           this.stockMinimo.set(articulo.stockMinimo ?? null);
-          this.idProveedor.set(articulo.idProveedor ?? null);
+          this.idProveedor.set(articulo.proveedorId ?? null);
           this.precioFinal.set(articulo.precioFinal);
           this.porcentajeIva.set(articulo.porcentajeIva);
-          this.notasReparacion.set(articulo.notas || '');
+          this.notas.set(articulo.notas || '');
           this.codigoBarras.set(articulo.codigoBarras || '');
           // Guardamos el estado del borrado lógico traído del backend
           this.activo.set(articulo.activo ?? true);
@@ -231,7 +233,7 @@ export class ArticuloFormComponent implements OnInit {
   private obtenerValorActualPorObjetivo(objetivo: string): string {
     if (objetivo === 'NOMBRE') return this.nombre();
     if (objetivo === 'CODIGO_BARRAS') return this.codigoBarras();
-    if (objetivo === 'NOTAS') return this.notasReparacion();
+    if (objetivo === 'NOTAS') return this.notas();
     if (objetivo === 'BUSCAR_PROVEEDOR') return this.filtroProveedor();
     if (objetivo === 'PRECIO') return this.precioFinal()?.toString() || '';
     if (objetivo === 'IVA') return this.porcentajeIva().toString();
@@ -244,7 +246,7 @@ export class ArticuloFormComponent implements OnInit {
   private actualizarValorSeñal(objetivo: string, valor: string) {
     if (objetivo === 'NOMBRE') this.nombre.set(valor);
     if (objetivo === 'CODIGO_BARRAS') this.codigoBarras.set(valor);
-    if (objetivo === 'NOTAS') this.notasReparacion.set(valor);
+    if (objetivo === 'NOTAS') this.notas.set(valor);
     if (objetivo === 'BUSCAR_PROVEEDOR') this.filtroProveedor.set(valor);
     if (objetivo === 'NUEVA_FAMILIA') this.nuevoNombreFamilia.set(valor);
     
@@ -283,19 +285,21 @@ export class ArticuloFormComponent implements OnInit {
       ? Number(this.subfamiliaSeleccionadaId()) 
       : (this.familiaSeleccionadaId() ? Number(this.familiaSeleccionadaId()) : null);
 
-    // Sincronizado con los contratos exactos del backend
-    const articuloPayload = {
+    // Mapeo adaptado: Todo se comporta como 'PRODUCTO' y el stock se asigna directamente
+    const articuloPayload: Articulo = {
+      id: this.idArticuloEdicion() || undefined,
+      codigoReferencia: this.codigoReferencia()?.trim() || `REF-${Date.now()}`,
       nombre: this.nombre(),
-      tipo: this.tipo(),
-      stock: this.tipo() === 'PRODUCTO' ? this.stockInicial() : null,
-      stockMinimo: this.tipo() === 'PRODUCTO' ? this.stockMinimo() : null,
-      idProveedor: this.idProveedor() ? Number(this.idProveedor()) : null,
+      stock: this.stockInicial(),
+      stockMinimo: this.stockMinimo(),
+      proveedorId: this.idProveedor() ? Number(this.idProveedor()) : null,
       precioFinal: this.precioFinal() ?? 0,
       porcentajeIva: this.porcentajeIva(),
-      notas: this.notasReparacion().trim(),
-      codigoBarras: this.codigoBarras().trim() || null,
+      notas: this.notas()?.trim() || null,
+      codigoBarras: this.codigoBarras()?.trim() || null,
       familiaId: idFamiliaFinal,
-      activo: this.activo()
+      activo: this.activo(),
+      porcentajeDescuento: this.porcentajeDescuento() ?? 0
     };
 
     const idEdicion = this.idArticuloEdicion();

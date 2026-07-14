@@ -9,7 +9,7 @@ $border-color: #cbd5e1;
 /* Contenedor principal: Ocupa todo el alto disponible */
 .tpv-container {
   display: grid;
-  grid-template-columns: 1fr 420px; // El catálogo es flexible, el ticket fijo
+  grid-template-columns: 1fr 405px; // El catálogo es flexible, el ticket fijo
   gap: 20px;
   height: calc(100vh - 120px); // Ajusta según tu header
   padding: 10px;
@@ -58,7 +58,7 @@ $border-color: #cbd5e1;
   .buscador-articulo-wrap input {
     width: 100%;
     box-sizing: border-box;
-    height: 50px;
+    height: 45px;
     padding: 12px;
     border-radius: 12px;
     border: 2px solid #cbd5e1;
@@ -211,7 +211,7 @@ $border-color: #cbd5e1;
   height: auto !important;           // Altura totalmente libre hacia abajo
   min-height: 100vh;
   overflow-y: visible !important;    // Permite que la página crezca de forma infinita si hace falta
-  width: 450px !important;  /* Ajusta este número (350px, 400px...) a tu gusto */
+  width: 430px !important;  /* Ajusta este número (350px, 400px...) a tu gusto */
   flex-shrink: 0 !important; /* Evita que la pantalla lo aplaste si hay muchos productos a la izquierda */
 }
 
@@ -261,7 +261,7 @@ $border-color: #cbd5e1;
     padding: 1rem 1.5rem !important;   
     min-height: 45px !important;         
     font-size: 1rem !important;        
-    font-weight: 450 !important;          
+    font-weight: 600 !important;          
     border-radius: 0.75rem !important;    
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25) !important; 
     cursor: pointer;
@@ -1095,7 +1095,7 @@ $border-color: #cbd5e1;
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
-      height: 46px !important;
+      height: 42px !important;
       width: auto !important; 
       flex-shrink: 0 !important;             
       padding: 0 0.75rem !important;         
@@ -1103,7 +1103,7 @@ $border-color: #cbd5e1;
       color: white !important;
       border: none !important;
       border-radius: 8px !important;
-      font-size: 0.8rem !important;
+      font-size: 1rem !important;
       font-weight: 600 !important;
       cursor: pointer !important;
       gap: 6px !important;

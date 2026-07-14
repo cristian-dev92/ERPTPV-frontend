@@ -150,11 +150,6 @@
                               style="background-color: #2b6cb0; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">
                         ⚙️ Configurar
                       </button>
-                      <button type="button" 
-                              (click)="eliminarLineaLocal(item)"
-                              style="background-color: rgba(229, 62, 62, 0.2); color: #f56565; border: 1px solid rgba(229, 62, 62, 0.4); padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-left: 4px;">
-                        🗑️ Borrar
-                      </button>
                     }
                   </div>
                 </div>
@@ -162,6 +157,20 @@
               </div>
             }
           </div>
+
+          <!-- FOOTER DE PAGINACIÓN: Siempre abajo del todo -->
+          <footer class="paginacion-footer">
+            <button [disabled]="paginaActual()" (click)="paginaAnterior()">
+              Anterior
+            </button>
+    
+            <span class="info-paginas">Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+    
+            <button [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
+              Siguiente
+            </button>
+            </footer>
+
          </div>
 
           @for (item of detallesEditados; track item.id; let idx = $index) {
@@ -191,22 +200,6 @@
                   </div>
                 }
 
-                @if (ordenSeleccionada()?.estadoTaller === 'EN_TALLER' || ordenSeleccionada()?.estadoTaller === 'LISTO' || ordenSeleccionada()?.tipo === 'VENTA_DIRECTA') {
-                  <div class="panic-price-box">
-                    <label class="panic-label">🚨 Modificar Precio de esta línea:</label>
-                     <div class="panic-input-wrapper">
-                      <div class="panic-field-container">
-                        <span class="currency-symbol">€</span>
-                        <input type="text" inputmode="decimal" [(ngModel)]="item.nuevoPrecioInput" (click)="activarTeclado('precio-linea', idx)" placeholder="0.00" />
-                      </div>
-                      <button type="button" class="btn-panic-submit" (click)="cambiarPrecioLineaEspecifica(item)">
-                        💥 Confirmar precio
-                      </button>
-                     </div>
-                     <small style="color: #a0aec0; display: block; margin-top: 6px; font-size: 0.85rem;">Precio actual base: {{ item.precio | currency:'EUR' }}</small>
-                   </div>
-                  }
-
                   <button type="button" class="btn-submit-pay" style="margin-top: 0.5rem;" (click)="toggleDesplegableServicio(null)">
                     Aceptar y Volver ✔️
                   </button>
@@ -223,12 +216,9 @@
             <div class="total-row pendiente"><span class="lbl">PENDIENTE DE CAJA: </span> <span class="val-pendiente">{{ orden.importePendiente | currency:'EUR' }}</span></div>
           </div>
 
-          @if (orden.tipo === 'REPARACION' || orden.tipoOrden === 'REPARACION') {
-            <button class="btn-save-edit" (click)="guardarCambiosReparacion()">
-              💾 Guardar y Continuar
-            </button>
-          }
-        </div> <div class="actions-section">
+        </div> 
+        
+        <div class="actions-section">
           <h3>⚙️ Acciones Operativas</h3>
 
           <div class="workflow-buttons">

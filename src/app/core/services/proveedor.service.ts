@@ -40,4 +40,11 @@ export class ProveedorService {
   eliminarProveedor(id: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
+
+  getProveedoresPaginados(pagina: number, cantidad: number): Observable<any> {
+  return this.http.get<any>(`${this.API_URL}/paginado`, {
+    params: { page: pagina.toString(), size: cantidad.toString() }
+  });
+ }
+
 }

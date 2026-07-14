@@ -4,6 +4,7 @@ import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiService } from '../../../core/services/ui.service';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
+import { ComponentePaginado } from '../../../core/utils/paginado-base';
 
 type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO';
 
@@ -14,7 +15,7 @@ type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO';
   templateUrl: './orden-list.html',
   styleUrl: './orden-list.scss'
 })
-export class OrdenListComponent implements OnInit {
+export class OrdenListComponent extends ComponentePaginado implements OnInit {
   private ordenService = inject(OrdenService);
   private uiService = inject(UiService);
   
@@ -23,9 +24,27 @@ export class OrdenListComponent implements OnInit {
   filtroEstado = signal<string>('TODOS');       
   terminoBusqueda = signal<string>('');
   ordenes = signal<any[]>([]);
+  ordenSeleccionada = signal<any | null>(null);
+  cargando = signal<boolean>(false);
 
-  // Añadimos notas personales
+  //Notas que salen en el ticket
+  notasMostrador = signal<string>('');
+
+  // Añadimos notas pgenerales
   notasGenerales = signal<string>('');
+
+  // =========================================================================
+  // Modales, Cobros y Devoluciones
+  // =========================================================================
+  detallesEditados: any[] = [];
+  idDetalleDesplegado: number | null = null;
+
+  mostrarModalCobro = signal<boolean>(false);
+  metodoPago = signal<MetodoPago>('EFECTIVO');
+  importeEntregado = signal<string>('');
+
+  mostrarModalDevolucion = signal<boolean>(false);
+  metodoDevolucion = signal<MetodoPago>('EFECTIVO');
 
   // --- CONFIGURACIÓN TECLADO TÁCTIL ---
   mostrarTeclado = signal<boolean>(false);
@@ -107,14 +126,6 @@ export class OrdenListComponent implements OnInit {
 
     return listaFiltrada.slice(0, 50);
   });
-
-  ordenSeleccionada = signal<any | null>(null);
-  detallesEditados: any[] = [];
-  idDetalleDesplegado: number | null = null; 
-
-  mostrarModalCobro = signal<boolean>(false);
-  metodoPago = signal<MetodoPago>('EFECTIVO');
-  importeEntregado = signal<string>('');
   
   cambioAOfrecer = computed(() => {
     if (this.metodoPago() === 'TARJETA') return 0;
@@ -123,15 +134,36 @@ export class OrdenListComponent implements OnInit {
     return entregado > total ? entregado - total : 0;
   });
 
-  mostrarModalDevolucion = signal<boolean>(false);
-  metodoDevolucion = signal<MetodoPago>('EFECTIVO');
+  constructor() {
+    super(); // Llama al constructor de la clase base
+  }
 
   ngOnInit() {
+    this.cargarDatos();
     this.cargarDatosDelServidor();
   }
 
+  // Obligatorio implementar este método (lo pide la clase base)
+  cargarDatos(): void {
+    this.cargando.set(true);
+    this.ordenService.getOrdenesPaginadas(this.paginaActual(), this.itemsPorPagina)
+      .subscribe({
+        next: (data: any) => {
+          // data.content trae los 20 registros de la página actual
+          this.ordenes.set(data.content);
+          this.totalElementos = data.totalElements;
+          this.totalPaginas = data.totalPages;
+          this.cargando.set(false);
+        },
+        error: (err) => {
+          this.uiService.mostrarToast('Error al cargar clientes paginados: ' + (err.error || err.message), 'error');
+          this.ordenSeleccionada.set(false);
+        }
+      });
+  }
+
   cargarDatosDelServidor() {
-    this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+    this.ordenService.getOrdenes().subscribe({
       next: (data) => this.ordenes.set(data),
       error: (err) => this.uiService.mostrarToast('Error al cargar la gestión de tickets: ' + (err.error?.message || err.message), 'error')
     });
@@ -179,29 +211,6 @@ export class OrdenListComponent implements OnInit {
     this.idDetalleDesplegado = this.idDetalleDesplegado === id ? null : id;
   }
 
-  eliminarLineaLocal(item: any) {
-   const orden = this.ordenSeleccionada();
-  if (!orden) return;
-
-  // El idCorrecto debe ser el id de la línea intermedia de la Base de Datos
-  const idCorrecto = item.id; 
-
-  this.uiService.mostrarToast('🗑️ Eliminando línea de forma permanente...', 'warning');
-
-  this.ordenService.eliminarLineaOrden(orden.id, idCorrecto).subscribe({
-    next: () => {
-      this.uiService.mostrarToast('✨ ¡Línea eliminada e inventario/totales recalculados!', 'success');
-      
-      // Actualizamos el modal en caliente con los datos que devuelve el motor de Java
-      this.cargarDatosDelServidor(); 
-      this.cerrarModal(); 
-    },
-    error: (err) => {
-      console.error(err);
-      this.uiService.mostrarToast('No se pudo eliminar la línea: ' + (err.error?.message || err.message), 'error');
-    }
-  });
-}
   cerrarModal() { 
     this.ordenSeleccionada.set(null);
     this.detallesEditados = [];
@@ -214,110 +223,41 @@ export class OrdenListComponent implements OnInit {
     this.cerrarTeclado();
   }
 
-  empezarTrabajo(ordenId: number) {
-    this.guardarCambiosFlujoServidor(ordenId, () => {
-      this.uiService.mostrarToast('¡Trabajo iniciado en taller!', 'success');
-      this.cargarDatosDelServidor();
-      this.cerrarModal();
-    });
-  }
-
-  finalizarReparacion(ordenId: number) {
-    this.guardarCambiosFlujoServidor(ordenId, () => {
-      this.ordenService.terminarReparacion(ordenId).subscribe({
-        next: () => {
-          this.uiService.mostrarToast('Reparación finalizada. Pasada a "Listos para recoger".', 'success');
-          this.cargarDatosDelServidor();
-          this.cerrarModal();
-        },
-        error: () => this.uiService.mostrarToast('Error al terminar reparación', 'error')
-      });
-    });
-  }
-
-  guardarCambiosReparacion() {
-    const orden = this.ordenSeleccionada();
-    if (!orden) return;
-
-    this.guardarCambiosFlujoServidor(orden.id, () => {
-      this.uiService.mostrarToast('Ticket y desgloses actualizados correctamente.', 'success');
-      this.cargarDatosDelServidor();
-      this.cerrarModal();
-    });
-  }
-
-  private guardarCambiosFlujoServidor(ordenId: number, callbackSuccess: () => void) {
-  // 1. Filtramos las líneas que son servicios/reparaciones
-  const serviciosAActualizar = this.detallesEditados.filter(d => d.esServicio);
-
-  if (serviciosAActualizar.length === 0) {
-    callbackSuccess();
-    return;
-  }
-
-  this.uiService.mostrarToast('Guardando líneas una a una de forma segura...', 'warning');
-
-  // 2. Función recursiva para ejecutar las peticiones en orden SECUENCIAL
-  const guardarLineaSecuencial = (indice: number) => {
-    // Si ya hemos procesado todos los artículos, disparamos el éxito general
-    if (indice >= serviciosAActualizar.length) {
-      callbackSuccess();
-      return;
-    }
-
-    const linea = serviciosAActualizar[indice];
-    const notaFinal = linea.notasReparacion || linea.notas || '';
-    
-    // Si el id es igual a la posición en el array (temporal), mandamos null
-    const idLineaCorrecto = (typeof linea.id === 'number' && linea.id === indice) ? null : linea.id;
-
-    // Ejecutamos la petición para ESTA línea
-    this.ordenService.editarReparacion(ordenId, notaFinal, linea.fechaEntrega, idLineaCorrecto).subscribe({
-      next: () => {
-        // 🚀 ÉXITO: Cuando termina de guardar una línea, llamamos a la siguiente
-        guardarLineaSecuencial(indice + 1);
-      },
-      error: (err) => {
-        console.error(`Error al guardar la línea con ID ${idLineaCorrecto}:`, err);
-        this.uiService.mostrarToast('Error al actualizar las notas de uno de los artículos.', 'error');
-      }
-    });
-  };
-
-  // 3. Arrancamos el bucle secuencial desde la primera línea (índice 0)
-  guardarLineaSecuencial(0);
- }
-
-  cambiarPrecioLineaEspecifica(item: any) {
-  const precioLimpio = item.nuevoPrecioInput.toString().replace(',', '.');
-  const precioParsed = parseFloat(precioLimpio);
-  const orden = this.ordenSeleccionada();
+  // =========================================================================
+  // Acciones de Taller
+  // =========================================================================
+  empezarTrabajo(trabajoId: number) {
+  this.uiService.mostrarToast('⚙️ Iniciando trabajo en el taller...', 'warning');
   
-  if (!orden || isNaN(precioParsed) || precioParsed <= 0) {
-    this.uiService.mostrarToast('Introduce un precio válido mayor que 0.', 'warning');
-    return;
-  }
-
-  // Aseguramos formato decimal limpio (ej: "10.00") por si Spring Boot se pone estricto con los tipos
-  const precioFinal = precioParsed.toFixed(2);
-
-  // Si 'item.articuloId' (2) te da Bad Request, cambia esto a: item.id || item.articuloId
-  const idCorrecto = item.id || item.articuloId;
-
-  this.uiService.mostrarToast(`⚡ Modificando precio de la línea a ${precioFinal}€...`, 'warning');
-
-  this.ordenService.cambiarPrecioOrden(orden.id, parseFloat(precioFinal), idCorrecto).subscribe({
+  this.ordenService.avanzarEstadoTrabajoTaller(trabajoId, 'EN_TALLER').subscribe({
     next: () => {
-      this.uiService.mostrarToast('💰 ¡Línea modificada y ticket recalculado con éxito!', 'success');
-      this.cargarDatosDelServidor();
+      this.uiService.mostrarToast('¡Trabajo iniciado en taller! 🛠️', 'success');
+      this.cargarDatosDelServidor(); // Recargamos para actualizar la vista
       this.cerrarModal();
     },
     error: (err) => {
-      console.error('Error del backend:', err);
-      this.uiService.mostrarToast('No se pudo cambiar el precio: ' + (err.error?.message || 'Fallo en servidor'), 'error');
+      console.error(err);
+      this.uiService.mostrarToast('No se pudo iniciar el trabajo', 'error');
     }
   });
-}
+ }
+
+  /** Finaliza un bulto/trabajo concreto pasándolo a LISTO (Listo para recoger) */
+  finalizarReparacion(trabajoId: number) {
+  this.uiService.mostrarToast('⚡ Marcando trabajo como completado...', 'warning');
+  
+  this.ordenService.avanzarEstadoTrabajoTaller(trabajoId, 'LISTO').subscribe({
+    next: () => {
+      this.uiService.mostrarToast('Reparación finalizada. Pasado a "Listos para recoger". 📦', 'success');
+      this.cargarDatosDelServidor(); // Recargamos la rejilla/panel
+      this.cerrarModal();
+    },
+    error: (err) => {
+      console.error(err);
+      this.uiService.mostrarToast('Error al terminar la reparación del bulto', 'error');
+    }
+  });
+ }
 
   abrirPanelCobro() {
     this.importeEntregado.set('');
@@ -361,7 +301,7 @@ export class OrdenListComponent implements OnInit {
 
     const ejecutarCambioEstado = () => {
       if (orden.estadoTaller === 'LISTO') {
-        this.ordenService.entregarOrden(orden.id).subscribe({
+        this.ordenService.crearOrden(orden.id).subscribe({
           next: () => {
             this.uiService.mostrarToast('¡Ticket completado! Orden cobrada y ENTREGADA.', 'success');
             this.cerrarPanelCobro();
@@ -390,6 +330,9 @@ export class OrdenListComponent implements OnInit {
     });
   }
 
+  // =========================================================================
+  // Gestión de Devoluciones
+  // =========================================================================
   abrirPanelDevolucion() {
     this.metodoDevolucion.set('EFECTIVO');
     this.mostrarModalDevolucion.set(true);
@@ -436,6 +379,9 @@ export class OrdenListComponent implements OnInit {
     });
   }
 
+  // =========================================================================
+  // Descargas de PDF
+  // =========================================================================
   descargarPdfTicket(ordenId: number) {
     this.uiService.mostrarToast('Generando PDF del ticket...');
     this.ordenService.getTicketPdf(ordenId).subscribe({
@@ -482,7 +428,7 @@ export class OrdenListComponent implements OnInit {
   }
 
   // =========================================================================
-  // LOGICA DEL NUEVO TECLADO VIRTUAL TÁCTIL
+  // LOGICA DEL TECLADO VIRTUAL TÁCTIL
   // =========================================================================
   activarTeclado(campo: string, indexLinea?: number | null) {
     if (isMobileOrTablet()) {
@@ -518,7 +464,7 @@ export class OrdenListComponent implements OnInit {
     } else if (campo === 'notas-generales') {
       // Escribir en las notas generales del ticket
       this.notasGenerales.set(this.notasGenerales() + caracterProcesado);
-    } else if (campo === 'notas-linea' && idx !== null) {
+    } else if (campo === 'notas-mostrador' && idx !== null) {
     // Inicializamos con string vacío tanto 'notas' como 'notasReparacion' para curarnos en salud
     if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
     if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
@@ -542,7 +488,7 @@ borrarUltimoCaracter() {
     // Borrar en las notas del ticket
     const actual = this.notasGenerales();
     this.notasGenerales.set(actual.slice(0, -1));
-  } else if (campo === 'notas-linea' && idx !== null) {
+  } else if (campo === 'notas-mostrador' && idx !== null) {
     const actualRep = this.detallesEditados[idx].notasReparacion || '';
     this.detallesEditados[idx].notasReparacion = actualRep.slice(0, -1);
     
@@ -563,7 +509,7 @@ insertarEspacio() {
   } else if (campo === 'notas-generales') {
     //Espacio en las notas del ticket
     this.notasGenerales.set(this.notasGenerales() + ' ');
-  } else if (campo === 'notas-linea' && idx !== null) {
+  } else if (campo === 'notas-mostrador' && idx !== null) {
     if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
     if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
 

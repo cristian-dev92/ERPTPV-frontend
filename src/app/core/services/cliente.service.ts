@@ -55,5 +55,15 @@ export class ClienteService {
   eliminarCliente(id: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
+
+  getClientesPaginados(pagina: number, cantidad: number): Observable<any> {
+    // Esto enviará la petición como: /api/clientes/paginado?page=0&size=20
+    return this.http.get<any>(`${this.API_URL}/paginado`, {
+      params: {
+        page: pagina.toString(),
+        size: cantidad.toString()
+      }
+    });
+  }
   
-}
+ }

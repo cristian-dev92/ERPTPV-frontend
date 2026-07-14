@@ -8,6 +8,7 @@ export interface FamiliaDTO {
   descripcion: string;
   familiaPadreId: number | null;
   familiaPadreNombre: string | null;
+  subfamilias?: FamiliaDTO[];
 }
 
 export interface NuevaFamiliaRequest {

@@ -1,39 +1,39 @@
-import { Component, inject, OnInit, signal, computed, ViewChild, HostListener } from '@angular/core';
-import { ArticuloService } from '../../../core/services/articulo.service';
-import { OrdenService, NuevaOrdenDTO, TipoOrden, NuevaLineaDTO, DetalleOrdenDTO } from '../../../core/services/orden.service';
-import { Articulo } from '../../../core/models/articulo.model';
-import { CurrencyPipe, DatePipe, NgClass, DecimalPipe } from '@angular/common';
+import { Component, OnInit, signal, computed, inject, ViewChild } from '@angular/core';
+import { CurrencyPipe, DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CajaService } from '../../../core/services/caja.service';
-import { ClienteService } from '../../../core/services/cliente.service';
-import { UiService } from '../../../core/services/ui.service';
-import { HttpClient } from "@angular/common/http";
-import { ClientesComponent } from '../../clientes/clientes';
-import { Router } from "@angular/router";
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
+import { ComponentePaginado } from '../../../core/utils/paginado-base';
 
-// Definición de Tipo Estricto para Métodos de Pago
-export type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO';
+// SERVICIOS
+import { ArticuloService } from '../../../core/services/articulo.service';
+import { ClienteService } from '../../../core/services/cliente.service';
+import { OrdenService } from '../../../core/services/orden.service';
+import { CajaService } from '../../../core/services/caja.service';
+import { UiService } from '../../../core/services/ui.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { FamiliaService } from '../../../core/services/familia.service';
 
-// Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
-export interface Cliente {
+// MODELOS / DTOS / INTERFACES NUEVOS
+import { Articulo } from '../../../core/models/articulo.model';
+import { ClientesComponent } from '../../clientes/clientes';
+import { NuevaOrdenDTO, OrdenDTO, DevolucionRequest, MetodoPago, LineaVentaDirectaDTO, TrabajoTallerDTO } from '../../../core/models/orden.model';
+import { HttpClient } from '@angular/common/http';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
+export interface FamiliaDTO {
   id: number;
   nombre: string;
-  telefono: string;
-  email?: string;
+  descripcion: string;
+  familiaPadreId: number | null;
+  familiaPadreNombre: string | null;
+  subfamilias?: FamiliaDTO[];
 }
 
-// Interfaz que extiende NuevaLineaDTO para incluir el nombre y precio del artículo, facilitando la visualización en el TPV
-export interface ItemCarrito extends NuevaLineaDTO {
-  articuloId: number;
+export interface NuevaFamiliaRequest {
   nombre: string;
-  tipo: 'PRODUCTO' | 'SERVICIO';
-  cantidad: number;
-  precio: number;
-  porcentajeDescuento: number;
-  notasReparacion?: string | null;
-  mostrarBocadilloNota?: boolean;
+  descripcion?: string;
+  familiaPadreId?: number | null;
 }
 
 // Interfaz para representar la información que devuelve el back al cerrar un recibo con AEAT, que luego se muestra en el TPV para que el cajero pueda verificarlo
@@ -44,38 +44,23 @@ export interface InfoVerifaktu {
   fecha: string;
 }
 
-export interface OrdenDTO {
+// Interfaz interna para manejar el carrito unificado en la vista antes de empaquetar el DTO
+interface LineaCarritoMostrador {
+  articulo: Articulo;
+  cantidad: number;
+  precioEditado: number;
+  porcentajeDescuento: number;
+  notasMostrador: string;
+  descripcionBulto: string; // Exclusivo si se trata como trabajo de reparación
+  destino: 'TIENDA' | 'TALLER';
+}
+
+// Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
+export interface Cliente {
   id: number;
-  numeroTicket: string;
-  total: number;
-  tipo?: 'VENTA_DIRECTA' | 'REPARACION' | 'DEVOLUCION';
-  
-  // === Campos de compatibilidad Front / Fechas ===
-  fecha?: Date | string;
-  createdAt?: string | Date;       
-  fechaCreacion?: string | Date; // LocalDateTime de Java
-
-  // === Campos de Cliente e Historial ===
-  cliente?: { nombre: string } | null;
-  clienteNombre?: string;     
-  clienteTelefono?: string;   
-  clienteId?: number | null;
-  empleadoNombre?: string;       
-
-  // === Desgloses Económicos y de Caja (Fundamentales de Java) ===
-  totalBaseImponible?: number;   // Suma de bases sin IVA
-  totalIva?: number;             // Suma de cuotas de IVA
-  importePagado?: number;        // Lo que ya ha dejado en caja el cliente
-  importePendiente?: number;     // Lo que le queda por pagar (Total - Pagado)
-
-  // === Estados de Negocio ===
-  estadoAeat?: 'ENVIADO' | 'PENDIENTE' | string; // Añadimos string por flexibilidad con VeriFactu
-  estadoPago?: 'PAGADO' | 'PARCIAL' | 'PENDIENTE' | 'CANCELADO' | 'DEVOLUCION' | string;
-  estadoTaller?: 'NO_APLICA' | 'EN_TALLER' | 'LISTO' | 'ENTREGADO' | 'CANCELADO' | string; 
-
-  // === Líneas e Información Taller ===
-  notasReparacion?: string;      // Nota rápida para las tarjetas del TPV
-  detalles?: DetalleOrdenDTO[];  // La lista de artículos reales del ticket
+  nombre: string;
+  telefono: string;
+  email?: string;
 }
 
 @Component({
@@ -86,87 +71,124 @@ export interface OrdenDTO {
   styleUrl: './tpv.scss'
 })
 
-export class TpvComponent implements OnInit {
+export class TpvComponent extends ComponentePaginado implements OnInit {
   private articuloService = inject(ArticuloService);
   private ordenService = inject(OrdenService);
   private cajaService = inject(CajaService);
   private clienteService = inject(ClienteService);
   public uiService = inject(UiService);
+  private router = inject(Router);
+  private familiaService = inject(FamiliaService);
+  private authService = inject(AuthService);
   private http: HttpClient = inject(HttpClient);
   private bufferCodigoBarras: string = '';
   private ultimaPulsacion: number = 0;
-  private router = inject(Router);
-  private sanitizer: DomSanitizer = inject(DomSanitizer);
+  private sanitizer = inject(DomSanitizer);
   public Math = Math;
   @ViewChild(ClientesComponent) clientesComponent!: ClientesComponent;
 
-  // === SIGNALS DEL TPV ===
-  carrito = signal<ItemCarrito[]>([]);
+  // === SIGNALS DE ESTADO PRINCIPALES ===
+  carrito = signal<LineaCarritoMostrador[]>([]);
+  categorias = signal<string[]>(['TODOS', 'CALZADO', 'REPARACION', 'COMPLEMENTOS', 'LIMPIEZA']);
+  categoriaSeleccionada = signal<string>('TODOS');
+  articulosFiltrados = signal<Articulo[]>([]);
   historialTickets = signal<OrdenDTO[]>([]);
+  tipoOrdenSeleccionada = signal<'VENTA_DIRECTA' | 'REPARACION'>('VENTA_DIRECTA');
+  metodoPagoSeleccionado = signal<MetodoPago>('EFECTIVO');
+  metodoPagoAnticipo = signal<string>('EFECTIVO');
+  importeAnticipo = 0;
+  cargando = signal<boolean>(false);
+
+  // Clientes y Taller
   clienteSeleccionado = signal<Cliente | null>(null);
   clienteSeleccionadoId = signal<number | null>(null);
   busquedaCliente = signal<string>('');
   clientesEncontrados = signal<Cliente[]>([]);
-  
   fechaRecogida = signal<string>('');
   sinFechaRecogida = signal<boolean>(false);
   notasGenerales = signal<string>('');
-  metodoPagoSeleccionado = signal<MetodoPago>('EFECTIVO');
-  mostrarModalMetodosPago = false;
-  mostrarModalPreguntaAnticipo = signal<boolean>(false);
-  opcionesMetodosPago: MetodoPago[] = ['EFECTIVO', 'TARJETA', 'BIZUM','TRANSFERENCIA', 'OTRO'];
-  mostrarHistorial = signal<boolean>(false);
 
-  // Estados de PDF e Impresión
-  idOperacionProcesada = signal<number | null>(null);
+  // Modales e interfaces
+  mostrarHistorial = signal<boolean>(false);
+  isTicketVisible = signal<boolean>(false);
+  mostrarModalPedirTicket = false;
+  mostrarModalSeleccionDevolucion = false;
+  mostrarModalMetodosPago = false;
+  opcionesMetodosPago: MetodoPago[] = ['EFECTIVO', 'TARJETA', 'BIZUM','TRANSFERENCIA', 'OTRO'];
+
+  // Control de Caja
+  cajaActual = this.cajaService.cajaActual;
+  cajaAbierta = computed(() => this.cajaActual() !== null);
+  saldoInicialInput: number = 0;
+
+  // Edición unificada de línea
+  mostrarModalEdicion = signal<boolean>(false);
+  indiceLineaEnEdicion = signal<number | null>(null);
+  precioLineaEnConstruccion = signal<string>('');
+  descuentoLineaEnConstruccion = signal<string>('0');
+  notaLineaEnConstruccion = signal<string>('');
+  bultoLineaEnConstruccion = signal<string>('');
+  busquedaArticulo = signal<string>('');
+
+  // Devoluciones enlazadas
+  numeroTicketBuscarInput: string = '';
+  ticketOrigenEncontrado: OrdenDTO | null = null;
+  lineasSeleccionadasParaDevolver: Map<number, { checked: boolean, cantidadADevolver: number }> = new Map();
+
+  // Anticipos
+  mostrarModalPreguntaAnticipo = signal<boolean>(false);
+  idOrdenPendienteAnticipo = signal<number | null>(null);
+  valorAnticipoFijo = signal<string>('');
+
+  // Veri*Factu / Impresión
   numeroTicketActual = signal<string>('TKT-PROVISIONAL');
   horaTicketActual = signal<string>('');
-  datosFacturaAeat = signal<any>(null);
-  isTicketVisible = signal<boolean>(false);
+  idOperacionProcesada = signal<number | null>(null);
+  ticketIframeUrl = signal<string | null>(null);
+  datosFacturaAeat = signal<InfoVerifaktu | null>(null);
+
+  // Estados de PDF e Impresión
   cargandoPDF = signal<boolean>(false);
   urlSeguraPdf = signal<SafeResourceUrl>(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank'));
   private rawBlobUrl: string | null = null; // Para liberar memoria
 
   // Modales y Flujos Especiales
   mostrarModalCliente = signal<boolean>(false);
-  mostrarModalPedirTicket = false;
-  mostrarModalSeleccionDevolucion = false;
   mostrarModalSeleccionPago = signal<boolean>(false); // Modificado para casar con el HTML
-  ticketOrigenEncontrado: OrdenDTO | null = null;
-  numeroTicketBuscarInput: string = '';
-  idOrdenPendienteAnticipo = signal<number | null>(null);
-  saldoInicialInput: number = 0;
-  valorAnticipoFijo = signal<string>('');
   parseFloat = parseFloat;
 
   // Estado del modal de teclado virtual / edición unificada de línea
   indiceItemEditandoLinea = signal<number | null>(null);
   modoCampoEdicionActivo = signal<'PRECIO' | 'DESCUENTO'>('PRECIO');
-  precioLineaEnConstruccion = signal<string>('');
-  descuentoLineaEnConstruccion = signal<string>('');
-  notaLineaEnConstruccion = signal<string>('');
 
-  // Variables auxiliares para flujos genéricos heredados
-  tipoOrdenSeleccionada = signal<TipoOrden>('VENTA_DIRECTA');
+  // Lista de familias obtenidas (puedes inicializarla vacía o con datos de prueba)
+  listaFamilias = signal<FamiliaDTO[]>([]);
+
+  // Señales de selección para la navegación de categorías
+  familiaSeleccionada = signal<FamiliaDTO | null>(null);
+  subfamiliaSeleccionada = signal<any | null>(null);
+
+  // Estados intermedios para la construcción de bultos/taller
+  descripcionBultoEnConstruccion = signal<string>('');
+  fechaPrevistaEntrega = signal<string>('');
+
+  // Control para abrir/cerrar el modal principal de taller
+  mostrarModalGestionServicios = signal<boolean>(false);
 
   // Estados del catalogo tactil
   articulos = signal<Articulo[]>([]); // Lista completa de artículos cargada desde el backend
-  categoriaSeleccionada = signal<'TODOS' | 'PRODUCTO' | 'SERVICIO'>('TODOS');
-  busquedaArticulo = signal<string>('');
 
   // --- ESTADO PARA MODIFICAR PRECIOS CON EL KEYPAD ---
   indiceItemEditandoPrecio = signal<number | null>(null);
   precioEnConstruccion = signal<string>(''); // Guarda los dígitos que pulsa el usuario (ej:
-
-  // Comprobación segura de caja abierta (computed reacciona al signal del servicio)
-  cajaActual = this.cajaService.cajaActual;
-  cajaAbierta = computed(() => !!this.cajaService.cajaActual());
 
   // === ESTADOS PARA EL TECLADO TÁCTIL GENERAL ===
   mostrarTeclado = signal<boolean>(false);
   inputActivo = signal<string>(''); // Aquí meteremos 'ARTICULO', 'CLIENTE', 'NOTAS_REPARACION', etc.
   mayusculas = signal<boolean>(true);
   valorTecladoEnConstruccion = signal<string>('');
+  maxUnidadesPermitidas: number = 1;
+  indiceLineaTemporal = signal<number | null>(null);
 
   // Distribución de teclas idéntica a tu diseño favorito del TPV
   lineaLetras1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
@@ -174,13 +196,6 @@ export class TpvComponent implements OnInit {
   lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
   lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
   lineaAcentos = ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü'];
-
-  // === GESTIÓN DE DEVOLUCIONES PARCIALES ===
-  lineasSeleccionadasParaDevolver: Map<number, { checked: boolean, cantidadADevolver: number }> = new Map();
-
-  // Guardamos estos dos de tu lógica anterior para saber qué línea del carrito se está editando
-  indiceLineaTemporal = signal<number | null>(null);
-  maxUnidadesPermitidas = 1;
 
    // Estado para controlar la visibilidad del ticket de venta al finalizar la compra, que se muestra solo en tablets y móviles
   idTicketOrigenDevolucion =signal<number | null>(null);
@@ -204,40 +219,303 @@ export class TpvComponent implements OnInit {
     return ['@', ',', '.', '_', '/', '%', '&', '"', '(', ')', '¡', '!', '¿', '?'];
   }
 
+  // === SIGNALS COMPUTED ===
+  subtotalTicket = computed(() => {
+    return this.carrito().reduce((acc, item) => acc + (item.precioEditado * item.cantidad), 0);
+  });
+
+  descuentoTotalTicket = computed(() => {
+    return this.carrito().reduce((acc, item) => {
+      const bruto = item.precioEditado * item.cantidad;
+      return acc + (bruto * (item.porcentajeDescuento / 100));
+    }, 0);
+  });
+
+  totalTicket = computed(() => {
+    const res = this.subtotalTicket() - this.descuentoTotalTicket();
+    return res < 0 ? 0 : Math.round(res * 100) / 100;
+  });
+
+  cantidadArticulosCarrito = computed(() => {
+    return this.carrito().reduce((acc, item) => acc + item.cantidad, 0);
+  });
+
   // Añade este método específico para abrirlo
   abrirModalNuevoCliente() {
   this.mostrarModalCliente.set(true);
   }
-
-  // Método que se ejecutará cuando el componente de clientes termine de guardar
-  // e inserte automáticamente el nuevo cliente en el TPV
+  // Método que se ejecutará cuando el componente de clientes termine de guardar e inserte automáticamente el nuevo cliente en el TPV
   onClienteRegistradoDelModal(cliente: any) {
   this.seleccionarCliente(cliente); // Lo dejas ya seleccionado en el ticket
   this.mostrarModalCliente.set(false); // Cierras el modal
   }
- 
-  // === COMPUTED: TOTALIZADOR INTELIGENTE DEL CARRO
-  totalTicket = computed(() => {
-    let subtotal = this.carrito().reduce((sum, item) => {
-      const precioConDtoLinea = item.precio * (1 - (item.porcentajeDescuento / 100));
-      return sum + (precioConDtoLinea * item.cantidad);
-    }, 0);
-    return subtotal;
-  });
 
-  ngOnInit() {
-    this.ordenService.getOrdenesPorEstado('TODAS').subscribe(data => this.historialTickets.set(data));
-    this.articuloService.getArticulos().subscribe(data => this.articulos.set(data));
+  constructor() {
+    super(); // Llama al constructor de la clase base
+  }
 
+  ngOnInit(): void {
+    this.cargarDatos();
+    this.cargarArticulos();
+    this.refrescarHistorialTrabajosActivos();
     // Solo disparas la comprobación. El servicio se encarga de mutar la señal.
     this.cajaService.checkEstadoCaja().subscribe({
       error: (err: any) => console.error("Error al verificar estado de caja inicial en TPV", err)
     });
   }
 
+  // Obligatorio implementar este método (lo pide la clase base)
+  cargarDatos(): void {
+    this.cargando.set(true);
+    this.ordenService.getOrdenesPaginadas(this.paginaActual(), this.itemsPorPagina)
+      .subscribe({
+        next: (data: any) => {
+          // data.content trae los 20 registros de la página actual
+          this.cargando.set(data.content);
+          this.totalElementos = data.totalElements;
+          this.totalPaginas = data.totalPages;
+          this.cargando.set(false);
+        },
+        error: (err) => {
+          this.uiService.mostrarToast('Error al cargar clientes paginados: ' + (err.error || err.message), 'error');
+          this.cargando.set(false);
+        }
+      });
+  }
+
+  refrescarHistorialTrabajosActivos(): void {
+    this.ordenService.getOrdenesConTrabajosActivos().subscribe({
+      next: (tickets) => this.historialTickets.set(tickets),
+      error: (err) => console.error('Error cargando trabajos activos:', err)
+    });
+  }
+
+  // Añadir una línea en blanco para trabajos que no correspondan a un producto del catálogo
+  agregarTrabajoManualSinProducto(): void {
+  const nuevoTrabajo: LineaCarritoMostrador = {
+    articulo: {
+      id: null as any,
+      nombre: '',
+      precioFinal: 0,  // Usamos el campo correcto de tu entidad de artículos
+      codigoBarras: '',
+      categoria: 'SERVICIOS'
+    } as any,
+    cantidad: 1,
+    precioEditado: 0,
+    porcentajeDescuento: 0,
+    notasMostrador: '',
+    descripcionBulto: '',
+    destino: 'TALLER'
+  };
+  // Usamos .update() que es más limpio y seguro para los Signals de Angular
+    this.carrito.update(items => [...items, nuevoTrabajo]);
+    
+  // Abrimos el modal de edición para que el zapatero le ponga precio y notas al momento
+  this.abrirModalEdicionLinea(this.carrito().length - 1);
+ }
+
+ // Funciones de Familia
+ seleccionarFamilia(familia: FamiliaDTO | null): void {
+  // Si es null es "Todas", si es un objeto es la familia seleccionada
+  this.familiaSeleccionada.set(familia);
+  // Limpiamos subfamilia al cambiar de familia padre
+  this.subfamiliaSeleccionada.set(null); 
+ }
+ seleccionarSubfamilia(sub: FamiliaDTO): void {
+  this.subfamiliaSeleccionada.set(sub);
+  // Aquí disparas la carga de productos de esa subfamilia concreta
+ }
+
+  obtenerFamiliasConJerarquia() {
+  this.familiaService.obtenerMisFamilias().subscribe(data => {
+    // 1. Separamos padres de hijos
+    const padres = data.filter(f => f.familiaPadreId === null);
+    const hijos = data.filter(f => f.familiaPadreId !== null);
+
+    // 2. Inyectamos los hijos en sus respectivos padres
+    const arbol = padres.map(padre => ({
+      ...padre,
+      subfamilias: hijos.filter(hijo => hijo.familiaPadreId === padre.id)
+    }));
+
+    this.listaFamilias.set(arbol);
+  });
+ }
+
+  // Alternar el destino de la línea (⚙️ Taller / 🛍️ Tienda)
+  toggleDestinoLinea(index: number): void {
+    this.carrito.update(items => {
+    const copia = [...this.carrito()];
+    if (copia[index]) {
+      const destinoActual = copia[index].destino || 'TIENDA';
+      const nuevoDestino = destinoActual === 'TALLER' ? 'TIENDA' : 'TALLER';
+      
+      copia[index] = {
+          ...copia[index],
+          destino: nuevoDestino,
+          // Si pasa a tienda, limpiamos notas de taller y descripción de bulto
+          notasMostrador: nuevoDestino === 'TIENDA' ? '' : copia[index].notasMostrador,
+          descripcionBulto: nuevoDestino === 'TIENDA' ? '' : copia[index].descripcionBulto
+        };
+      }
+      return copia;
+    });
+  }
+
+  // Control de apertura y cierre del gestor de taller
+  abrirGestorTallerYServicios(): void {
+    // Establecemos valores por defecto si es necesario (ej: fecha de entrega a 7 días vista)
+    const hoy = new Date();
+    hoy.setDate(hoy.getDate() + 7);
+    this.fechaPrevistaEntrega.set(hoy.toISOString().split('T')[0]);
+    
+    this.mostrarModalGestionServicios.set(true);
+  }
+
+  cerrarModalServicios(): void {
+    this.mostrarModalGestionServicios.set(false);
+  }
+
+  // === LOGICA DE ARTICULOS ===
+  cargarArticulos(): void {
+    this.articuloService.getArticulos().subscribe({
+      next: (articulos) => this.articulosFiltrados.set(articulos),
+      error: () => this.uiService.mostrarToast('No se pudieron cargar los artículos.', 'error')
+    });
+  }
+
+  filtrarPorCategoria(cat: string): void {
+    this.categoriaSeleccionada.set(cat);
+    if (cat === 'TODOS') {
+      this.cargarArticulos();
+    } else {
+      this.articuloService.getArticulosPorCategoria(cat).subscribe({
+        next: (articulos) => this.articulosFiltrados.set(articulos),
+        error: () => this.uiService.mostrarToast('Error al filtrar categorías.', 'error')
+      });
+    }
+  }
+
+  filtrarPorNombreManual(): void {
+    const term = this.busquedaArticulo().trim().toUpperCase();
+    if (!term) {
+      this.filtrarPorCategoria(this.categoriaSeleccionada());
+      return;
+    }
+    this.articuloService.buscarPorNombre(term).subscribe({
+      next: (res) => this.articulosFiltrados.set(res),
+      error: () => this.articulosFiltrados.set([])
+    });
+  }
+
+  // === GESTIÓN DEL CARRITO ===
+  agregarAlCarrito(articulo: Articulo): void {
+    if (!this.cajaAbierta()) {
+      this.uiService.mostrarToast(' Operación denegada. Debe realizar la apertura de caja primero.', 'error');
+      return;
+    }
+
+    // Determinamos el destino inicial: Si la orden general ya está en modo REPARACION, asumimos que va a TALLER. Si no, por defecto va a TIENDA (Venta Directa).
+    const destinoInicial = this.tipoOrdenSeleccionada() === 'REPARACION' ? 'TALLER' : 'TIENDA';
+
+    this.carrito.update(items => {
+      const existe = items.findIndex(i => i.articulo.id === articulo.id && i.destino === destinoInicial);
+      
+      if (existe !== -1) {
+        // Si ya existe en el carrito con el mismo destino, incrementamos cantidad
+        const nuevos = [...items];
+        nuevos[existe] = { ...nuevos[existe], cantidad: nuevos[existe].cantidad + 1 };
+        return nuevos;
+      } else {
+        // Si es nuevo, lo añadimos estableciendo por defecto sus propiedades de taller vacías
+        return [...items, {
+          articulo: articulo,
+          cantidad: 1,
+          precioEditado: articulo.precioFinal,
+          porcentajeDescuento: 0,
+          notasMostrador: '',
+          descripcionBulto: destinoInicial === 'TALLER' ? `Par de ${articulo.nombre.toLowerCase()}` : '',
+          destino: destinoInicial
+        }];
+      }
+    });
+    this.uiService.mostrarToast(`🛒 ${articulo.nombre} añadido al mostrador.`, 'success');
+  }
+
+  incrementarCantidad(index: number): void {
+    this.carrito.update(items => items.map((item, i) => i === index ? { ...item, cantidad: item.cantidad + 1 } : item));
+  }
+
+  decrementarCantidad(index: number): void {
+    this.carrito.update(items => {
+      const item = items[index];
+      if (item.cantidad > 1) {
+        return items.map((item, i) => i === index ? { ...item, cantidad: item.cantidad - 1 } : item);
+      }
+      return items.filter((_, i) => i !== index);
+    });
+  }
+
+  eliminarLinea(index: number): void {
+    this.carrito.update(items => items.filter((_, i) => i !== index));
+    this.uiService.mostrarToast('Línea eliminada.', 'warning');
+  }
+  
+  // === MODAL DE EDICIÓN UNIFICADA DE LÍNEA ===
+  abrirModalEdicionLinea(index: number): void {
+    const item = this.carrito()[index];
+    if (!item) return;
+
+    this.indiceLineaEnEdicion.set(index);
+    this.precioLineaEnConstruccion.set(item.precioEditado.toFixed(2));
+    this.descuentoLineaEnConstruccion.set(item.porcentajeDescuento.toString());
+    this.notaLineaEnConstruccion.set(item.notasMostrador || '');
+    this.bultoLineaEnConstruccion.set(item.descripcionBulto || '');
+    this.mostrarModalEdicion.set(true);
+  }
+
+  guardarCambiosLineaUnificada(): void {
+    const index = this.indiceLineaEnEdicion();
+    if (index === null) return;
+
+    const nuevoPrecio = parseFloat(this.precioLineaEnConstruccion());
+    let nuevoDesc = parseFloat(this.descuentoLineaEnConstruccion() || '0');
+
+    if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
+      this.uiService.mostrarToast('El precio introducido no es válido.', 'warning');
+      return;
+    }
+    if (nuevoDesc < 0) nuevoDesc = 0;
+    if (nuevoDesc > 100) nuevoDesc = 100;
+
+    this.carrito.update(items => {
+      const copia = [...items];
+      copia[index] = {
+        ...copia[index],
+        precioEditado: Number(this.precioLineaEnConstruccion()),
+        porcentajeDescuento: Number(this.descuentoLineaEnConstruccion() || '0'),
+        notasMostrador: this.notaLineaEnConstruccion(),
+        descripcionBulto: this.bultoLineaEnConstruccion()
+      };
+      return copia;
+    });
+
+    this.uiService.mostrarToast('Línea del mostrador actualizada.', 'success');
+    this.cerrarModalEdicionLinea();
+  }
+
+  cerrarModalEdicionLinea(): void {
+    this.mostrarModalEdicion.set(false);
+    this.indiceLineaEnEdicion.set(null);
+    this.precioLineaEnConstruccion.set('');
+    this.descuentoLineaEnConstruccion.set('0');
+    this.notaLineaEnConstruccion.set('');
+    this.bultoLineaEnConstruccion.set('');
+  }
+
   // === MÉTODOS DEL CORE TPV ===
   tieneServicioEnCarrito(): boolean {
-    return this.carrito().some(item => item.tipo?.toUpperCase() === 'SERVICIO');
+    return this.carrito().some(item => item.destino === 'TALLER');
   }
 
   ajustarCantidad(index: number, cambio: number): void {
@@ -261,6 +539,8 @@ export class TpvComponent implements OnInit {
   }
 
   quitarDelCarrito(index: number): void {
+    const items = [...this.carrito()];
+    items.splice(index, 1);
     this.carrito.update(items => items.filter((_, i) => i !== index));
     this.uiService.mostrarToast('Artículo eliminado del carrito.', 'success');
   }
@@ -343,20 +623,7 @@ export class TpvComponent implements OnInit {
 
       this.mostrarModalSeleccionPago.set(true);
     }
-  }
-
-  // Filtrado de artículos en tiempo real
-  articulosFiltrados = computed(() => {
-    const listaOriginal = this.articulos();
-    const categoria = this.categoriaSeleccionada();
-    const texto = this.busquedaArticulo().toLowerCase().trim();
-
-    return listaOriginal.filter(art => {
-      const coincideCategoria = (categoria === 'TODOS') || (art.tipo === categoria);
-      const coincideTexto = art.nombre.toLowerCase().includes(texto);
-      return coincideCategoria && coincideTexto;
-    });
-  });       
+  }   
 
   // Método para cargar el catálogo de artículos desde el backend, que se ejecuta al hacer clic en el botón "Recargar Catálogo"
   cargarCatalogo() {
@@ -371,47 +638,6 @@ export class TpvComponent implements OnInit {
     this.categoriaSeleccionada.set(cat);
   }
 
-  // Método para agregar un artículo al carrito, que se ejecuta al hacer clic en el botón "Agregar al Carrito" de cada artículo
-  agregarAlCarrito(articulo: Articulo) {
-    // 1. Extraemos y aseguramos el ID en una constante local de tipo 'number'
-    const idSeguro = articulo.id;
-    if (idSeguro === undefined || idSeguro === null) {
-      console.error('No se puede añadir un artículo sin ID al carrito');
-      return;
-    }
-
-    // CONTROL AUTOMÁTICO: Si metemos mano de obra/taller, cambiamos la operación a REPARACIÓN inmediatamente
-    if (articulo.tipo === 'SERVICIO') {
-      this.tipoOrdenSeleccionada.set('REPARACION');
-    }
-
-    this.carrito.update((items: ItemCarrito[]): ItemCarrito[] => {
-      // 1. Usamos la constante local que TypeScript ya sabe que es 100% number
-      const existe = items.find(item => item.articuloId === idSeguro);
-    
-      if (existe) {
-        return items.map(item => 
-          item.articuloId === idSeguro 
-            ? { ...item, cantidad: item.cantidad + 1 } 
-            : item
-        );
-      }
-    
-      // 2. Creamos el nuevo item forzando explícitamente el tipo ItemCarrito
-      const nuevoItem: ItemCarrito = {
-        articuloId: idSeguro,
-        nombre: articulo.nombre,
-        cantidad: 1,
-        precio: articulo.precioFinal,
-        porcentajeDescuento: 0, 
-        notasReparacion: null, 
-        tipo: articulo.tipo
-      };
-    
-      return [...items, nuevoItem];
-    });
-  }
-
   // ==================================================
   // 💰 FLUJO ORDINARIO: VENTAS DIRECTAS Y REPARACIONES
   // ==================================================
@@ -422,75 +648,79 @@ export class TpvComponent implements OnInit {
       return;
     }
 
-    // RE-EVALUACIÓN DE SEGURIDAD: Si no hay ningún SERVICIO en el carrito, nos aseguramos de que sea VENTA_DIRECTA
-    const tieneServicios = this.carrito().some(item => item.tipo === 'SERVICIO');
-    if (!tieneServicios) {
-      this.tipoOrdenSeleccionada.set('VENTA_DIRECTA');
-    }
-
-    // 2. VALIDACIÓN ESTRICTA DE CLIENTE (Evita que pase si no es VENTA_DIRECTA)
-    const tipoActual = this.tipoOrdenSeleccionada();
-    if (tipoActual !== 'VENTA_DIRECTA' && !this.clienteSeleccionado()) {
-      this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
+    if (this.carrito().length === 0) {
+      this.uiService.mostrarToast('El carrito está vacío.', 'warning');
       return;
     }
 
-    // 3. Validación de fecha de recogida para reparaciones
-    if (tipoActual === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
-      this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
+    if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.clienteSeleccionadoId()) {
+      this.uiService.mostrarToast('⚠️ Taller: Es obligatorio asignar un cliente para guardar el bulto.', 'warning');
       return;
     }
 
-    // Construimos la petición cumpliendo con la interfaz estricta NuevaOrdenDTO
-    const request: NuevaOrdenDTO = {
-      empresaId: 1,  
-      empleadoId: 2, 
+    // Segmentación exacta requerida por NuevaOrdenDTO
+    const lineasVentaDirecta: LineaVentaDirectaDTO[] = [];
+    const trabajosTaller: TrabajoTallerDTO[] = [];
+
+    const fechaPrometida = this.sinFechaRecogida() 
+      ? new Date().toISOString().split('T')[0] 
+      : (this.fechaRecogida() || new Date().toISOString().split('T')[0]);
+
+    this.carrito().forEach(item => {
+      if (item.destino === 'TALLER') {
+        trabajosTaller.push({
+          descripcionTrabajo: item.articulo.nombre,
+          precioFinalTrabajo: item.precioEditado,
+          notasMostrador: item.notasMostrador || null,
+          fechaPrometidaRecogida: fechaPrometida,
+          articuloBaseId: item.articulo.id ?? null,
+          cantidadMaterial: item.cantidad,
+          descripcionBulto: item.descripcionBulto || `Bulto de ${item.articulo.nombre}`
+        });
+      } else {
+        lineasVentaDirecta.push({
+          articuloId: item.articulo.id ?? 0,
+          cantidad: item.cantidad,
+          porcentajeDescuento: item.porcentajeDescuento
+        });
+      }
+    });
+
+    const nuevaOrden: NuevaOrdenDTO = {
       clienteId: this.clienteSeleccionadoId(),
-      tipo: tipoActual,
-      fechaPrometidaRecogida: tipoActual === 'REPARACION' && !this.sinFechaRecogida() ? this.fechaRecogida() : null,
-      notasGenerales: this.notasGenerales() || '',
-      lineas: this.carrito().map(item => ({
-        articuloId: item.articuloId,
-        cantidad: item.cantidad,
-        precioUnitario: item.precio, 
-        porcentajeDescuento: item.porcentajeDescuento || 0, 
-        notasReparacion: item.notasReparacion || null 
-      }))
+      descuentoGlobal: 0, 
+      notasGenerales: this.notasGenerales(),
+      importePagado: this.tipoOrdenSeleccionada() === 'VENTA_DIRECTA' ? this.totalTicket() : 0, 
+      lineasVentaDirecta,
+      trabajosTaller
     };
 
-    this.ordenService.crearOrden(request).subscribe({
-      next: (ordenGuardada) => {
-        // Dependiendo del tipo de orden y la configuración, decidimos el flujo de cobro:
-        if (tipoActual === 'VENTA_DIRECTA') {
-          this.cobrarTicketCompleto(ordenGuardada.id);
-        } else {
-          // Guardamos la ID devuelta por Java
-          this.idOrdenPendienteAnticipo.set(ordenGuardada.id);
-          
-          // INDEPENDIENTE: Abrimos el modal de la pregunta directamente sin tocar el teclado virtual
+    this.uiService.mostrarToast('🚀 Guardando orden en el motor central...', 'success');
+
+    this.ordenService.crearOrden(nuevaOrden).subscribe({
+      next: (ordenProcesada) => {
+        this.idOperacionProcesada.set(ordenProcesada.id);
+        
+        if (this.tipoOrdenSeleccionada() === 'REPARACION') {
+          this.idOrdenPendienteAnticipo.set(ordenProcesada.id);
           this.mostrarModalPreguntaAnticipo.set(true);
+        } else {
+          this.cobrarTicketCompleto(ordenProcesada.id);
         }
       },
       error: (err) => {
-        console.error('Error completo del backend:', err);
-        let mensajeDetallado = 'Error desconocido al crear el ticket.';
-        if (err.error) {
-          if (typeof err.error === 'string') mensajeDetallado = err.error;
-          else if (err.error.message) mensajeDetallado = err.error.message;
-          else if (err.message) mensajeDetallado = err.message;
-        } else if (err.message) {
-          mensajeDetallado = err.message;
-        }
-        this.uiService.mostrarToast('🚫 Fallo en Servidor: ' + mensajeDetallado, 'error');
+        console.error(err);
+        this.uiService.mostrarToast('Error al procesar la venta: ' + (err.error?.message || 'Rechazado'), 'error');
       }
     });
   }
 
   // Métodos privados para manejar los flujos de cobro según la selección del cajero
   private cobrarTicketCompleto(id: number) {
-    this.ordenService.cobrar(id, this.metodoPagoSeleccionado() as any).subscribe({
+    this.ordenService.cobrar(id, this.metodoPagoSeleccionado()).subscribe({
       next: (res) => {
-        this.uiService.mostrarToast('💰 ¡Venta cobrada al 100% correctamente en Caja!', 'success');
+        this.uiService.mostrarToast('💰 Venta #${res.numeroTicket} correcta.', 'success');
+        this.procesarPostCobroCompleto(res);
         // Guardamos la referencia de operación/ID para la llamada del PDF
         this.idOperacionProcesada.set(id);
 
@@ -499,16 +729,17 @@ export class TpvComponent implements OnInit {
         this.horaTicketActual.set(new Date().toLocaleTimeString());
 
         // === NUEVO: INSERTAR EL TICKET EN EL HISTORIAL INFERIOR ===
-        this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
-          next: (ticketsActualizados) => {
+        this.ordenService.getOrdenes().subscribe({
+          next: (ticketsActualizados: OrdenDTO[]) => {
             this.historialTickets.set(ticketsActualizados);
-          }
+          },
+          error: (err) => console.error('Error al actualizar el historial:', err)
         });
 
           // Módulo Veri*Factu
           this.datosFacturaAeat.set({
             qr: '',
-            ref: res.numeroFTicket, 
+            ref: res.numeroTicket, 
             total: this.totalTicket(),
             fecha: new Date().toLocaleTimeString()
           });
@@ -539,7 +770,7 @@ export class TpvComponent implements OnInit {
         fecha: new Date().toISOString() // ISO Estricto para AEAT
       });
 
-      this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+      this.ordenService.getOrdenes().subscribe({
         next: (ticketsActualizados: any) => this.historialTickets.set(ticketsActualizados)
       });
 
@@ -561,7 +792,7 @@ export class TpvComponent implements OnInit {
           total: importe,
           fecha: new Date().toISOString() // Mejora 3: ISO Estricto para AEAT
         });
-        this.ordenService.getOrdenesPorEstado('TODAS').subscribe({
+        this.ordenService.getOrdenes().subscribe({
           next: (ticketsActualizados: any) => this.historialTickets.set(ticketsActualizados)
         });
         this.isTicketVisible.set(true);
@@ -572,22 +803,51 @@ export class TpvComponent implements OnInit {
     });
   }
 
+  private procesarPostCobroCompleto(res: OrdenDTO): void {
+    this.limpiarMemoriaBlobUrl();
+    this.numeroTicketActual.set(res.numeroTicket);
+    this.horaTicketActual.set(new Date().toLocaleTimeString());
+
+    this.datosFacturaAeat.set({
+      qr: (res as any).qrVerifaktu || '', 
+      ref: res.numeroTicket,
+      total: res.total,
+      fecha: new Date().toLocaleTimeString()
+    });
+
+    this.refrescarHistorialTrabajosActivos();
+    this.isTicketVisible.set(true);
+    this.generarYPrevisualizarTicket();
+    this.limpiarCarrito();
+  }
+
   /* 🖨️ Función para obtener el PDF del Backend y meterlo en la previsualización */
   generarYPrevisualizarTicket(): void {
-    const idProcesado = this.idOperacionProcesada();
-    if (!idProcesado) {
+    const id = this.idOperacionProcesada();
+    if (!id) {
       this.uiService.mostrarToast('No se encontró ninguna ID de operación activa.', 'error');
       return;
     }
 
     this.cargandoPDF.set(true);
 
+    this.ordenService.getTicketPdf(id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        this.ticketIframeUrl.set(url);
+      },
+      error: (err) => {
+        console.error(err);
+        this.uiService.mostrarToast('No se pudo generar la previsualización.', 'error');
+      }
+    });
+
     //Si es REPARACIÓN y el total cobrado en el anticipo ha sido 0, atacamos al endpoint de la Orden, no al de la Caja física.
     const esReparacion = this.tipoOrdenSeleccionada() === 'REPARACION';
 
     const peticionPdf$ = esReparacion
-      ? this.ordenService.getTicketPdf(idProcesado) // <-- Cambia por tu método que recupera el PDF desde OrdenService
-      : this.cajaService.descargarPdf80mm(idProcesado);
+      ? this.ordenService.getTicketPdf(id) // <-- Cambia por tu método que recupera el PDF desde OrdenService
+      : this.cajaService.descargarPdf80mm(id);
 
     peticionPdf$.subscribe({
       next: (blob: Blob) => {
@@ -608,6 +868,21 @@ export class TpvComponent implements OnInit {
     });
   }
 
+  imprimirIframeFisico(): void {
+    const id = this.idOperacionProcesada();
+    if (id) {
+      this.ordenService.imprimirTicket(id).subscribe();
+    }
+  }
+
+  private limpiarMemoriaBlobUrl(): void {
+    const actual = this.ticketIframeUrl();
+    if (actual) {
+      URL.revokeObjectURL(actual);
+      this.ticketIframeUrl.set(null);
+    }
+  }
+
   /* Acción del historial inferior para descargar el PDF oficial A4 regulado */
   previsualizarFacturaA4(ticket: OrdenDTO): void {
     // Extraemos el nombre del cliente EXACTAMENTE igual que lo haces en tu HTML
@@ -624,7 +899,7 @@ export class TpvComponent implements OnInit {
     this.idOperacionProcesada.set(ticket.id);
     this.numeroTicketActual.set(ticket.numeroTicket);
     // Controlamos la fecha por si viene en formato String o Date del back
-    const fechaSegura = ticket.fechaCreacion || ticket.fecha || ticket['createdAt'] || new Date();
+    const fechaSegura = ticket.fechaCreacion ?? new Date();
     this.horaTicketActual.set(new Date(fechaSegura).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 
     this.ordenService.getFacturaPdf(ticket.id).subscribe({
@@ -639,18 +914,18 @@ export class TpvComponent implements OnInit {
         this.cargandoPDF.set(false);
         this.isTicketVisible.set(false); // Cerramos el modal si falla el servidor
         // Si el error es un Blob de tipo JSON, lo "desenterramos" para leerlo
-    if (err.error instanceof Blob && err.error.type === 'application/json') {
-      const lector = new FileReader();
-      lector.onload = () => {
-        const mensajeErrorJava = JSON.parse(lector.result as string);
-        this.uiService.mostrarToast('Error en servidor: ' + (mensajeErrorJava.message || 'Fallo al renderizar A4'), 'error');
-      };
-      lector.readAsText(err.error);
-      } else {
-      this.uiService.mostrarToast('Error al recuperar la factura oficial.', 'error');
+        if (err.error instanceof Blob && err.error.type === 'application/json') {
+          const lector = new FileReader();
+          lector.onload = () => {
+            const mensajeErrorJava = JSON.parse(lector.result as string);
+            this.uiService.mostrarToast('Error en servidor: ' + (mensajeErrorJava.message || 'Fallo al renderizar A4'), 'error');
+          };
+          lector.readAsText(err.error);
+        } else {
+          this.uiService.mostrarToast('Error al recuperar la factura oficial.', 'error');
+        }
       }
-     }
-   });
+    });
   }
 
   cerrarReciboAeat(): void {
@@ -661,13 +936,6 @@ export class TpvComponent implements OnInit {
     this.idOperacionProcesada.set(null);
     this.idOrdenPendienteAnticipo.set(null);
     this.limpiarCarrito();
-  }
-
-  private limpiarMemoriaBlobUrl() {
-    if (this.rawBlobUrl) {
-      window.URL.revokeObjectURL(this.rawBlobUrl);
-      this.rawBlobUrl = null;
-    }
   }
 
   /* MANDA EL TICKET DIRECTAMENTE A LA IMPRESORA SIN SALIR DEL TPV */
@@ -681,112 +949,81 @@ export class TpvComponent implements OnInit {
     }
   }
 
-  // === MODAL UNIFICADO DE EDICIÓN DE LÍNEA (HTML MOCKUP) ===
-
-  abrirModalEdicionLinea(index: number) {
-    const item = this.carrito()[index];
-    this.indiceItemEditandoLinea.set(index);
-    this.modoCampoEdicionActivo.set('PRECIO');
-    this.precioLineaEnConstruccion.set(item.precio.toString());
-    this.descuentoLineaEnConstruccion.set(item.porcentajeDescuento.toString());
-    this.notaLineaEnConstruccion.set(item.notasReparacion || '');
+  // === HISTORIAL / ACCIONES DE NUEVOS ENDPOINTS ===
+  anularOrdenHistorial(ticket: OrdenDTO): void {
+    this.ordenService.cancelarOrden(ticket.id).subscribe({
+      next: () => {
+        this.uiService.mostrarToast('🚫 Ticket anulado correctamente.', 'success');
+        this.refrescarHistorialTrabajosActivos();
+      },
+      error: (err) => this.uiService.mostrarToast('No se puede anular: ' + (err.error?.message || err.message), 'error')
+    });
   }
+
+  liquidarOrdenHistorial(ticket: OrdenDTO): void {
+    this.ordenService.cobrar(ticket.id, this.metodoPagoSeleccionado()).subscribe({
+      next: () => {
+        this.uiService.mostrarToast(`💰 Balance de la Orden #${ticket.numeroTicket} saldado.`, 'success');
+        this.refrescarHistorialTrabajosActivos();
+      },
+      error: (err) => this.uiService.mostrarToast('No se pudo completar el cobro pendiente.', 'error')
+    });
+  }
+
+  avanzarEstadoTrabajo(trabajoId: number, estadoSiguiente: any): void {
+    this.ordenService.avanzarEstadoTrabajoTaller(trabajoId, estadoSiguiente).subscribe({
+      next: () => {
+        this.uiService.mostrarToast('⚙️ Estado del bulto actualizado en taller.', 'success');
+        this.refrescarHistorialTrabajosActivos();
+      },
+      error: (err) => this.uiService.mostrarToast('Fallo al cambiar estado.', 'error')
+    });
+  }
+
+  // === MODAL UNIFICADO DE EDICIÓN DE LÍNEA (HTML MOCKUP) ===
 
   pulsarTeclaEdicionLinea(tecla: string) {
     const modo = this.modoCampoEdicionActivo();
-    const signalAEditar = modo === 'PRECIO' ? this.precioLineaEnConstruccion : this.descuentoLineaEnConstruccion;
-    const actual = signalAEditar();
-
+  
+  // 1. Gestionamos la edición si estamos tocando el PRECIO
+  if (modo === 'PRECIO') {
+    const actual = this.precioLineaEnConstruccion();
     if (tecla === '.' && actual.includes('.')) return;
     if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
-    signalAEditar.set(actual + tecla);
+    this.precioLineaEnConstruccion.set(actual + tecla);
+  } 
+  // 2. Gestionamos la edición si estamos tocando el DESCUENTO
+  else if (modo === 'DESCUENTO') { // Adapta el string a tu 'modoCampoEdicionActivo'
+    const actual = this.descuentoLineaEnConstruccion();
+    if (tecla === '.') return; // Un descuento en una zapatería suele ser entero, si usas decimales quita esta línea
+    this.descuentoLineaEnConstruccion.set(actual === '0' ? tecla : actual + tecla);
   }
+ }
 
   borrarUltimoDigitoEdicionLinea() {
     const modo = this.modoCampoEdicionActivo();
-    const signalAEditar = modo === 'PRECIO' ? this.precioLineaEnConstruccion : this.descuentoLineaEnConstruccion;
-    const actual = signalAEditar();
-    if (actual.length > 0) signalAEditar.set(actual.slice(0, -1));
-  }
-
-  guardarCambiosLineaUnificada() {
-    const index = this.indiceItemEditandoLinea();
-    if (index === null) return;
-
-    const nuevoPrecio = parseFloat(this.precioLineaEnConstruccion() || '0');
-    let nuevoDto = parseFloat(this.descuentoLineaEnConstruccion() || '0');
-
-    if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
-      this.uiService.mostrarToast('El precio introducido no es válido.', 'warning');
-      return;
+    if (modo === 'PRECIO') {
+      const actual = this.precioLineaEnConstruccion();
+      this.precioLineaEnConstruccion.set(actual.length > 0 ? actual.slice(0, -1) : '');
+    } else {
+      const actual = this.descuentoLineaEnConstruccion();
+      this.descuentoLineaEnConstruccion.set(actual.length > 0 ? actual.slice(0, -1) : '0');
     }
-    if (nuevoDto < 0) nuevoDto = 0;
-    if (nuevoDto > 100) nuevoDto = 100;
-
-    this.carrito.update(items => {
-      const copia = [...items];
-      copia[index] = {
-        ...copia[index],
-        precio: nuevoPrecio,
-        porcentajeDescuento: nuevoDto,
-        notasReparacion: this.notaLineaEnConstruccion()
-      };
-      return copia;
-    });
-
-    this.uiService.mostrarToast('Línea de artículo actualizada', 'success');
-    this.cerrarModalEdicionLinea();
-  }
-
-  cerrarModalEdicionLinea() {
-    this.indiceItemEditandoLinea.set(null);
-    this.precioLineaEnConstruccion.set('');
-    this.descuentoLineaEnConstruccion.set('');
-    this.notaLineaEnConstruccion.set('');
   }
 
   /* Acción rápida del historial inferior para cambiar de estado una reparación de taller */
   entregarReparacionHistorial(ticket: OrdenDTO): void {
-    this.ordenService.entregarOrden(ticket.id).subscribe({
+    this.ordenService.avanzarEstadoTrabajoTaller(ticket.id, 'ENTREGADO').subscribe({
       next: () => {
         this.uiService.mostrarToast('✅ Reparación entregada y saldo liquidado correctamente.', 'success');
         // Refrescamos el historial en caliente
-        this.ordenService.getOrdenesPorEstado('TODAS').subscribe(t => this.historialTickets.set(t));
+        this.ordenService.getOrdenes().subscribe(t => this.historialTickets.set(t));
       },
       error: (err) => this.uiService.mostrarToast('No se pudo entregar: ' + (err.error?.message || err.error), 'error')
     });
   }
 
-  /* Acción rápida para anular por completo un ticket erróneo desde el mostrador */
-  anularOrdenHistorial(ticket: OrdenDTO): void {
-    this.ordenService.cancelarOrden(ticket.id).subscribe({
-      next: () => {
-        this.uiService.mostrarToast('🚫 Ticket anulado por completo. Caja y stock restaurados.', 'success');
-        this.ordenService.getOrdenesPorEstado('TODAS').subscribe(t => this.historialTickets.set(t));
-      },
-      error: (err) => this.uiService.mostrarToast('No se pudo anular la orden: ' + (err.error?.message || err.error), 'error')
-    });
-  }
-
-  /* Botón de cobro rápido de saldo pendiente directo desde la rejilla del historial */
-  liquidarOrdenHistorial(ticket: OrdenDTO): void {
-    // Calculamos el saldo restante que le queda por pagar al cliente usando el método de pago activo en el TPV
-    const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
-    
-    this.ordenService.cobrar(ticket.id, metodoPagoSeguro).subscribe({
-      next: (res) => {
-        this.uiService.mostrarToast(`💰 Saldo de la Orden #${ticket.numeroTicket} liquidado con éxito.`, 'success');
-        // Refrescamos la lista para que cambie el badge financiero a PAGADO en caliente
-        this.ordenService.getOrdenesPorEstado('TODAS').subscribe(t => this.historialTickets.set(t));
-      },
-      error: (err) => {
-        console.error('Error al liquidar balance pendiente:', err);
-        this.uiService.mostrarToast('No se pudo completar el cobro del saldo restante.', 'error');
-      }
-    });
-  }
-  // === MÉTODOS ADICIONALES REQUERIDOS ===
-  // Métodos para manejar la búsqueda y selección de clientes en el TPV (útil para reparaciones)
+  // === BÚSQUEDA Y MANEJO DE CLIENTES ===
   buscarClientes(termino: string) {
     this.busquedaCliente.set(termino);
     // Si escribe menos de 2 caracteres, limpiamos el desplegable
@@ -875,9 +1112,8 @@ export class TpvComponent implements OnInit {
   const id = this.idOrdenPendienteAnticipo();
   
   if (id !== null) {
-    const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
     // Cobro de 0€ para imprimir el resguardo físico directo de taller sin pagos previos
-    this.cobrarAnticipoTicket(id, 0, metodoPagoSeguro);
+    this.cobrarAnticipoTicket(id, 0, this.metodoPagoSeleccionado());
     this.cerrarTeclado();
     this.idOrdenPendienteAnticipo.set(null);
   } else {
@@ -891,10 +1127,10 @@ export class TpvComponent implements OnInit {
   const id = this.idOrdenPendienteAnticipo();
 
   if (id !== null && numImporte > 0 && numImporte <= this.totalTicket()) {
-    const metodoPagoSeguro = this.metodoPagoSeleccionado() as any;
-    this.cobrarAnticipoTicket(id, numImporte, metodoPagoSeguro);
+    this.cobrarAnticipoTicket(id, numImporte, this.metodoPagoSeleccionado());
     this.cerrarTeclado();
     this.idOrdenPendienteAnticipo.set(null);
+    this.mostrarModalPreguntaAnticipo.set(false);
   } else {
     this.uiService.mostrarToast(`Importe no válido. El máximo permitido es ${this.totalTicket()}€.`, 'warning');
   }
@@ -923,7 +1159,7 @@ export class TpvComponent implements OnInit {
     // Llamamos a tu servicio pasándole la ID del ticket
     this.ordenService.imprimirTicket(ticket.id).subscribe({
       next: () => {
-        this.uiService.mostrarToast(`🖨️ Ticket #${ticket.numeroTicket} reimpresso con éxito.`, 'success');
+        this.uiService.mostrarToast(`🖨️ Reimprimiendo ticket térmico #${ticket.numeroTicket}`, 'success');
       },
       error: (err: any) => {
         console.error('Error al reimprimir:', err);
@@ -935,7 +1171,7 @@ export class TpvComponent implements OnInit {
   // Lógica para lanzar la reimpresión de la factura A4 oficial del ticket seleccionado
   reimprimirFacturaA4(ticket: OrdenDTO) {
     //VALIDACIÓN OBLIGATORIA: Evitamos facturas A4 a clientes anónimos
-    const nombreCliente = ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General';
+    const nombreCliente = !ticket.clienteId && !ticket.clienteNombre || 'Cliente General';
     if (nombreCliente === 'Cliente General') {
       this.uiService.mostrarToast('No se puede generar una factura formal A4 para una venta anónima. Debe registrar un cliente.', 'warning');
       return;
@@ -960,7 +1196,7 @@ export class TpvComponent implements OnInit {
     // Clonamos el objeto de la línea para actualizar su propiedad
     nuevosItems[index] = {
       ...nuevosItems[index],
-      notasReparacion: nuevoTexto
+      notasMostrador: nuevoTexto
     };
     return nuevosItems;
   });
@@ -994,7 +1230,7 @@ export class TpvComponent implements OnInit {
 
     this.cajaService.abrirCaja(this.saldoInicialInput).subscribe({
       next: (caja) => {
-        this.uiService.mostrarToast(`🚀 Caja abierta con un fondo de ${caja.saldoInicial}€`, 'success');
+        this.uiService.mostrarToast(`Caja abierta con un fondo de ${caja.saldoInicial}€`, 'success');
         this.saldoInicialInput = 0;
         // Al abrirse, el signal cajaActual del servicio se actualiza y el TPV se desbloquea solo
       },
@@ -1012,7 +1248,7 @@ abrirKeypadPrecio(index: number) {
       return;
   }
   this.indiceItemEditandoPrecio.set(index);
-  this.precioEnConstruccion.set(this.carrito()[index].precio.toFixed(2));
+  this.precioEnConstruccion.set(this.carrito()[index].precioEditado.toFixed(2));
 }
 
 pulsarTeclaPrecio(tecla: string) {
@@ -1045,7 +1281,7 @@ guardarPrecioModificado() {
     const copia = [...items];
     copia[index] = {
       ...copia[index],
-      precio: nuevoPrecio
+      precioEditado: nuevoPrecio
     };
     return copia;
   });
@@ -1095,24 +1331,20 @@ abrirModal() {
   this.ordenService.buscarTicketParaDevolucion(this.numeroTicketBuscarInput.trim()).subscribe({
     next: (ticketDTO) => {
       if (ticketDTO.estadoPago === 'DEVUELTO') {
-        this.uiService.mostrarToast('⚠️ Este ticket ya figura como totalmente devuelto.', 'error');
+        this.uiService.mostrarToast(' Este ticket ya figura como totalmente devuelto.', 'error');
         return;
       }
 
       this.ticketOrigenEncontrado = ticketDTO;
-      const lineas = ticketDTO.detalles || [];
-      
-      // Inicializamos el Map de checkboxes y cantidades máximas
       this.lineasSeleccionadasParaDevolver.clear();
-      lineas.forEach((linea: any) => {
-        // Usamos como clave el id del artículo o de la línea
-        const idClave = linea.id;
-        this.lineasSeleccionadasParaDevolver.set(idClave, {
-          checked: false,
-          cantidadADevolver: Math.abs(linea.cantidad) // Por defecto la cantidad máxima comprada
+      
+      // Mapea tanto líneas físicas de venta como materiales de taller si se devuelven
+        ticketDTO.lineasVentaDirecta.forEach(linea => {
+          this.lineasSeleccionadasParaDevolver.set(linea.articuloId, {
+            checked: false,
+            cantidadADevolver: linea.cantidad
+          });
         });
-      });
-
       this.mostrarModalSeleccionDevolucion = true; // Abrimos la rejilla interactiva
     },
     error: (err) => {
@@ -1126,58 +1358,46 @@ abrirModal() {
   const ticket = this.ticketOrigenEncontrado;
   if (!ticket) return;
 
-  const lineasTicketOriginal = ticket.detalles || [];
-  
-  // Filtrar solo las líneas que el zapatero ha marcado con el checkbox
-  const lineasFiltradasBody: any[] = [];
+  const lineasDevolucionPayload: any[] = [];
+    this.lineasSeleccionadasParaDevolver.forEach((control, articuloId) => {
+      if (control.checked && control.cantidadADevolver > 0) {
+        lineasDevolucionPayload.push({
+          articuloId: articuloId,
+          cantidad: control.cantidadADevolver
+        });
+      }
+    });
 
-  lineasTicketOriginal.forEach((linea: any) => {
-    const idClave = linea.id;
-    const estadoSeleccion = this.lineasSeleccionadasParaDevolver.get(idClave);
-
-    if (estadoSeleccion && estadoSeleccion.checked) {
-      lineasFiltradasBody.push({
-        articuloId: linea.articuloId,
-        cantidad: estadoSeleccion.cantidadADevolver // Cantidad parcial o total ajustada en pantalla
-      });
+    if (lineasDevolucionPayload.length === 0) {
+      this.uiService.mostrarToast('Selecciona algún elemento para el abono.', 'warning');
+      return;
     }
-  });
 
-  if (lineasFiltradasBody.length === 0) {
-    this.uiService.mostrarToast('⚠️ Debes seleccionar al menos un artículo para poder emitir el abono.', 'warning');
-    return;
-  }
+  this.uiService.mostrarToast('Generando abono parcial enlazado (DEV-)...', 'success');
 
-  this.uiService.mostrarToast('🚀 Generando abono parcial enlazado (DEV-)...', 'success');
-
-  const requestDevolucion = {
+  const requestDevolucion: DevolucionRequest = {
     ordenOrigenId: ticket.id,
     metodoPago: this.metodoPagoSeleccionado(),
-    lineas: lineasFiltradasBody
+    lineas: lineasDevolucionPayload
   };
 
   this.ordenService.procesarDevolucion(requestDevolucion).subscribe({
-    next: (devolucionGuardada) => {
-      this.uiService.mostrarToast(`✅ Abono parcial ${devolucionGuardada.numeroTicket} emitido. ¡Abre el cajón!`, 'success');
+    next: (res: OrdenDTO) => {
+      this.uiService.mostrarToast(`✅ Abono rectificativo ${res.numeroTicket} emitido.`, 'success');
       
       // HIGIENE DE MEMORIA ANTES DE ASIGNAR NUEVO BLOB
       this.limpiarMemoriaBlobUrl();
       // Inyectamos las referencias para que el iframe imprima el PDF térmico del DEV-
-      this.idOperacionProcesada.set(devolucionGuardada.id);
-      this.numeroTicketActual.set(devolucionGuardada.numeroTicket);
+      this.idOperacionProcesada.set(res.id);
+      this.procesarPostCobroCompleto(res);
+      this.mostrarModalSeleccionDevolucion = false;
+      this.ticketOrigenEncontrado = null;
       this.horaTicketActual.set(new Date().toLocaleTimeString());
 
       // Pintamos visualmente el abono generado en tu historial
       const ticketAbonoHistorial: OrdenDTO = {
-        id: devolucionGuardada.id,
-        numeroTicket: devolucionGuardada.numeroTicket,
-        fecha: new Date(),
-        clienteNombre: ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General',
-        total: devolucionGuardada.total, // Ya viene en negativo calculado de forma nativa por tu back
-        estadoAeat: 'PENDIENTE',
-        estadoPago: 'DEVOLUCION',
-        tipo: 'VENTA_DIRECTA',
-        cliente: null
+        ...res,
+        clienteNombre: res.clienteNombre || ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General'
       };
 
       this.historialTickets.update(tickets => [ticketAbonoHistorial, ...tickets]);
@@ -1241,6 +1461,7 @@ confirmarTicketIntroducido() {
  // Método para limpiar el carrito y resetear estados después de finalizar una venta o reparación
   private limpiarCarrito() {
     this.carrito.set([]);
+    this.deseleccionarCliente();
     this.clienteSeleccionado.set(null);
     this.clienteSeleccionadoId.set(null);
     this.busquedaCliente.set('');
@@ -1257,7 +1478,7 @@ confirmarTicketIntroducido() {
 
   // === GESTIÓN DEL TECLADO VIRTUAL ===
 
-  abrirTeclado(objetivo: 'PRODUCTO' | 'CLIENTE' | 'DESCUENTO' | 'NOTAS_GENERALES' | 'DESCUENTO_MANUAL' | 'NOTAS_REPARACION' | 'NUMERO_TICKET' | 'NUMERO_CANTIDAD' | 'APERTURA_CAJA' | 'CANTIDAD_ANTICIPO' | 'PREGUNTA_ANTICIPO', index: number | null = null, maxCantidad: number = 1) {
+  abrirTeclado(objetivo: any, index: number | null = null, maxCantidad: number = 1) {
    // Si estás en tablet y no es la pregunta de anticipo, nos saltamos el teclado virtual
    if (objetivo !== 'PREGUNTA_ANTICIPO' && isMobileOrTablet()) return;
 
@@ -1273,9 +1494,9 @@ confirmarTicketIntroducido() {
     else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
       const item = this.carrito()[index];
       this.valorTecladoEnConstruccion.set(item ? item.porcentajeDescuento.toString() : '');
-    } else if (objetivo === 'NOTAS_REPARACION' && index !== null) {
+    } else if (objetivo === 'NOTAS_MOSTRADOR' && index !== null) {
       const item = this.carrito()[index];
-      this.valorTecladoEnConstruccion.set(item?.notasReparacion || '');
+      this.valorTecladoEnConstruccion.set(item?.notasMostrador || '');
     } else if (objetivo === 'NUMERO_TICKET') this.valorTecladoEnConstruccion.set(this.numeroTicketBuscarInput);
     else if (objetivo === 'NUMERO_CANTIDAD' && index !== null) {
       const control = this.lineasSeleccionadasParaDevolver.get(index);
@@ -1337,6 +1558,9 @@ confirmarTicketIntroducido() {
     // Acciones especiales al pulsar "ACEPTAR" o cerrar
     if (objetivo === 'CANTIDAD_ANTICIPO') {
       this.aplicarCantidadAnticipo();
+      this.mostrarTeclado.set(false);
+      this.inputActivo.set('PRODUCTO');
+      this.valorTecladoEnConstruccion.set('');
     } else if (objetivo === 'APERTURA_CAJA') {
       this.saldoInicialInput = parseFloat(resultado) || 0;
       this.ejecutarAperturaCaja();
@@ -1365,7 +1589,7 @@ confirmarTicketIntroducido() {
     else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
       let num = parseFloat(valor) || 0;
       this.carrito.update(items => items.map((item, i) => i === index ? { ...item, porcentajeDescuento: num > 100 ? 100 : num } : item));
-    } else if (objetivo === 'NOTAS_REPARACION') {
+    } else if (objetivo === 'NOTAS_MOSTRADOR') {
     const index = this.indiceLineaTemporal();
     if (index !== null) {
       this.carrito.update(items => items.map((item, i) => i === index ? { ...item, notasReparacion: valor } : item));
@@ -1433,6 +1657,6 @@ confirmarAnticipoConNumpad(): void {
   } else {
     this.uiService.mostrarToast('Por favor, introduce un importe válido.', 'warning');
   }
-}
+ }
 
 }

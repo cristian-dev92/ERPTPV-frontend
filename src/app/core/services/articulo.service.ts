@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Articulo } from '../models/articulo.model';
+import { Observable, map } from 'rxjs';
+import { Articulo, NuevoArticuloRequest } from '../models/articulo.model';
 
 /**
  * Servicio encargado de la comunicación con los endpoints de Artículos.
@@ -24,9 +24,25 @@ export class ArticuloService {
     return this.http.get<Articulo>(`${this.apiUrl}/${id}`);
   }
 
-  // BUSQUEDA EN TIEMPO REAL PARA EL TPV (Por nombre, código de barras o código interno)
+  // BÚSQUEDA GENERAL PARA EL TPV (Centralizado en tu backend: busca por nombre, código de barras o SKU)
   buscarPorTermino(termino: string): Observable<Articulo[]> {
-    return this.http.get<Articulo[]>(`${this.apiUrl}/buscar?query=${encodeURIComponent(termino)}`);
+    return this.http.get<Articulo[]>(`${this.apiUrl}/buscar`, {
+      params: { query: termino }
+    });
+  }
+
+  // ALIAS SEMÁNTICOS PARA COMPATIBILIDAD CON TPV. Redirigen limpiamente a tu infraestructura de búsqueda sin alterar el componente
+  buscarPorNombre(nombre: string): Observable<Articulo[]> {
+    return this.buscarPorTermino(nombre);
+  }
+
+  // Filtro de familias/categorías dinámicas para la botonera del mostrador
+  getArticulosPorCategoria(familia: string): Observable<Articulo[]> {
+    return this.getArticulos().pipe(
+      map(articulos => 
+        articulos.filter(a => a.familiaNombre?.toUpperCase() === familia.toUpperCase())
+      )
+    );
   }
 
   // Crea un nuevo artículo en el backend
@@ -43,4 +59,11 @@ export class ArticuloService {
   eliminarArticulo(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  getArticulosPaginados(pagina: number, cantidad: number): Observable<any> {
+  return this.http.get<any>(`${this.apiUrl}/paginado`, {
+    params: { page: pagina.toString(), size: cantidad.toString() }
+  });
+ }
+
 }

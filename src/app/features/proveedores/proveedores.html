@@ -2,7 +2,7 @@
   
   <header class="proveedores-header">
     <div>
-      <h1>📦 Directorio de Proveedores</h1>
+      <h1>Directorio de Proveedores</h1>
       <p>Gestione los contactos de vuestros distribuidores de material, cueros y repuestos.</p>
     </div>
     <button (click)="abrirModal()" class="btn-nuevo-proveedor" type="button">
@@ -62,6 +62,20 @@
         }
       </tbody>
     </table>
+
+  <!-- FOOTER DE PAGINACIÓN: Siempre abajo del todo -->
+  <footer class="paginacion-footer">
+    <button [disabled]="paginaActual()" (click)="paginaAnterior()">
+      Anterior
+    </button>
+    
+    <span class="info-paginas">Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+    
+    <button [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
+      Siguiente
+    </button>
+  </footer>
+
   </div>
 
   <!-- MODAL DE REGISTRO FLOTANTE -->

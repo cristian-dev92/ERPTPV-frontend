@@ -1,4 +1,4 @@
-$primary: #1e293b;
+$primary: #1e293b; 
 $secondary: #3b82f6;
 $border: #e2e8f0;
 $bg-light: #f8fafc;
@@ -6,7 +6,7 @@ $danger: #ef4444;
 $warning: #f59e0b;
 
 .clientes-container {
-  max-width: 1200px;
+  max-width: 1600px;  
   margin: 0 auto;
   padding: 1.5rem;
   font-family: system-ui, -apple-system, sans-serif;
@@ -48,6 +48,7 @@ $warning: #f59e0b;
 
 .search-bar-container {
   margin-bottom: 1.5rem;
+  width: 100%;
   .search-input {
     width: 100%;
     padding: 14px 16px;
