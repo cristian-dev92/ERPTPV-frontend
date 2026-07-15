@@ -105,13 +105,12 @@ export class ClientesComponent extends ComponentePaginado implements OnInit {
   // Obligatorio implementar este método (lo pide la clase base)
   cargarDatos(): void {
     this.cargando.set(true);
-    this.clienteService.getClientesPaginados(this.paginaActual(), this.itemsPorPagina)
+    this.clienteService.getClientesPaginados(this.paginaActual(), this.itemsPorPagina())
       .subscribe({
         next: (data: any) => {
           // data.content trae los 20 registros de la página actual
           this.clientes.set(data.content);
-          this.totalElementos = data.totalElements;
-          this.totalPaginas = data.totalPages;
+          this.totalElementos.set(data.totalElements || data.total || 0);
           this.cargando.set(false);
         },
         error: (err) => {
@@ -119,7 +118,7 @@ export class ClientesComponent extends ComponentePaginado implements OnInit {
           this.cargando.set(false);
         }
       });
-  }
+  } 
 
   // ⌨️ MÉTODOS DEL TECLADO TÁCTIL
   abrirTeclado(objetivo: string, valorActual: string = '') {

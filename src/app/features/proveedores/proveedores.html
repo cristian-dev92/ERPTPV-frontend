@@ -62,20 +62,6 @@
         }
       </tbody>
     </table>
-
-  <!-- FOOTER DE PAGINACIÓN: Siempre abajo del todo -->
-  <footer class="paginacion-footer">
-    <button [disabled]="paginaActual()" (click)="paginaAnterior()">
-      Anterior
-    </button>
-    
-    <span class="info-paginas">Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
-    
-    <button [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
-      Siguiente
-    </button>
-  </footer>
-
   </div>
 
   <!-- MODAL DE REGISTRO FLOTANTE -->

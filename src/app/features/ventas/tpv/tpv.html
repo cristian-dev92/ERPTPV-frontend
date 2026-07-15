@@ -51,13 +51,23 @@
 
       <!-- Fila de Subfamilias Dinámicas (Solo se muestra si la familia activa tiene subfamilias) -->
       @if (familiaSeleccionada() && familiaSeleccionada()?.subfamilias?.length) {
-        <div class="fila-subfamilias" style="display: flex; gap: 6px; overflow-x: auto; padding-top: 4px; border: 1px solid #e2e8f0;">
+        <div class="fila-subfamilias" style="display: flex; gap: 6px; overflow-x: auto; padding: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; border-radius: 8px; width: 100%;">
+          
+          <!-- Botón comodín de "Ver Todo" estilizado como el resto -->
+          <button type="button" 
+                  class="btn-subcategoria" 
+                  [class.active]="subfamiliaSeleccionada() === null" 
+                  (click)="seleccionarSubfamilia(null)"
+                  style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; transition: all 0.2s; flex-shrink: 0;">
+            📁 Todo
+          </button>
+
           @for (sub of familiaSeleccionada()?.subfamilias; track sub.id) {
             <button type="button" 
                     class="btn-subcategoria" 
                     [class.active]="subfamiliaSeleccionada()?.id === sub.id" 
                     (click)="seleccionarSubfamilia(sub)"
-                    style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; border: 1px solid #cbd5e1; background: #f8fafc; cursor: pointer; transition: all 0.2s;">
+                    style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; transition: all 0.2s; flex-shrink: 0;">
               {{ sub.nombre }}
             </button>
           }
@@ -112,20 +122,6 @@
         </div>
       }
     </div>
-
-    <!-- FOOTER DE PAGINACIÓN: Siempre abajo del todo -->
-      <footer class="paginacion-footer">
-        <button [disabled]="paginaActual()" (click)="paginaAnterior()">
-          Anterior
-        </button>
-    
-        <span class="info-paginas">Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
-    
-        <button [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
-          Siguiente
-        </button>
-      </footer>
-
   </div>
 
   <!--SECCION CARRITO (TICKET ACTUAL)-->
@@ -189,7 +185,7 @@
                style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background: #fff; margin-bottom: 6px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
             
             <div class="detalles-articulo-linea" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
-              <span class="nombre-producto" style="font-weight: 600; color: #1e293b; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.articulo }}</span>
+              <span class="nombre-producto" style="font-weight: 600; color: #1e293b; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.articulo.nombre }}</span>
               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                 @if (item.notasMostrador) {
                   <span class="badge-nota-taller" style="background: #eff6ff; color: #2563eb; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 500;">📝 Con Nota</span>
@@ -346,14 +342,18 @@
 </div>
 
 <!-- MODAL DE EDICIÓN UNIFICADA (LÍNEAS DE TICKET) -->
-@if (indiceItemEditandoLinea() !== null) {
+@if (indiceLineaEnEdicion() !== null && indiceLineaEnEdicion() !== undefined && carrito()[indiceLineaEnEdicion()!]) {
+  @let idx = indiceLineaEnEdicion()!;
+  @let itemActivo = carrito()[idx];
   <div class="modal-keypad-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
     
     <div class="modal-keypad-content unificado-linea-content" style="max-width: 750px; width: 95%; max-height: 90vh; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); margin: auto; display: flex; flex-direction: column; overflow: hidden;">
       
       <div class="modal-header-linea" style="margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; flex-shrink: 0;">
         <h3 style="margin: 0; font-size: 1.1rem; color: #0b2286;">⚙️ Edición de precio, descuento y notas</h3>
-        <p class="nombre-articulo-editar" style="margin: 4px 0 0 0; color: #000000; font-size: 1.4rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ carrito()[indiceItemEditandoLinea()!].articulo }}</p>
+        <p class="nombre-articulo-editar" style="margin: 4px 0 0 0; color: #000000; font-size: 1.4rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          {{ itemActivo.articulo.nombre || 'Producto' }}
+        </p>
       </div>
 
       <div class="cuerpo-edicion-linea-grid" style="flex: 1; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; overflow: hidden;">
@@ -392,7 +392,7 @@
           
           <!-- NOTAS DE TALLER: Para trabajotallerDTO (notasMostrador, visible en el ticket de 80mm) -->
           <div class="seccion-notas-taller-linea" style="display: flex; flex-direction: column; gap: 4px;">
-            <label for="notaTallerLinea" style="font-weight: 600; color: #334155; font-size: 0.9rem; display: flex; align-items: center; gap: 4px;">📋 Notas de Taller (notasMostrador - Salen en Ticket 80mm):</label>
+            <label for="notaTallerLinea" style="font-weight: 600; color: #334155; font-size: 0.9rem; display: flex; align-items: center; gap: 4px;">📋 Notas de Taller (Salen en Ticket 80mm):</label>
             <textarea 
               id="notaTallerLinea"
               style="width: 100%; height: 95px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.4; background: #fafafa; font-family: inherit;"
@@ -406,7 +406,7 @@
           <!-- DESCRIPCIÓN DEL BULTO: Para trabajosalidaDTO (descripcionBulto, NO sale en el ticket de 80mm) -->
           <div class="observaciones-ticket-row" style="display: flex; flex-direction: column; gap: 4px;">
             <label for="descripcionBultoTaller" style="font-size: 0.9rem; font-weight: 600; color: #334155; display: flex; align-items: center; gap: 4px;">
-              🥾 Descripción Física del Bulto (descripcionBulto - No sale en Ticket):
+              🥾 Descripción Física del Bulto:
             </label>
             <textarea 
               id="descripcionBultoTaller"
@@ -862,9 +862,10 @@
         <div class="lista-devolucion-articulos">
           @for (linea of [ ...(ticketOrigenEncontrado?.lineasVentaDirecta || []), ...(ticketOrigenEncontrado?.trabajosTaller || []) ]; track linea.id) {
             @let item = $any(linea);
-            @let idClave = item.id;
+            @let idClave = item.articuloId !== undefined ? item.articuloId : item.id;
             @let control = lineasSeleccionadasParaDevolver.get(idClave);
-            @let cantidadMaxima = item.cantidad !== undefined ? Math.abs(item.cantidad) : 1;
+            @let cantOriginal = item.cantidad !== undefined ? item.cantidad : (item.cantidadMaterial || 1);
+            @let cantidadMaxima = Math.abs(cantOriginal);
             
             <div class="fila-devolucion-interactiva" [style.opacity]="control?.checked ? '1' : '0.6'">
               <label class="label-articulo">

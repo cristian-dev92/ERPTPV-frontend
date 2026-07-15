@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { OrdenService } from '../../../core/services/orden.service';
 import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,15 +27,11 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   ordenSeleccionada = signal<any | null>(null);
   cargando = signal<boolean>(false);
 
-  //Notas que salen en el ticket
+  // Notas generales y de mostrador
   notasMostrador = signal<string>('');
-
-  // Añadimos notas pgenerales
   notasGenerales = signal<string>('');
 
-  // =========================================================================
   // Modales, Cobros y Devoluciones
-  // =========================================================================
   detallesEditados: any[] = [];
   idDetalleDesplegado: number | null = null;
 
@@ -46,7 +42,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   mostrarModalDevolucion = signal<boolean>(false);
   metodoDevolucion = signal<MetodoPago>('EFECTIVO');
 
-  // --- CONFIGURACIÓN TECLADO TÁCTIL ---
+  // CONFIGURACIÓN TECLADO TÁCTIL
   mostrarTeclado = signal<boolean>(false);
   inputActivo = signal<string>(''); 
   mayusculas = signal<boolean>(true); 
@@ -57,76 +53,105 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   lineaLetras2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ', '.'];
   lineaLetras3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '_', 'com'];
 
-  // Computed para aplicar los filtros y búsqueda sobre el listado de órdenes
+  // =========================================================================
+  // Sincronización en Tiempo Real con el TPV (Constructor)
+  // =========================================================================
+  constructor() {
+    super(); // Llama al constructor de la clase base
+    
+    // Escuchamos el canal reactivo del OrdenService mediante un efecto
+    effect(() => {
+      // Accedemos a la signal de forma reactiva invocándola con ()
+      this.ordenService.ticketProcesado();
+      
+      // Recargamos silenciosamente los datos
+      this.cargarDatos();
+    });
+  }
+
+  ngOnInit() {
+    this.cargarDatos();
+  }
+
+  // =========================================================================
+  // Cargador Unificado de Datos (Respeta la Base de Paginación)
+  // =========================================================================
+  cargarDatos(): void {
+    this.cargando.set(true);
+    
+    this.ordenService.getOrdenesPaginadas(this.paginaActual(), this.itemsPorPagina())
+      .subscribe({
+        next: (data: any) => {
+          const listaDeOrdenes = data.content || data || [];
+          this.ordenes.set(listaDeOrdenes);
+          
+          this.totalElementos.set(data.totalElements || data.total || 0);
+          
+          this.cargando.set(false);
+        },
+        error: (err) => {
+          console.error('Error cargando órdenes:', err);
+          this.uiService.mostrarToast('Error al cargar la gestión de tickets: ' + (err.error || err.message), 'error');
+          this.cargando.set(false);
+        }
+      });
+  }
+
+  // =========================================================================
+  // Filtro Reactivo Computado (Corregido y sin cierres de llave rotos)
+  // =========================================================================
   ordenesAMostrar = computed(() => {
+    const lista = this.ordenes();
+    const tipo = this.filtroTipo();     // 'TALLER' | 'LISTO_RECOGER' | 'CERRADOS'
+    const estado = this.filtroEstado(); // 'TODOS' | ...
     const busqueda = this.terminoBusqueda().toLowerCase().trim();
-    const pestañaPrincipal = this.filtroTipo();
-    const subFiltro = this.filtroEstado();
-    let listaFiltrada = this.ordenes();
 
-    // =========================================================================
-    // 1. Por estado de flujo físico del taller
-    // =========================================================================
-    if (pestañaPrincipal === 'TALLER') {
-      listaFiltrada = listaFiltrada.filter(orden => orden.estadoTaller === 'EN_TALLER');
-      
-      if (subFiltro === 'PENDIENTE_PAGO') {
-        listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PENDIENTE' || orden.estadoPago === 'ANTICIPO');
-      } else if (subFiltro === 'PAGADO') {
-        listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PAGADO');
-      }
-    } 
-    else if (pestañaPrincipal === 'LISTO_RECOGER') {
-      listaFiltrada = listaFiltrada.filter(orden => orden.estadoTaller === 'LISTO');
-      
-      if (subFiltro === 'PAGADO') {
-        listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PAGADO');
-      } else if (subFiltro === 'PENDIENTE_PAGO') {
-        listaFiltrada = listaFiltrada.filter(orden => orden.estadoPago === 'PENDIENTE' || orden.estadoPago === 'ANTICIPO');
-      }
-    } 
-    else if (pestañaPrincipal === 'CERRADOS') {
-      listaFiltrada = listaFiltrada.filter(orden =>
-        orden.estadoTaller === 'ENTREGADO' || 
-        (orden.tipoOrden || orden.tipo) === 'VENTA_DIRECTA' || 
-        (orden.tipoOrden || orden.tipo) === 'DEVOLUCION'
-      );
-      
-      if (subFiltro === 'VENTA_DIRECTA') {
-        listaFiltrada = listaFiltrada.filter(orden =>
-          (orden.tipoOrden || orden.tipo) === 'VENTA_DIRECTA' &&
-          (orden.total >= 0 && (orden.importeTotal ?? 0) >= 0)
-        );
-      } else if (subFiltro === 'REPARACION') {
-        listaFiltrada = listaFiltrada.filter(orden => 
-          (orden.tipoOrden || orden.tipo) === 'REPARACION'
-        );
-      } else if (subFiltro === 'DEVOLUCION') {
-        listaFiltrada = listaFiltrada.filter(orden => 
-          (orden.tipoOrden || orden.tipo) === 'DEVOLUCION' || 
-          orden.tipoOrden === 'ABONO' ||
-          orden.tipo === 'ABONO' ||
-          orden.total < 0 || 
-          (orden.importeTotal < 0)
-        );
-      }
-    }
-
-    // =========================================================================
-    // 2. Buscador
-    // =========================================================================
+    // 1. Filtrado inteligente por término de búsqueda
+    let filtradas = lista;
     if (busqueda) {
-      listaFiltrada = listaFiltrada.filter(orden => {
-        const cumpleId = orden.id?.toString().includes(busqueda);
-        const cumpleCliente = orden.clienteNombre?.toLowerCase().includes(busqueda);
-        const cumpleNumFactura = orden.numeroTicket?.toLowerCase().includes(busqueda) || orden.numeroFactura?.toLowerCase().includes(busqueda);
-        return cumpleId || cumpleCliente || cumpleNumFactura;
+      filtradas = filtradas.filter(o => {
+        const numTicket = (o.numeroTicket || o.id || '').toString().toLowerCase();
+        const numFactura = (o.numeroFactura || '').toLowerCase();
+        const cliente = (o.clienteNombre || o.cliente?.nombre || '').toLowerCase();
+        return numTicket.includes(busqueda) || cliente.includes(busqueda) || numFactura.includes(busqueda);
       });
     }
 
-    return listaFiltrada.slice(0, 50);
+    // 2. Filtrar por Pestaña Principal
+    if (tipo === 'TALLER') {
+      filtradas = filtradas.filter(o => 
+        o.tipo === 'REPARACION' && 
+        o.estadoTaller !== 'LISTO' && 
+        o.estadoTaller !== 'ENTREGADO'
+      );
+    } 
+    else if (tipo === 'LISTO_RECOGER') {
+      filtradas = filtradas.filter(o => 
+        o.tipo === 'REPARACION' && 
+        o.estadoTaller === 'LISTO'
+      );
+    } 
+    else if (tipo === 'CERRADOS') {
+      filtradas = filtradas.filter(o => 
+        o.tipo === 'VENTA_DIRECTA' || 
+        o.tipo === 'DEVOLUCION' || 
+        (o.tipo === 'REPARACION' && o.estadoTaller === 'ENTREGADO')
+      );
+    }
+
+    // 3. Filtrar por los Sub-filtros
+    if (estado !== 'TODOS') {
+      if (tipo === 'CERRADOS') {
+        filtradas = filtradas.filter(o => o.tipo === estado);
+      } else {
+        filtradas = filtradas.filter(o => o.estadoPago === estado);
+      }
+    }
+
+    // Retorna las órdenes filtradas y limita la renderización de la lista por rendimiento (p. ej. a 50)
+    return filtradas.slice(0, 50);
   });
-  
+
   cambioAOfrecer = computed(() => {
     if (this.metodoPago() === 'TARJETA') return 0;
     const total = this.ordenSeleccionada()?.importePendiente || 0;
@@ -134,78 +159,42 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     return entregado > total ? entregado - total : 0;
   });
 
-  constructor() {
-    super(); // Llama al constructor de la clase base
-  }
+  // =========================================================================
+  // Controladores de Vista y Modales
+  // =========================================================================
+  verDetalle(orden: any) {
+    this.notasGenerales.set(orden.notasGenerales || orden.observaciones || '');
+    this.ordenSeleccionada.set(orden);
+    this.idDetalleDesplegado = null;
 
-  ngOnInit() {
-    this.cargarDatos();
-    this.cargarDatosDelServidor();
-  }
+    const lineas = orden.detalles || orden.lineas || [];
+    this.detallesEditados = lineas.map((linea: any, index: number) => {
+      let fechaFormateada = '';
+      const fechaBase = linea.fechaPrometidaRecogida || orden.fechaPrometidaRecogida;
+      if (fechaBase) {
+        fechaFormateada = new Date(fechaBase).toISOString().split('T')[0];
+      }
 
-  // Obligatorio implementar este método (lo pide la clase base)
-  cargarDatos(): void {
-    this.cargando.set(true);
-    this.ordenService.getOrdenesPaginadas(this.paginaActual(), this.itemsPorPagina)
-      .subscribe({
-        next: (data: any) => {
-          // data.content trae los 20 registros de la página actual
-          this.ordenes.set(data.content);
-          this.totalElementos = data.totalElements;
-          this.totalPaginas = data.totalPages;
-          this.cargando.set(false);
-        },
-        error: (err) => {
-          this.uiService.mostrarToast('Error al cargar clientes paginados: ' + (err.error || err.message), 'error');
-          this.ordenSeleccionada.set(false);
-        }
-      });
-  }
+      const precioUnitario = linea.precioUnitario || linea.precioUnidad || linea.precio || 0;
+      const cantidad = linea.cantidad || 1;
+      const subtotalLinea = linea.subtotal || linea.total || (cantidad * precioUnitario);
+      const notaExistente = linea.notas || linea.notasReparacion || '';
 
-  cargarDatosDelServidor() {
-    this.ordenService.getOrdenes().subscribe({
-      next: (data) => this.ordenes.set(data),
-      error: (err) => this.uiService.mostrarToast('Error al cargar la gestión de tickets: ' + (err.error?.message || err.message), 'error')
+      return {
+        id: linea.id || index, 
+        articuloId: linea.articuloId || linea.articulo?.id,
+        nombre: linea.articuloNombre || linea.articulo?.nombre || 'Artículo/Servicio',
+        cantidad: cantidad,
+        precio: precioUnitario,
+        subtotal: subtotalLinea,
+        esServicio: linea.esServicio || linea.articulo?.tipo === 'SERVICIO' || orden.tipo === 'REPARACION',
+        notas: notaExistente,
+        notasReparacion: notaExistente,
+        fechaEntrega: fechaFormateada,
+        nuevoPrecioInput: '' 
+      };
     });
   }
-
-  verDetalle(orden: any) {
-  // Cargar la nota general existente del ticket (ajusta el nombre del campo si en tu JSON se llama distinto)
-  this.notasGenerales.set(orden.notasGenerales || orden.observaciones || '');
-  this.ordenSeleccionada.set(orden);
-  this.idDetalleDesplegado = null;
-
-  const lineas = orden.detalles || orden.lineas || [];
-  this.detallesEditados = lineas.map((linea: any, index: number) => {
-    let fechaFormateada = '';
-    const fechaBase = linea.fechaPrometidaRecogida || orden.fechaPrometidaRecogida;
-    if (fechaBase) {
-      fechaFormateada = new Date(fechaBase).toISOString().split('T')[0];
-    }
-
-    // 1. Aseguramos capturar el precio unitario venga como venga del backend
-    const precioUnitario = linea.precioUnitario || linea.precioUnidad || linea.precio || 0;
-    const cantidad = linea.cantidad || 1;
-    
-    // 2. Aseguramos el subtotal de la línea
-    const subtotalLinea = linea.subtotal || linea.total || (cantidad * precioUnitario);
-    const notaExistente = linea.notas || linea.notasReparacion || '';
-
-    return {
-      id: linea.id || index, 
-      articuloId: linea.articuloId || linea.articulo?.id,
-      nombre: linea.articuloNombre || linea.articulo?.nombre || 'Artículo/Servicio',
-      cantidad: cantidad,
-      precio: precioUnitario, // <-- Ahora sí tendrá el valor real
-      subtotal: subtotalLinea, // <-- Ahora sí tendrá el valor real
-      esServicio: linea.esServicio || linea.articulo?.tipo === 'SERVICIO' || orden.tipo === 'REPARACION',
-      notas: notaExistente,
-      notasReparacion: notaExistente,
-      fechaEntrega: fechaFormateada,
-      nuevoPrecioInput: '' 
-    };
-  });
-}
 
   toggleDesplegableServicio(id: number | null) {
     this.idDetalleDesplegado = this.idDetalleDesplegado === id ? null : id;
@@ -227,45 +216,49 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   // Acciones de Taller
   // =========================================================================
   empezarTrabajo(trabajoId: number) {
-  this.uiService.mostrarToast('⚙️ Iniciando trabajo en el taller...', 'warning');
-  
-  this.ordenService.avanzarEstadoTrabajoTaller(trabajoId, 'EN_TALLER').subscribe({
-    next: () => {
-      this.uiService.mostrarToast('¡Trabajo iniciado en taller! 🛠️', 'success');
-      this.cargarDatosDelServidor(); // Recargamos para actualizar la vista
-      this.cerrarModal();
-    },
-    error: (err) => {
-      console.error(err);
-      this.uiService.mostrarToast('No se pudo iniciar el trabajo', 'error');
-    }
-  });
- }
+    this.uiService.mostrarToast('⚙️ Iniciando trabajo en el taller...', 'warning');
+    
+    this.ordenService.avanzarEstadoTrabajoTaller(trabajoId, 'EN_TALLER').subscribe({
+      next: () => {
+        this.uiService.mostrarToast('¡Trabajo iniciado en taller! 🛠️', 'success');
+        this.cargarDatos();
+        this.cerrarModal();
+      },
+      error: (err) => {
+        console.error(err);
+        this.uiService.mostrarToast('No se pudo iniciar el trabajo', 'error');
+      }
+    });
+  }
 
-  /** Finaliza un bulto/trabajo concreto pasándolo a LISTO (Listo para recoger) */
   finalizarReparacion(trabajoId: number) {
-  this.uiService.mostrarToast('⚡ Marcando trabajo como completado...', 'warning');
-  
-  this.ordenService.avanzarEstadoTrabajoTaller(trabajoId, 'LISTO').subscribe({
-    next: () => {
-      this.uiService.mostrarToast('Reparación finalizada. Pasado a "Listos para recoger". 📦', 'success');
-      this.cargarDatosDelServidor(); // Recargamos la rejilla/panel
-      this.cerrarModal();
-    },
-    error: (err) => {
-      console.error(err);
-      this.uiService.mostrarToast('Error al terminar la reparación del bulto', 'error');
-    }
-  });
- }
+    this.uiService.mostrarToast('⚡ Marcando trabajo como completado...', 'warning');
+    
+    this.ordenService.avanzarEstadoTrabajoTaller(trabajoId, 'LISTO').subscribe({
+      next: () => {
+        this.uiService.mostrarToast('Reparación finalizada. Pasado a "Listos para recoger". 📦', 'success');
+        this.cargarDatos();
+        this.cerrarModal();
+      },
+      error: (err) => {
+        console.error(err);
+        this.uiService.mostrarToast('Error al terminar la reparación del bulto', 'error');
+      }
+    });
+  }
 
+  // =========================================================================
+  // Pasarela de Cobro Simple (Teclado Numérico)
+  // =========================================================================
   abrirPanelCobro() {
     this.importeEntregado.set('');
     this.metodoPago.set('EFECTIVO');
     this.mostrarModalCobro.set(true);
   } 
 
-  cerrarPanelCobro() { this.mostrarModalCobro.set(false); }
+  cerrarPanelCobro() { 
+    this.mostrarModalCobro.set(false); 
+  }
 
   presionarTecla(valor: string) {
     const actual = this.importeEntregado();
@@ -291,7 +284,31 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   finalizarEntregaYCobro() {
     const orden = this.ordenSeleccionada();
     if (!orden) return;
-    const totalCobrar = orden.importePendiente;
+
+    const totalCobrar = orden.importePendiente || 0;
+
+    if (totalCobrar === 0) {
+      if (orden.estadoTaller === 'LISTO') {
+        this.uiService.mostrarToast('📦 Registrando entrega de pedido ya pagado...', 'warning');
+        
+        this.ordenService.avanzarEstadoTrabajoTaller(orden.id, 'ENTREGADO').subscribe({
+          next: () => {
+            this.uiService.mostrarToast('¡Pedido entregado con éxito! ✔️', 'success');
+            this.cerrarModal(); 
+            this.cargarDatos();
+          },
+          error: (err) => {
+            console.error(err);
+            this.uiService.mostrarToast('Error al marcar el pedido como ENTREGADO', 'error');
+          }
+        });
+      } else {
+        this.uiService.mostrarToast('Este ticket ya está completado y cobrado.', 'success');
+        this.cerrarModal();
+      }
+      return;
+    }
+
     const entregado = this.metodoPago() !== 'EFECTIVO' ? totalCobrar : (parseFloat(this.importeEntregado()) || 0);
 
     if (this.metodoPago() === 'EFECTIVO' && entregado < totalCobrar) {
@@ -301,20 +318,20 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
 
     const ejecutarCambioEstado = () => {
       if (orden.estadoTaller === 'LISTO') {
-        this.ordenService.crearOrden(orden.id).subscribe({
+        this.ordenService.avanzarEstadoTrabajoTaller(orden.id, 'ENTREGADO').subscribe({
           next: () => {
             this.uiService.mostrarToast('¡Ticket completado! Orden cobrada y ENTREGADA.', 'success');
             this.cerrarPanelCobro();
             this.cerrarModal(); 
-            this.cargarDatosDelServidor();
+            this.cargarDatos();
           },
-          error: () => this.uiService.mostrarToast('Problema al marcar como ENTREGADO.', 'error')
+          error: () => this.uiService.mostrarToast('El pago se guardó, pero hubo un problema al marcar como ENTREGADO.', 'error')
         });
       } else {
         this.uiService.mostrarToast('¡Pago adelantado registrado! El ticket sigue en proceso.', 'success');
         this.cerrarPanelCobro();
         this.cerrarModal(); 
-        this.cargarDatosDelServidor();
+        this.cargarDatos();
       }
     };
 
@@ -338,7 +355,9 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     this.mostrarModalDevolucion.set(true);
   }
 
-  cerrarPanelDevolucion() { this.mostrarModalDevolucion.set(false); }
+  cerrarPanelDevolucion() { 
+    this.mostrarModalDevolucion.set(false); 
+  }
 
   confirmarDevolucionTicket() {
     const orden = this.ordenSeleccionada();
@@ -373,7 +392,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
         this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada.`, 'success');
         this.cerrarPanelDevolucion();
         this.cerrarModal();
-        this.cargarDatosDelServidor();
+        this.cargarDatos();
       },
       error: (err) => this.uiService.mostrarToast('Error al procesar la devolución: ' + (err.error || err.message), 'error')
     });
@@ -428,7 +447,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   }
 
   // =========================================================================
-  // LOGICA DEL TECLADO VIRTUAL TÁCTIL
+  // LÓGICA DEL TECLADO VIRTUAL TÁCTIL
   // =========================================================================
   activarTeclado(campo: string, indexLinea?: number | null) {
     if (isMobileOrTablet()) {
@@ -448,77 +467,72 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     this.mayusculas.set(!this.mayusculas());
   }
 
- escribirTeclado(caracter: string) {
-  const campo = this.inputActivo();
-  const idx = this.indiceLineaActiva;
+  escribirTeclado(caracter: string) {
+    const campo = this.inputActivo();
+    const idx = this.indiceLineaActiva;
 
-  let caracterProcesado = caracter;
-  if (caracter === 'com') {
-    caracterProcesado = '.com';
-  } else if (isNaN(Number(caracter))) {
-    caracterProcesado = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
-  }
-  
-  if (campo === 'busqueda') {
-    this.terminoBusqueda.set(this.terminoBusqueda() + caracterProcesado);
-    } else if (campo === 'notas-generales') {
-      // Escribir en las notas generales del ticket
-      this.notasGenerales.set(this.notasGenerales() + caracterProcesado);
-    } else if (campo === 'notas-mostrador' && idx !== null) {
-    // Inicializamos con string vacío tanto 'notas' como 'notasReparacion' para curarnos en salud
-    if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
-    if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
-
-    this.detallesEditados[idx].notasReparacion += caracterProcesado;
-    this.detallesEditados[idx].notas += caracterProcesado; // Mantenemos ambos actualizados
-  } else if (campo === 'precio-linea' && idx !== null) {  
-    if (!this.detallesEditados[idx].nuevoPrecioInput) this.detallesEditados[idx].nuevoPrecioInput = '';
-    this.detallesEditados[idx].nuevoPrecioInput += caracterProcesado;
-  }
-}
-
-borrarUltimoCaracter() {
-  const campo = this.inputActivo();
-  const idx = this.indiceLineaActiva;
-  
-  if (campo === 'busqueda') {
-    const actual = this.terminoBusqueda();
-    this.terminoBusqueda.set(actual.slice(0, -1));
-  } else if (campo === 'notas-generales') {
-    // Borrar en las notas del ticket
-    const actual = this.notasGenerales();
-    this.notasGenerales.set(actual.slice(0, -1));
-  } else if (campo === 'notas-mostrador' && idx !== null) {
-    const actualRep = this.detallesEditados[idx].notasReparacion || '';
-    this.detallesEditados[idx].notasReparacion = actualRep.slice(0, -1);
+    let caracterProcesado = caracter;
+    if (caracter === 'com') {
+      caracterProcesado = '.com';
+    } else if (isNaN(Number(caracter))) {
+      caracterProcesado = this.mayusculas() ? caracter.toUpperCase() : caracter.toLowerCase();
+    }
     
-    const actualNot = this.detallesEditados[idx].notas || '';
-    this.detallesEditados[idx].notas = actualNot.slice(0, -1);
-  } else if (campo === 'precio-linea' && idx !== null) {
-    const actual = this.detallesEditados[idx].nuevoPrecioInput || '';
-    this.detallesEditados[idx].nuevoPrecioInput = actual.slice(0, -1);  
+    if (campo === 'busqueda') {
+      this.terminoBusqueda.set(this.terminoBusqueda() + caracterProcesado);
+    } else if (campo === 'notas-generales') {
+      this.notasGenerales.set(this.notasGenerales() + caracterProcesado);
+    } else if ((campo === 'notas-mostrador' || campo === 'notas-linea') && idx !== null) {
+      if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
+      if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
+
+      this.detallesEditados[idx].notasReparacion += caracterProcesado;
+      this.detallesEditados[idx].notas += caracterProcesado;
+    } else if (campo === 'precio-linea' && idx !== null) {  
+      if (!this.detallesEditados[idx].nuevoPrecioInput) this.detallesEditados[idx].nuevoPrecioInput = '';
+      this.detallesEditados[idx].nuevoPrecioInput += caracterProcesado;
+    }
   }
-}
 
-insertarEspacio() {
-  const campo = this.inputActivo();
-  const idx = this.indiceLineaActiva;
-  
-  if (campo === 'busqueda') {
-    this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
-  } else if (campo === 'notas-generales') {
-    //Espacio en las notas del ticket
-    this.notasGenerales.set(this.notasGenerales() + ' ');
-  } else if (campo === 'notas-mostrador' && idx !== null) {
-    if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
-    if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
-
-    this.detallesEditados[idx].notasReparacion += ' ';
-    this.detallesEditados[idx].notas += ' ';
-  } else if (campo === 'precio-linea' && idx !== null) {
-    if (!this.detallesEditados[idx].nuevoPrecioInput) this.detallesEditados[idx].nuevoPrecioInput = '';
-    this.detallesEditados[idx].nuevoPrecioInput += ' ';
+  borrarUltimoCaracter() {
+    const campo = this.inputActivo();
+    const idx = this.indiceLineaActiva;
+    
+    if (campo === 'busqueda') {
+      const actual = this.terminoBusqueda();
+      this.terminoBusqueda.set(actual.slice(0, -1));
+    } else if (campo === 'notas-generales') {
+      const actual = this.notasGenerales();
+      this.notasGenerales.set(actual.slice(0, -1));
+    } else if ((campo === 'notas-mostrador' || campo === 'notas-linea') && idx !== null) {
+      const actualRep = this.detallesEditados[idx].notasReparacion || '';
+      this.detallesEditados[idx].notasReparacion = actualRep.slice(0, -1);
+      
+      const actualNot = this.detallesEditados[idx].notas || '';
+      this.detallesEditados[idx].notas = actualNot.slice(0, -1);
+    } else if (campo === 'precio-linea' && idx !== null) {
+      const actual = this.detallesEditados[idx].nuevoPrecioInput || '';
+      this.detallesEditados[idx].nuevoPrecioInput = actual.slice(0, -1);  
+    }
   }
- } 
 
+  insertarEspacio() {
+    const campo = this.inputActivo();
+    const idx = this.indiceLineaActiva;
+    
+    if (campo === 'busqueda') {
+      this.terminoBusqueda.set(this.terminoBusqueda() + ' ');
+    } else if (campo === 'notas-generales') {
+      this.notasGenerales.set(this.notasGenerales() + ' ');
+    } else if ((campo === 'notas-mostrador' || campo === 'notas-linea') && idx !== null) {
+      if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
+      if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
+
+      this.detallesEditados[idx].notasReparacion += ' ';
+      this.detallesEditados[idx].notas += ' ';
+    } else if (campo === 'precio-linea' && idx !== null) {
+      if (!this.detallesEditados[idx].nuevoPrecioInput) this.detallesEditados[idx].nuevoPrecioInput = '';
+      this.detallesEditados[idx].nuevoPrecioInput += ' ';
+    }
+  } 
 }

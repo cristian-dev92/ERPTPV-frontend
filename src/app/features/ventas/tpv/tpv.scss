@@ -23,13 +23,36 @@ $border-color: #cbd5e1;
   gap: 15px;
   height: 100%;
 
+ // === SELECTOR DE FAMILIAS Y SUBFAMILIAS (SCSS CORREGIDO) ===
   .categorias-bar {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
 
+    // Fila horizontal con scroll suave para las familias principales
+    .fila-familias {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding-bottom: 6px;
+      width: 100%;
+      
+      // Ocultar la barra de scroll clásica en navegadores para que quede más estético
+      &::-webkit-scrollbar {
+        height: 5px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+    }
+
+    // Botones de Familias Principales
     .btn-categoria {
-      flex: 1;
-      padding: 12px 15px;
+      flex: 0 0 auto; // Evita que los botones se encojan
+      padding: 10px 18px;
       border: 2px solid #e2e8f0;
       background-color: #ffffff;
       border-radius: 8px;
@@ -47,6 +70,51 @@ $border-color: #cbd5e1;
         border-color: #3b82f6;
         color: #ffffff;
         box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+      }
+    }
+
+    // Fila de subfamilias (segundo nivel)
+    .fila-subfamilias {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 6px;
+      border: 1px solid #e2e8f0;
+      background-color: #f8fafc;
+      border-radius: 8px;
+      width: 100%;
+
+      &::-webkit-scrollbar {
+        height: 4px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+
+      .btn-subcategoria {
+        flex: 0 0 auto;
+        padding: 5px 14px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        border-radius: 20px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #f1f5f9;
+          border-color: #94a3b8;
+        }
+
+        &.active {
+          background: #64748b;
+          border-color: #64748b;
+          color: #ffffff;
+        }
       }
     }
   }

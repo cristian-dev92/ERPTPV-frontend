@@ -91,7 +91,6 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   carrito = signal<LineaCarritoMostrador[]>([]);
   categorias = signal<string[]>(['TODOS', 'CALZADO', 'REPARACION', 'COMPLEMENTOS', 'LIMPIEZA']);
   categoriaSeleccionada = signal<string>('TODOS');
-  articulosFiltrados = signal<Articulo[]>([]);
   historialTickets = signal<OrdenDTO[]>([]);
   tipoOrdenSeleccionada = signal<'VENTA_DIRECTA' | 'REPARACION'>('VENTA_DIRECTA');
   metodoPagoSeleccionado = signal<MetodoPago>('EFECTIVO');
@@ -168,6 +167,9 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   familiaSeleccionada = signal<FamiliaDTO | null>(null);
   subfamiliaSeleccionada = signal<any | null>(null);
 
+  // Almacén local con todos los artículos cargados de golpe de la base de datos
+  articulosTotales = signal<any[]>([]);
+
   // Estados intermedios para la construcción de bultos/taller
   descripcionBultoEnConstruccion = signal<string>('');
   fechaPrevistaEntrega = signal<string>('');
@@ -240,6 +242,37 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     return this.carrito().reduce((acc, item) => acc + item.cantidad, 0);
   });
 
+  articulosFiltrados = computed(() => {
+    const busqueda = this.busquedaArticulo().toLowerCase().trim();
+    const familia = this.familiaSeleccionada();
+    const subfamilia = this.subfamiliaSeleccionada();
+
+    return this.articulosTotales().filter(articulo => {
+      // 1. Filtro de búsqueda por texto
+      const coincideTexto = !busqueda || 
+        articulo.nombre.toLowerCase().includes(busqueda) || 
+        (articulo.codigo && articulo.codigo.toLowerCase().includes(busqueda));
+
+      // 2. Filtro por Familia (Padre) o sus Subfamilias hijas
+      let coincideFamilia = true;
+      if (familia) {
+        // Obtenemos una lista de todos los IDs válidos para esta categoría (el padre + sus hijos)
+        const idsFamiliaValidos = [
+          familia.id, 
+          ...(familia.subfamilias?.map(sub => sub.id) || [])
+        ];
+        
+        // El artículo cumple si su familiaId está dentro de los IDs válidos
+        coincideFamilia = idsFamiliaValidos.includes(articulo.familiaId);
+      }
+
+      // 3. Filtro por Subfamilia concreta (si el cajero ha pulsado una píldora de subfamilia)
+      const coincideSubfamilia = !subfamilia || articulo.familiaId === subfamilia.id;
+
+      return coincideTexto && coincideFamilia && coincideSubfamilia;
+    });
+  });
+  
   // Añade este método específico para abrirlo
   abrirModalNuevoCliente() {
   this.mostrarModalCliente.set(true);
@@ -257,8 +290,9 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   ngOnInit(): void {
     this.cargarDatos();
     this.cargarArticulos();
+    this.obtenerFamiliasConJerarquia();
+    this.cargarHistorialTurno();
     this.refrescarHistorialTrabajosActivos();
-    // Solo disparas la comprobación. El servicio se encarga de mutar la señal.
     this.cajaService.checkEstadoCaja().subscribe({
       error: (err: any) => console.error("Error al verificar estado de caja inicial en TPV", err)
     });
@@ -267,7 +301,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   // Obligatorio implementar este método (lo pide la clase base)
   cargarDatos(): void {
     this.cargando.set(true);
-    this.ordenService.getOrdenesPaginadas(this.paginaActual(), this.itemsPorPagina)
+    this.ordenService.getOrdenesPaginadas(this.paginaActual(), this.itemsPorPagina())
       .subscribe({
         next: (data: any) => {
           // data.content trae los 20 registros de la página actual
@@ -320,11 +354,20 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   this.familiaSeleccionada.set(familia);
   // Limpiamos subfamilia al cambiar de familia padre
   this.subfamiliaSeleccionada.set(null); 
+  this.uiService.mostrarToast(familia ? `Categoría: ${familia.nombre}` : 'Mostrando todas las familias', 'success');
  }
- seleccionarSubfamilia(sub: FamiliaDTO): void {
-  this.subfamiliaSeleccionada.set(sub);
-  // Aquí disparas la carga de productos de esa subfamilia concreta
- }
+
+ seleccionarSubfamilia(sub: FamiliaDTO | null): void {
+    // Si vuelve a pulsar en la misma subfamilia, la desactivamos para ver todo el padre
+    if (this.subfamiliaSeleccionada()?.id === sub?.id) {
+      this.subfamiliaSeleccionada.set(null);
+    } else {
+      this.subfamiliaSeleccionada.set(sub);
+      if (sub) {
+        this.uiService.mostrarToast(`Subcategoría: ${sub.nombre}`, 'success');
+      }
+    }
+  }
 
   obtenerFamiliasConJerarquia() {
   this.familiaService.obtenerMisFamilias().subscribe(data => {
@@ -379,32 +422,8 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   // === LOGICA DE ARTICULOS ===
   cargarArticulos(): void {
     this.articuloService.getArticulos().subscribe({
-      next: (articulos) => this.articulosFiltrados.set(articulos),
+      next: (articulos) => this.articulosTotales.set(articulos),
       error: () => this.uiService.mostrarToast('No se pudieron cargar los artículos.', 'error')
-    });
-  }
-
-  filtrarPorCategoria(cat: string): void {
-    this.categoriaSeleccionada.set(cat);
-    if (cat === 'TODOS') {
-      this.cargarArticulos();
-    } else {
-      this.articuloService.getArticulosPorCategoria(cat).subscribe({
-        next: (articulos) => this.articulosFiltrados.set(articulos),
-        error: () => this.uiService.mostrarToast('Error al filtrar categorías.', 'error')
-      });
-    }
-  }
-
-  filtrarPorNombreManual(): void {
-    const term = this.busquedaArticulo().trim().toUpperCase();
-    if (!term) {
-      this.filtrarPorCategoria(this.categoriaSeleccionada());
-      return;
-    }
-    this.articuloService.buscarPorNombre(term).subscribe({
-      next: (res) => this.articulosFiltrados.set(res),
-      error: () => this.articulosFiltrados.set([])
     });
   }
 
@@ -654,7 +673,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     }
 
     if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.clienteSeleccionadoId()) {
-      this.uiService.mostrarToast('⚠️ Taller: Es obligatorio asignar un cliente para guardar el bulto.', 'warning');
+      this.uiService.mostrarToast('Taller: Es obligatorio asignar un cliente para guardar el bulto.', 'warning');
       return;
     }
 
@@ -687,7 +706,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     });
 
     const nuevaOrden: NuevaOrdenDTO = {
-      clienteId: this.clienteSeleccionadoId(),
+      clienteId: this.clienteSeleccionadoId() ?? null,
       descuentoGlobal: 0, 
       notasGenerales: this.notasGenerales(),
       importePagado: this.tipoOrdenSeleccionada() === 'VENTA_DIRECTA' ? this.totalTicket() : 0, 
@@ -695,7 +714,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
       trabajosTaller
     };
 
-    this.uiService.mostrarToast('🚀 Guardando orden en el motor central...', 'success');
+    this.uiService.mostrarToast('Guardando orden en el motor central...', 'success');
 
     this.ordenService.crearOrden(nuevaOrden).subscribe({
       next: (ordenProcesada) => {
@@ -705,52 +724,44 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
           this.idOrdenPendienteAnticipo.set(ordenProcesada.id);
           this.mostrarModalPreguntaAnticipo.set(true);
         } else {
-          this.cobrarTicketCompleto(ordenProcesada.id);
+          // 💡 SOLUCIÓN: Si es venta directa, el backend ya la cobra al crearla 
+          // porque le mandamos el 'importePagado'. No llames a cobrarTicketCompleto()!
+          this.uiService.mostrarToast(`💰 Venta #${ordenProcesada.numeroTicket || ordenProcesada.id} correcta.`, 'success');
+          // Ejecutamos exactamente los mismos pasos de limpieza y actualización de pantalla:
+          this.procesarPostCobroCompleto(ordenProcesada);
+          // Actualizamos los datos del ticket para la vista y Veri*Factu
+          this.numeroTicketActual.set(ordenProcesada.numeroTicket);
+          this.horaTicketActual.set(new Date().toLocaleTimeString());
+          // Actualizar el historial inferior de tickets
+          this.ordenService.getOrdenes().subscribe({
+            next: (ticketsActualizados: OrdenDTO[]) => {
+              this.historialTickets.set(ticketsActualizados);
+            },
+            error: (err) => {
+              this.uiService.mostrarToast('Error al actualizar el historial de ventas: ' + (err.message || 'Error desconocido'), 'error');
+            }
+          });
+
+          // Módulo Veri*Factu (usamos el número de ticket procesado)
+          this.datosFacturaAeat.set({
+            qr: '',
+            ref: ordenProcesada.numeroTicket, 
+            total: this.totalTicket(),
+            fecha: new Date().toLocaleTimeString()
+          });
+
+          // Mostrar visor/modal de ticket y lanzar previsualización PDF
+          this.isTicketVisible.set(true);
+          this.generarYPrevisualizarTicket();
+          
+          // Refrescamos stock de la tienda
+          this.cargarCatalogo();
         }
       },
       error: (err) => {
         console.error(err);
         this.uiService.mostrarToast('Error al procesar la venta: ' + (err.error?.message || 'Rechazado'), 'error');
       }
-    });
-  }
-
-  // Métodos privados para manejar los flujos de cobro según la selección del cajero
-  private cobrarTicketCompleto(id: number) {
-    this.ordenService.cobrar(id, this.metodoPagoSeleccionado()).subscribe({
-      next: (res) => {
-        this.uiService.mostrarToast('💰 Venta #${res.numeroTicket} correcta.', 'success');
-        this.procesarPostCobroCompleto(res);
-        // Guardamos la referencia de operación/ID para la llamada del PDF
-        this.idOperacionProcesada.set(id);
-
-        // Actualizamos el número de ticket y la hora para mostrarlos en el recibo de venta
-        this.numeroTicketActual.set(res.numeroTicket);
-        this.horaTicketActual.set(new Date().toLocaleTimeString());
-
-        // === NUEVO: INSERTAR EL TICKET EN EL HISTORIAL INFERIOR ===
-        this.ordenService.getOrdenes().subscribe({
-          next: (ticketsActualizados: OrdenDTO[]) => {
-            this.historialTickets.set(ticketsActualizados);
-          },
-          error: (err) => console.error('Error al actualizar el historial:', err)
-        });
-
-          // Módulo Veri*Factu
-          this.datosFacturaAeat.set({
-            qr: '',
-            ref: res.numeroTicket, 
-            total: this.totalTicket(),
-            fecha: new Date().toLocaleTimeString()
-          });
-        // Mostramos el ticket de venta con el PDF previsualizado para que el cajero pueda imprimirlo o revisarlo antes de cerrar el recibo
-        this.isTicketVisible.set(true);
-        // Lanzamos la generación del PDF ahora que tenemos ID y datos cargados
-        this.generarYPrevisualizarTicket();
-        // REFRESCAR STOCK: Añadido aquí para ventas directas
-        this.cargarCatalogo();
-      },
-      error: (err) => this.uiService.mostrarToast('Error al procesar el pago: ' + (err.error || err.message), 'error')
     });
   }
 
@@ -831,38 +842,33 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
 
     this.cargandoPDF.set(true);
 
-    this.ordenService.getTicketPdf(id).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        this.ticketIframeUrl.set(url);
-      },
-      error: (err) => {
-        console.error(err);
-        this.uiService.mostrarToast('No se pudo generar la previsualización.', 'error');
-      }
-    });
-
-    //Si es REPARACIÓN y el total cobrado en el anticipo ha sido 0, atacamos al endpoint de la Orden, no al de la Caja física.
+    // 1. Buscamos en el historial o en el ticket origen si es un abono/devolución
+    const esDevolucion = this.historialTickets().find(t => t.id === id)?.numeroTicket?.startsWith('DEV-') || false;
     const esReparacion = this.tipoOrdenSeleccionada() === 'REPARACION';
 
-    const peticionPdf$ = esReparacion
-      ? this.ordenService.getTicketPdf(id) // <-- Cambia por tu método que recupera el PDF desde OrdenService
+    // Si es devolución o reparación, atacamos a ordenService. Si es venta ordinaria, a cajaService.
+    const peticionPdf$ = (esReparacion || esDevolucion)
+      ? this.ordenService.getTicketPdf(id) 
       : this.cajaService.descargarPdf80mm(id);
 
     peticionPdf$.subscribe({
       next: (blob: Blob) => {
+        // Liberamos memoria de URLs de blobs anteriores del navegador
         if (this.rawBlobUrl) {
           URL.revokeObjectURL(this.rawBlobUrl);
         }
+
+        // Creamos la nueva URL temporal para el binario del PDF
         this.rawBlobUrl = URL.createObjectURL(blob);
-        // Sanitizamos la URL para que Angular nos permita incrustarla de forma segura en el <iframe> del HTML
+        
+        // Sanitizamos para el [src] del iframe del HTML
         this.urlSeguraPdf.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.rawBlobUrl));
         this.cargandoPDF.set(false);
         this.uiService.mostrarToast('📄 Ticket generado. Listo para revisión o impresión.', 'success');
       },
       error: (err) => {
         console.error('Error al generar PDF del ticket:', err);
-        this.uiService.mostrarToast('No se pudo precargar la vista del ticket.', 'error');
+        this.uiService.mostrarToast('No se pudo generar la vista de impresión.', 'error');
         this.cargandoPDF.set(false);
       }
     });
@@ -881,6 +887,19 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
       URL.revokeObjectURL(actual);
       this.ticketIframeUrl.set(null);
     }
+  }
+
+  // Método que se conecta a tu servicio de órdenes para rellenar la barra inferior con los tickets de hoy o del turno
+  cargarHistorialTurno(): void {
+    this.ordenService.getOrdenes().subscribe({
+      next: (tickets: OrdenDTO[]) => {
+        // Guardamos los tickets reales de la base de datos en tu señal
+        this.historialTickets.set(tickets);
+      },
+      error: (err) => {
+        console.error('Error al recuperar las ventas del turno:', err);
+      }
+    });
   }
 
   /* Acción del historial inferior para descargar el PDF oficial A4 regulado */
@@ -1338,14 +1357,26 @@ abrirModal() {
       this.ticketOrigenEncontrado = ticketDTO;
       this.lineasSeleccionadasParaDevolver.clear();
       
-      // Mapea tanto líneas físicas de venta como materiales de taller si se devuelven
+      // 1. Mapeamos líneas de venta directa usando su 'articuloId'
+      if (ticketDTO.lineasVentaDirecta) {
         ticketDTO.lineasVentaDirecta.forEach(linea => {
+          const clave = linea.articuloId;
           this.lineasSeleccionadasParaDevolver.set(linea.articuloId, {
             checked: false,
             cantidadADevolver: linea.cantidad
           });
         });
-      this.mostrarModalSeleccionDevolucion = true; // Abrimos la rejilla interactiva
+      }
+      // 2. Mapeamos trabajos de taller (usamos su ID de línea si no tienen articuloId)
+      if (ticketDTO.trabajosTaller) {
+        ticketDTO.trabajosTaller.forEach(trabajo => {
+          this.lineasSeleccionadasParaDevolver.set(trabajo.id, {
+            checked: false,
+            cantidadADevolver: trabajo.cantidadMaterial || 1
+          });
+        });
+      }
+      this.mostrarModalSeleccionDevolucion = true;
     },
     error: (err) => {
       console.error(err);
@@ -1359,19 +1390,32 @@ abrirModal() {
   if (!ticket) return;
 
   const lineasDevolucionPayload: any[] = [];
-    this.lineasSeleccionadasParaDevolver.forEach((control, articuloId) => {
-      if (control.checked && control.cantidadADevolver > 0) {
+
+  this.lineasSeleccionadasParaDevolver.forEach((control, clave) => {
+    if (control.checked && control.cantidadADevolver > 0) {
+      
+      // 1. Comprobamos si la clave corresponde a una línea de venta directa (articuloId)
+      const esVentaDirecta = ticket.lineasVentaDirecta?.some(l => l.articuloId === clave);
+
+      if (esVentaDirecta) {
         lineasDevolucionPayload.push({
-          articuloId: articuloId,
+          articuloId: clave, // Es el ID del artículo físico
+          cantidad: control.cantidadADevolver
+        });
+      } else {
+        // 2. Si no es venta, asumimos que es un servicio o trabajo de taller usando su ID de línea
+        lineasDevolucionPayload.push({
+          trabajoTallerId: clave, // Mandamos el ID del trabajo de taller
           cantidad: control.cantidadADevolver
         });
       }
-    });
-
-    if (lineasDevolucionPayload.length === 0) {
-      this.uiService.mostrarToast('Selecciona algún elemento para el abono.', 'warning');
-      return;
     }
+  });
+
+  if (lineasDevolucionPayload.length === 0) {
+    this.uiService.mostrarToast('Selecciona algún elemento para el abono.', 'warning');
+    return;
+  }
 
   this.uiService.mostrarToast('Generando abono parcial enlazado (DEV-)...', 'success');
 
@@ -1387,6 +1431,7 @@ abrirModal() {
       
       // HIGIENE DE MEMORIA ANTES DE ASIGNAR NUEVO BLOB
       this.limpiarMemoriaBlobUrl();
+      
       // Inyectamos las referencias para que el iframe imprima el PDF térmico del DEV-
       this.idOperacionProcesada.set(res.id);
       this.procesarPostCobroCompleto(res);
@@ -1411,13 +1456,14 @@ abrirModal() {
       this.ticketOrigenEncontrado = null;
       this.numeroTicketBuscarInput = '';
       this.limpiarFormularioMostrador();
+      this.cargarHistorialTurno();
     },
     error: (err) => {
       console.error(err);
       this.uiService.mostrarToast('Error legal al registrar el abono: ' + (err.error?.message || 'Rechazado por el servidor'), 'error');
     }
   });
- }
+}
 
  // Al pulsar el botón de la cabecera, abrimos el minimodal
  pedirNumeroTicketDevolucion() {

@@ -71,7 +71,7 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
   // Obligatorio implementar este método (lo pide la clase base)
   cargarDatos(): void {
     this.cargando.set(true);
-    this.proveedorService.getProveedoresPaginados(this.paginaActual(), this.itemsPorPagina)
+    this.proveedorService.getProveedoresPaginados(this.paginaActual(), this.itemsPorPagina())
       .subscribe({
         next: (data: any) => {
           // data.content trae los 20 registros de la página actual

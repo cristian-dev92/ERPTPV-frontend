@@ -1,29 +1,26 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable, tap } from 'rxjs';
-import { 
-  NuevaOrdenDTO, 
-  OrdenDTO, 
-  DevolucionRequest, 
-  MetodoPago, 
-  EstadoTaller 
-} from '../models/orden.model'; // Ajusta la ruta a tus modelos
+import { Observable, tap } from 'rxjs';
+import { NuevaOrdenDTO, OrdenDTO, DevolucionRequest, MetodoPago, EstadoTaller } from '../models/orden.model'; // Ajusta la ruta a tus modelos
 
 @Injectable({ providedIn: 'root' })
 export class OrdenService {
   private http = inject(HttpClient);
   private readonly API_URL = '/api/ordenes';
+  public ticketProcesado = signal<number>(0);
 
   // 1. Crear el ticket unificado (El motor central del TPV)
   crearOrden(peticion: NuevaOrdenDTO): Observable<OrdenDTO> {
-    return this.http.post<OrdenDTO>(this.API_URL, peticion);
+    return this.http.post<OrdenDTO>(this.API_URL, peticion).pipe(tap(() => this.notificarCambio()) // <-- Avisamos de que se ha creado algo
+    );
   }
 
   // 2. Cobrar una orden pendiente de liquidar (muta PRE- a TCK-)
   cobrar(id: number, metodoPago: MetodoPago): Observable<OrdenDTO> {
     return this.http.post<OrdenDTO>(`${this.API_URL}/${id}/cobrar`, null, {
       params: { metodoPago }
-    });
+    }).pipe(tap(() => this.notificarCambio()) // <-- Avisamos de que se ha cobrado algo
+   );
   }
 
   // 3. Registrar un anticipo / entrega a cuenta
@@ -62,7 +59,9 @@ export class OrdenService {
 
   // 8. Procesar devolución (Genera Factura Rectificativa DEV-)
   procesarDevolucion(peticion: DevolucionRequest): Observable<OrdenDTO> {
-    return this.http.post<OrdenDTO>(`${this.API_URL}/devolucion`, peticion);
+    return this.http.post<OrdenDTO>(`${this.API_URL}/devolucion`, peticion).pipe(
+      tap(() => this.notificarCambio()) // <-- Avisamos de que se ha devuelto algo
+    );
   }
 
   // 9. Descargar PDF térmico del ticket (80mm)
@@ -89,7 +88,22 @@ export class OrdenService {
     );
   }
 
-  // Método auxiliar higiénico de impresión mediante iframe oculto
+  // 13. Obtiene el histórico completo de órdenes/tickets para el TPV
+  getOrdenes(): Observable<OrdenDTO[]> {
+    return this.http.get<OrdenDTO[]>(this.API_URL);
+  }
+
+  // 14. Obtiene el histórico de órdenes de manera paginada para evitar sobrecargar el TPV
+  getOrdenesPaginadas(pagina: number, cantidad: number): Observable<any> {
+    return this.http.get<any>(`${this.API_URL}/paginado`, {
+      params: {
+        page: pagina.toString(),
+        size: cantidad.toString()
+      }
+    });
+  }
+
+   // Método auxiliar higiénico de impresión mediante iframe oculto
   private ejecutarImpresionSilenciosa(blob: Blob): void {
     const blobUrl = window.URL.createObjectURL(blob);
     let iframe = document.getElementById('iframeImpresionSilenciosa') as HTMLIFrameElement;
@@ -113,19 +127,9 @@ export class OrdenService {
     iframe.src = blobUrl;
   }
 
-  // 13. Obtiene el histórico completo de órdenes/tickets para el TPV
-  getOrdenes(): Observable<OrdenDTO[]> {
-    return this.http.get<OrdenDTO[]>(this.API_URL);
-  }
-
-  // 14. Obtiene el histórico de órdenes de manera paginada para evitar sobrecargar el TPV
-  getOrdenesPaginadas(pagina: number, cantidad: number): Observable<any> {
-    return this.http.get<any>(`${this.API_URL}/paginado`, {
-      params: {
-        page: pagina.toString(),
-        size: cantidad.toString()
-      }
-    });
+  // Incrementa el valor del signal para forzar que cualquier componente "escuchando" se entere
+  public notificarCambio(): void {
+    this.ticketProcesado.update(val => val + 1);
   }
 
 }

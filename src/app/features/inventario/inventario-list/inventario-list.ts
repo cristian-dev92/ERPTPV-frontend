@@ -111,7 +111,7 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
   // Obligatorio implementar este método (lo pide la clase base)
   cargarDatos(): void {
     this.loading.set(true);
-    this.articuloService.getArticulosPaginados(this.paginaActual(), this.itemsPorPagina)
+    this.articuloService.getArticulosPaginados(this.paginaActual(), this.itemsPorPagina())
       .subscribe({
         next: (data: any) => {
           // data.content contiene la lista de artículos para la página actual

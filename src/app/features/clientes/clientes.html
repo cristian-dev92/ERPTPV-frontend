@@ -7,7 +7,7 @@
     </div>
     <button class="btn-nuevo-cliente" (click)="abrirModal()">➕ Nuevo Cliente</button>
   </header>
-
+  }
   <div class="search-bar-container">
     <input 
       type="text" 
@@ -18,7 +18,8 @@
       (focus)="abrirTeclado('BUSQUEDA', filtroBusqueda())">
   </div>
 
-  <div class="tabla-wrapper desktop-only">
+  <div class="desktop-only">
+   <div class="tabla-wrapper">
     <table class="zapatero-table">
       <thead>
         <tr>
@@ -59,23 +60,21 @@
         }
       </tbody>
     </table>
-
-  <!-- FOOTER DE PAGINACIÓN: Siempre abajo del todo -->
-  <footer class="paginacion-footer">
-    <button [disabled]="paginaActual()" (click)="paginaAnterior()">
-      Anterior
-    </button>
-    
-    <span class="info-paginas">Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
-    
-    <button [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
-      Siguiente
-    </button>
-  </footer>
-
  </div>
 
-  <div class="grid-clientes-movil mobile-only">
+ <!-- Paginación acoplada para Escritorio -->
+      <footer class="paginacion-footer">
+        <button class="btn-paginar" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">
+          ⬅️ Anterior
+        </button>
+        <span class="info-paginas">Página <strong>{{ paginaActual() + 1 }}</strong> de <strong>{{ totalPaginas() }}</strong></span>
+        <button class="btn-paginar" [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
+          Siguiente ➡️
+        </button>
+      </footer>
+    </div>
+ <div class="mobile-only">
+  <div class="grid-clientes-movil">
     @if (cargando()) {
       <div class="card-loading">Cargando clientes...</div>
     } @else if (clientesFiltrados().length === 0) {
@@ -100,14 +99,24 @@
        }
      }
    </div>
-  }
+
+   <!-- Paginación acoplada para Móvil -->
+      <footer class="paginacion-footer">
+        <button class="btn-paginar" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">
+          Anterior
+        </button>
+        <span class="info-paginas">Pág. {{ paginaActual() + 1 }}/{{ totalPaginas() }}</span>
+        <button class="btn-paginar" [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
+          Siguiente
+        </button>
+      </footer>
+    </div>
 
 @if (mostrarModalRegistro()) {
   <div class="modal-overlay" [class.teclado-abierto]="mostrarTeclado()">
     <div class="modal-box">
       <div class="modal-header">
         <h3>{{ modoEdicion() ? 'Modificar Ficha' : 'Alta de Cliente' }}</h3>
-        <p>Introduce los datos mínimos para cumplir con VeriFactu y avisar del estado de sus reparaciones</p>
       </div>
 
       <div class="form-group">
