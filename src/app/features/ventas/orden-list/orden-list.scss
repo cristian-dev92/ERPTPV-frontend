@@ -369,7 +369,7 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
     margin-bottom: 10px;
     flex-shrink: 0;
 
-    .txt-cliente { font-size: 1.1rem; margin-bottom: 5px; }
+    .txt-cliente { color: #f0ebeb; font-size: 1.1rem; margin-bottom: 5px; }
     .txt-telefono { color: #f0ebeb; font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
     .txt-registrado { font-size: 1.1rem; color: #ffffff; }
   }
@@ -628,8 +628,8 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
     &.finish { background-color: $color-success; &:hover { background-color: color.adjust($color-success, $lightness: -8%); } }
     &.cash { background-color: #b91c1c; &:hover { background-color: #991b1b; } }
     &.deliver-only {
-      background-color: $color-secondary;
-      border-bottom: 4px solid color.adjust($color-secondary, $lightness: -12%);
+      background-color: $color-success;
+      border-bottom: 4px solid color.adjust($color-success, $lightness: -12%);
       &:hover { background-color: color.adjust($color-secondary, $lightness: 5%); }
       &:active { transform: translateY(2px); border-bottom-width: 1px; filter: brightness(0.9); }
     }

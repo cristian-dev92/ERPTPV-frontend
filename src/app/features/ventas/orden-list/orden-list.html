@@ -56,17 +56,23 @@
           <span class="badge" [ngClass]="getBadgeClass(orden)"> 
                {{ orden.total < 0 ? 'DEVOLUCION' : 
                   ((orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') ? 'PAGADO' : 
-                  (orden.tipo === 'REPARACION' ? orden.estadoTaller : orden.estadoPago)) }}
+                  (getTipoOrden(orden) === 'REPARACION' ? getEstadoTaller(orden) : orden.estadoPago)) }}
           </span>
         </div>
         <div class="card-body">
           <p class="cliente"><strong>👤 {{ orden.clienteNombre || orden.cliente?.nombre || 'Cliente General' }}</strong></p>
-          <p class="servicio">👞 {{ orden.descripcionCorto || (orden.tipo === 'VENTA_DIRECTA' ? 'VENTA' : (orden.tipo === 'REPARACION' ? 'REPARACIÓN' : (orden.tipo === 'DEVOLUCION' ? 'DEVOLUCIÓN' : 'Trabajo del taller'))) }}</p>
+          <p class="servicio">👞 {{ orden.descripcionCorto || (getTipoOrden(orden) === 'VENTA_DIRECTA' ? 'VENTA' : (getTipoOrden(orden) === 'REPARACION' ? 'REPARACIÓN' : (getTipoOrden(orden) === 'DEVOLUCION' ? 'DEVOLUCIÓN' : 'Trabajo del taller'))) }}</p>
           
-          @if (orden.tipo === 'REPARACION') {
-            <p class="fecha-limite" [ngClass]="{'retrasado': orden.estadoTaller !== 'LISTO' && orden.estadoTaller !== 'ENTREGADO'}">
-              📅 Fecha Recogida: {{ orden.fechaPrometidaRecogida | date:'dd/MM/yyyy' }}
-            </p>
+          @if (getTipoOrden(orden) === 'REPARACION') {
+            @if (orden.fechaPrometidaRecogida) {
+              <p class="fecha-limite" [ngClass]="{'retrasado': getEstadoTaller(orden) !== 'LISTO' && getEstadoTaller(orden) !== 'ENTREGADO'}">
+                📅 Fecha Recogida: {{ orden.fechaPrometidaRecogida | date:'dd/MM/yyyy' }}
+              </p>
+            } @else {
+              <p class="fecha-limite">
+                📅 Sin fecha de recogida
+              </p>
+            }
           }
             <p class="fecha-limite">
               💰 Total: {{ orden.total | currency:'EUR' }}
@@ -74,8 +80,11 @@
         </div>
         
         <div class="card-quick-actions" (click)="$event.stopPropagation()">
-          @if (orden.tipo === 'REPARACION' && orden.estadoTaller === 'EN_TALLER') {
-            <button class="btn-finish" (click)="finalizarReparacion(orden.id)">✔️ Terminar Trabajo</button>
+          @if (getTipoOrden(orden) === 'REPARACION' && getEstadoTaller(orden) === 'EN_TALLER') {
+            <button class="btn-finish" (click)="finalizarReparacion(orden)">✔️ Terminar Trabajo</button>
+          }
+          @if (getEstadoTaller(orden) === 'LISTO') {
+            <button class="btn-deliver" style="background: #16a34a; color: #fff; padding: 8px 14px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.85rem;" (click)="entregarAlCliente(orden)">📦 Entregar al Cliente</button>
           }
         </div>
       </div>
@@ -132,42 +141,69 @@
     <div class="modal-content">
       
       <div class="modal-header">
-        <h2>Ticket #{{ orden.id }} — {{ orden.estadoTaller || orden.estadoPago }}</h2>
+        <h2>Ticket #{{ orden.id }} — {{ getEstadoTaller(orden) || orden.estadoPago }}</h2>
         <button class="close-btn" (click)="cerrarModal()">✕</button>
       </div>
 
       <div class="modal-grid">
         
-        <div class="info-section">
-          <div class="cliente-header-box">
-            <p class="txt-cliente">
-              <strong>👤 Cliente:</strong> {{ orden.clienteNombre || orden.cliente?.nombre || 'Cliente de Mostrador' }}
-            </p>
-            @if (orden.clienteTelefono) {
-              <p class="txt-telefono">
-                <strong>📞 Teléfono:</strong> {{ orden.clienteTelefono }}
+          <div class="info-section">
+            <div class="cliente-header-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;">
+              <p class="txt-cliente" style="margin: 0;">
+                <strong>👤 Cliente:</strong> {{ orden.clienteNombre || orden.cliente?.nombre || 'Cliente de Mostrador' }}
               </p>
-            }
-            <p class="txt-registrado">
-              📅 Registrado: {{ (orden.fecha || orden['createdAt'] || orden['fechaCreacion']) | date:'dd/MM/yyyy HH:mm' }}
-            </p>
-          </div>
+              <p class="txt-registrado" style="margin: 0; text-align: right;">
+                📅 Registrado: {{ (orden.fecha || orden['createdAt'] || orden['fechaCreacion']) | date:'dd/MM/yyyy HH:mm' }}
+              </p>
+              @if (orden.clienteTelefono) {
+                <p class="txt-telefono" style="margin: 0;">
+                  <strong>📞 Teléfono:</strong> {{ orden.clienteTelefono }}
+                </p>
+              }
+            </div>
 
-        <!-- Bloque táctil de Observaciones Generales del Ticket -->
-        <div class="observaciones-ticket-row" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-          <label for="notasGeneralesTicket" style="font-size: 0.85rem; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 4px;">
-            📝 NOTAS PARA ASUNTOS PROPIOS:
+        <!-- Bloque táctil de Notas de Taller y Fechas de Recogida por línea -->
+        <div class="observaciones-ticket-row" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 0.85rem; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 4px;">
+            📋 DETALLE POR TRABAJO:
           </label>
-          <textarea 
-            id="notasGeneralesTicket"
-            style="width: 100%; min-height: 48px; height: 52px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.3; background: #f8fafc; font-family: inherit;"
-            [value]="notasGenerales()"
-            (click)="activarTeclado('notas-generales', null)"
-            (input)="notasGenerales.set($any($event.target).value)">
-          </textarea>
+          @for (item of detallesEditados.filter(d => d.esServicio); track item.id) {
+            <div style="background: #1e293b; border-radius: 6px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #4ade80; font-weight: 600; font-size: 0.85rem;">{{ item.cantidad }}x {{ item.nombre }}</span>
+                @if (item.fechaEntrega) {
+                  <span style="color: #fbbf24; font-size: 0.8rem; font-weight: 600;">📅 Recogida: {{ item.fechaEntrega | date:'dd/MM/yyyy' }}</span>
+                } @else {
+                  <span style="color: #94a3b8; font-size: 0.8rem;">📅 Sin fecha de recogida</span>
+                }
+              </div>
+              @if (item.notasMostrador) {
+                <span style="color: #e2e8f0; font-size: 0.8rem; padding-left: 4px;">📝 {{ item.notasMostrador }}</span>
+              }
+              @if (item.descripcionBulto) {
+                <span style="color: #94a3b8; font-size: 0.8rem; padding-left: 4px;">📦 {{ item.descripcionBulto }}</span>
+              }
+            </div>
+          }
+          @if (detallesEditados.filter(d => d.esServicio).length === 0) {
+            <span style="color: #94a3b8; font-size: 0.85rem; font-style: italic;">Sin trabajos de taller</span>
+          }
         </div>
           
           <hr class="separator-ticket">
+
+          <!-- Notas Generales editables -->
+          <div style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+            <label for="notasGeneralesTicket" style="font-size: 0.85rem; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 4px;">
+              📝 NOTAS GENERALES:
+            </label>
+            <textarea 
+              id="notasGeneralesTicket"
+              style="width: 100%; min-height: 48px; border: 1px solid #475569; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.3; background: #1e293b; color: #e2e8f0; font-family: inherit;"
+              [(ngModel)]="notasGenerales"
+              (click)="activarTeclado('notas-generales', null)">
+            </textarea>
+          </div>
 
           <div class="desglose-ticket-box">
             <h3>📦 Contenido del Ticket</h3>
@@ -175,11 +211,16 @@
             <div class="tabla-desglose-tpv">
               @for (item of detallesEditados; track item.id; let idx = $index) {
                 <div class="linea-desglose-card" [class.es-servicio-item]="item.esServicio">
-      
+     
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                       <span style="color: #4ade80; font-weight: bold; margin-right: 8px;">{{ item.cantidad }}x</span>
                       <span style="font-weight: 600;">{{ item.nombre }}</span>
+                      @if (item.esServicio) {
+                        <span style="background: #7c3aed; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600;">TALLER</span>
+                      } @else {
+                        <span style="background: #2563eb; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600;">ARTÍCULO</span>
+                      }
                     </div>
                   <div>
                     <span style="color: #a0aec0; font-size: 0.95rem; margin-right: 10px;">{{ item.precio | currency:'EUR' }}</span>
@@ -217,10 +258,15 @@
 
                 @if (item.esServicio) {
                   <div class="config-group">
-                    <label>📝 Nota específica del trabajo(Ticket y Factura):</label>
-                    <textarea [(ngModel)]="item.notasReparacion" (click)="activarTeclado('notas-mostrador', idx)"></textarea>
+                    <label>📝 Notas de Taller:</label>
+                    <textarea [(ngModel)]="item.notasMostrador" (click)="activarTeclado('notas-mostrador', idx)"></textarea>
                   </div>
-            
+                  
+                  <div class="config-group">
+                    <label>📦 Descripción del bulto:</label>
+                    <input type="text" [(ngModel)]="item.descripcionBulto" style="color: #fff; border: 1px solid #475569; background: #1e293b; border-radius: 6px; padding: 8px 10px; width: 100%; box-sizing: border-box;" />
+                  </div>
+              
                   <div class="config-group">
                     <label>📅 Fecha de recogida prometida:</label>
                     <input type="date" inputmode="numeric" [(ngModel)]="item.fechaEntrega" (click)="$any($event.target).showPicker()" />
@@ -253,32 +299,34 @@
               🖨️ Generar / Imprimir Ticket
             </button>
 
-            <button class="btn-action print-factura" (click)="descargarFacturaA4(orden.id)">
-              📄 Generar / Imprimir Factura
-            </button>
+            @if (orden.clienteNombre && orden.clienteNombre !== 'Cliente General') {
+              <button class="btn-action print-factura" (click)="descargarFacturaA4(orden)">
+                📄 Generar / Imprimir Factura
+              </button>
+            }
           
-            @if (orden.tipo === 'REPARACION' && orden.estadoTaller === 'EN_TALLER') {
-              <button class="btn-action finish" (click)="finalizarReparacion(orden.id)">
-                🏁 Finalizar trabajo (Mover a Estanteria)
+          @if (getTipoOrden(orden) === 'REPARACION' && getEstadoTaller(orden) === 'EN_TALLER') {
+              <button class="btn-action finish" (click)="finalizarReparacion(orden)">
+                🏁 Terminar trabajo (Mover a Estanteria)
               </button>
             }
 
             @if (orden.importePendiente > 0 && orden.estadoPago !== 'CANCELADO' && orden.estadoPago !== 'DEVUELTO') {
               <div class="zona-acciones-cobro" style="margin-top: 1rem; width: 100%;">
                 <button type="button" class="btn-ir-cobrar" (click)="abrirPanelCobro()" style="width: 100%;">
-                  {{ orden.estadoTaller === 'LISTO' ? '💵 Liquidar y Entregar Cliente' : '💵 Registrar Anticipo' }}
+                  {{ getEstadoTaller(orden) === 'LISTO' ? '💵 Liquidar y Entregar Cliente' : '💵 Registrar Anticipo' }}
                 </button>
               </div>
-            } @else if (orden.importePendiente === 0 && orden.tipo === 'REPARACION' && orden.estadoTaller === 'LISTO') {
+            } @else if (orden.importePendiente === 0 && getTipoOrden(orden) === 'REPARACION' && getEstadoTaller(orden) === 'LISTO') {
               <button class="btn-action deliver-only" (click)="finalizarEntregaYCobro()" style="margin-top: 1rem; width: 100%;">
                 📦 Entregar al Cliente (Ya Pagado al 100%)
               </button>
             }
 
-            @if ((orden.estadoPago === 'PAGADO' || orden.estadoTaller === 'ENTREGADO')
+            @if ((orden.estadoPago === 'PAGADO' || getEstadoTaller(orden) === 'ENTREGADO')
                   && orden.estadoPago !== 'DEVOLUCION' 
                   && orden.estadoPago !== 'DEVUELTO'
-                  && orden.tipo !== 'DEVOLUCION') {
+                  && getTipoOrden(orden) !== 'DEVOLUCION') {
               <div class="zona-acciones-devolucion" style="margin-top: 1rem; width: 100%;">
                 <button type="button" class="btn-ir-devolver" (click)="abrirPanelDevolucion()" style="width: 100%;">
                   🔄 Solicitar Devolución (Factura Rectificativa)

@@ -94,7 +94,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   historialTickets = signal<OrdenDTO[]>([]);
   tipoOrdenSeleccionada = signal<'VENTA_DIRECTA' | 'REPARACION'>('VENTA_DIRECTA');
   metodoPagoSeleccionado = signal<MetodoPago>('EFECTIVO');
-  metodoPagoAnticipo = signal<string>('EFECTIVO');
+  metodoPagoAnticipo = signal<MetodoPago>('EFECTIVO');
   importeAnticipo = 0;
   cargando = signal<boolean>(false);
 
@@ -128,6 +128,16 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   notaLineaEnConstruccion = signal<string>('');
   bultoLineaEnConstruccion = signal<string>('');
   busquedaArticulo = signal<string>('');
+  busquedaArticuloTaller = signal<string>('');
+  filaBuscadorAbierto = signal<number | null>(null);
+  articulosTallerEncontrados = computed(() => {
+    const termino = this.busquedaArticuloTaller().toLowerCase().trim();
+    if (!termino) return [];
+    return this.articulosTotales().filter(a =>
+      a.nombre.toLowerCase().includes(termino) ||
+      (a.codigo && a.codigo.toLowerCase().includes(termino))
+    ).slice(0, 20);
+  });
 
   // Devoluciones enlazadas
   numeroTicketBuscarInput: string = '';
@@ -407,7 +417,11 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
 
   // Control de apertura y cierre del gestor de taller
   abrirGestorTallerYServicios(): void {
-    // Establecemos valores por defecto si es necesario (ej: fecha de entrega a 7 días vista)
+    this.busquedaCliente.set('');
+    this.clientesEncontrados.set([]);
+    this.importeAnticipo = 0;
+    this.metodoPagoAnticipo.set('EFECTIVO');
+    this.indiceLineaEnEdicion.set(null);
     const hoy = new Date();
     hoy.setDate(hoy.getDate() + 7);
     this.fechaPrevistaEntrega.set(hoy.toISOString().split('T')[0]);
@@ -417,6 +431,21 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
 
   cerrarModalServicios(): void {
     this.mostrarModalGestionServicios.set(false);
+    this.indiceLineaEnEdicion.set(null);
+    this.filaBuscadorAbierto.set(null);
+    this.busquedaArticuloTaller.set('');
+  }
+
+  confirmarTallerYServicios() {
+    if (this.tieneServicioEnCarrito() && !this.clienteSeleccionadoId()) {
+      this.uiService.mostrarToast('Taller: Es obligatorio asignar un cliente para guardar el bulto.', 'warning');
+      return;
+    }
+    this.cerrarModalServicios();
+    if (this.tieneServicioEnCarrito()) {
+      this.tipoOrdenSeleccionada.set('REPARACION');
+    }
+    this.finalizarVenta();
   }
 
   // === LOGICA DE ARTICULOS ===
@@ -682,7 +711,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     const trabajosTaller: TrabajoTallerDTO[] = [];
 
     const fechaPrometida = this.sinFechaRecogida() 
-      ? new Date().toISOString().split('T')[0] 
+      ? null 
       : (this.fechaRecogida() || new Date().toISOString().split('T')[0]);
 
     this.carrito().forEach(item => {
@@ -721,8 +750,18 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
         this.idOperacionProcesada.set(ordenProcesada.id);
         
         if (this.tipoOrdenSeleccionada() === 'REPARACION') {
-          this.idOrdenPendienteAnticipo.set(ordenProcesada.id);
-          this.mostrarModalPreguntaAnticipo.set(true);
+          this.idOperacionProcesada.set(ordenProcesada.id);
+          const anticipo = parseFloat(String(this.importeAnticipo)) || 0;
+          this.cobrarAnticipoTicket(ordenProcesada.id, anticipo, this.metodoPagoAnticipo());
+          this.ordenService.getOrdenes().subscribe({
+            next: (ticketsActualizados: OrdenDTO[]) => {
+              this.historialTickets.set(ticketsActualizados);
+            },
+            error: (err) => {
+              this.uiService.mostrarToast('Error al actualizar el historial de ventas: ' + (err.message || 'Error desconocido'), 'error');
+            }
+          });
+          this.limpiarCarrito();
         } else {
           // 💡 SOLUCIÓN: Si es venta directa, el backend ya la cobra al crearla 
           // porque le mandamos el 'importePagado'. No llames a cobrarTicketCompleto()!
@@ -752,7 +791,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
 
           // Mostrar visor/modal de ticket y lanzar previsualización PDF
           this.isTicketVisible.set(true);
-          this.generarYPrevisualizarTicket();
+          // La previsualización ya la lanza procesarPostCobroCompleto()
           
           // Refrescamos stock de la tienda
           this.cargarCatalogo();
@@ -843,13 +882,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     this.cargandoPDF.set(true);
 
     // 1. Buscamos en el historial o en el ticket origen si es un abono/devolución
-    const esDevolucion = this.historialTickets().find(t => t.id === id)?.numeroTicket?.startsWith('DEV-') || false;
-    const esReparacion = this.tipoOrdenSeleccionada() === 'REPARACION';
-
-    // Si es devolución o reparación, atacamos a ordenService. Si es venta ordinaria, a cajaService.
-    const peticionPdf$ = (esReparacion || esDevolucion)
-      ? this.ordenService.getTicketPdf(id) 
-      : this.cajaService.descargarPdf80mm(id);
+    const peticionPdf$ = this.ordenService.getTicketPdf(id);
 
     peticionPdf$.subscribe({
       next: (blob: Blob) => {
@@ -1045,29 +1078,39 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   // === BÚSQUEDA Y MANEJO DE CLIENTES ===
   buscarClientes(termino: string) {
     this.busquedaCliente.set(termino);
-    // Si escribe menos de 2 caracteres, limpiamos el desplegable
     if (termino.trim().length < 2) {
       this.clientesEncontrados.set([]);
       return;
     }
-    // Convertimos a MAYÚSCULAS para que coincida con la base de datos
     const terminoLimpio = termino.trim().toUpperCase();
-    // Expresión regular para saber si solo está escribiendo números (admite el + del prefijo)
-    const esTelefono = /^\+?[0-9\s\-]+$/.test(terminoLimpio);
-
-    if (esTelefono) {
-      // Llamada al endpoint de teléfono (/api/clientes/telefono/{telefono})
-      this.clienteService.buscarPorTelefono(terminoLimpio).subscribe({
-        next: (resultado) => this.clientesEncontrados.set([resultado]), // Envolvemos en array para mantener la consistencia con la búsqueda por nombre
-        error: () => this.clientesEncontrados.set([])
-      });
-    } else {
-      // Llamada al endpoint de nombre (/api/clientes/nombre/{nombre})
-      this.clienteService.buscarPorNombre(terminoLimpio).subscribe({
-        next: (resultado) => this.clientesEncontrados.set(resultado),
-        error: () => this.clientesEncontrados.set([])
-      });
-    }
+    this.clienteService.buscarPorNombre(terminoLimpio).subscribe({
+      next: (porNombre) => {
+        if (/[0-9]/.test(terminoLimpio)) {
+          this.clienteService.buscarPorTelefono(terminoLimpio).subscribe({
+            next: (porTelefono) => {
+              const merged = [...porNombre];
+              if (!merged.some(c => c.id === porTelefono.id)) {
+                merged.push(porTelefono);
+              }
+              this.clientesEncontrados.set(merged);
+            },
+            error: () => this.clientesEncontrados.set(porNombre)
+          });
+        } else {
+          this.clientesEncontrados.set(porNombre);
+        }
+      },
+      error: () => {
+        if (/[0-9]/.test(terminoLimpio)) {
+          this.clienteService.buscarPorTelefono(terminoLimpio).subscribe({
+            next: (porTelefono) => this.clientesEncontrados.set([porTelefono]),
+            error: () => this.clientesEncontrados.set([])
+          });
+        } else {
+          this.clientesEncontrados.set([]);
+        }
+      }
+    });
   }
 
   seleccionarCliente(cliente: Cliente) {
@@ -1204,6 +1247,80 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
         console.error('Error al reimprimir factura A4:', err);
         this.uiService.mostrarToast('No se pudo recuperar el documento para imprimir.', 'error');
       }
+    });
+  }
+
+  // Métodos para editar campos desde el modal de gestión de taller
+  actualizarDescripcionLinea(index: number, nuevoTexto: string) {
+    this.carrito.update(items => {
+      const nuevosItems = [...items];
+      nuevosItems[index] = {
+        ...nuevosItems[index],
+        articulo: { ...nuevosItems[index].articulo, nombre: nuevoTexto }
+      };
+      return nuevosItems;
+    });
+  }
+
+  buscarArticuloTaller(index: number, texto: string) {
+    this.carrito.update(items => {
+      const nuevosItems = [...items];
+      nuevosItems[index] = {
+        ...nuevosItems[index],
+        articulo: { ...nuevosItems[index].articulo, nombre: texto }
+      };
+      return nuevosItems;
+    });
+    this.busquedaArticuloTaller.set(texto);
+    if (texto.trim().length >= 2) {
+      this.filaBuscadorAbierto.set(index);
+    } else {
+      this.filaBuscadorAbierto.set(null);
+    }
+  }
+
+  buscarEnPopupTaller(index: number, texto: string) {
+    this.busquedaArticuloTaller.set(texto);
+    this.carrito.update(items => {
+      const nuevosItems = [...items];
+      nuevosItems[index] = {
+        ...nuevosItems[index],
+        articulo: { ...nuevosItems[index].articulo, nombre: texto }
+      };
+      return nuevosItems;
+    });
+  }
+
+  cerrarBuscadorTallerConDelay() {
+    setTimeout(() => this.filaBuscadorAbierto.set(null), 200);
+  }
+
+  seleccionarArticuloTaller(index: number, articulo: any) {
+    this.carrito.update(items => {
+      const nuevosItems = [...items];
+      nuevosItems[index] = {
+        ...nuevosItems[index],
+        articulo: { ...articulo },
+        precioEditado: articulo.precioFinal,
+        destino: 'TALLER'
+      };
+      return nuevosItems;
+    });
+    this.filaBuscadorAbierto.set(null);
+  }
+
+  actualizarCantidadLinea(index: number, cambio: number) {
+    this.ajustarCantidad(index, cambio);
+  }
+
+  actualizarPrecioLinea(index: number, evento: any) {
+    const input = evento.target as HTMLInputElement;
+    const valor = parseFloat(input.value);
+    if (isNaN(valor) || valor < 0) return;
+    this.carrito.update(items => {
+      const nuevosItems = [...items];
+      nuevosItems[index] = { ...nuevosItems[index], precioEditado: valor };
+      return nuevosItems;
     });
   }
 
@@ -1531,7 +1648,7 @@ confirmarTicketIntroducido() {
     this.inputActivo.set(objetivo);
     this.indiceLineaTemporal.set(index);
     this.maxUnidadesPermitidas = maxCantidad;
-    this.mayusculas.set(objetivo !== 'DESCUENTO' && objetivo !== 'DESCUENTO_MANUAL' && objetivo !== 'NUMERO_CANTIDAD' && objetivo !== 'APERTURA_CAJA');
+    this.mayusculas.set(objetivo !== 'DESCUENTO' && objetivo !== 'DESCUENTO_MANUAL' && objetivo !== 'NUMERO_CANTIDAD' && objetivo !== 'APERTURA_CAJA' && objetivo !== 'PRECIO_LINEA' && objetivo !== 'CANTIDAD_ANTICIPO');
 
     // Inicializamos el buffer con el valor que ya tenga el campo
     if (objetivo === 'PRODUCTO') this.valorTecladoEnConstruccion.set(this.busquedaArticulo());
@@ -1547,6 +1664,17 @@ confirmarTicketIntroducido() {
     else if (objetivo === 'NUMERO_CANTIDAD' && index !== null) {
       const control = this.lineasSeleccionadasParaDevolver.get(index);
       this.valorTecladoEnConstruccion.set(control ? control.cantidadADevolver.toString() : '1');
+    } else if (objetivo === 'CANTIDAD_ANTICIPO') {
+      this.valorTecladoEnConstruccion.set(this.importeAnticipo.toString());
+    } else if (objetivo === 'PRECIO_LINEA' && index !== null) {
+      const item = this.carrito()[index];
+      this.valorTecladoEnConstruccion.set(item ? (item.precioEditado || 0).toString() : '0');
+    } else if (objetivo === 'DESCRIPCION_LINEA' && index !== null) {
+      const item = this.carrito()[index];
+      this.valorTecladoEnConstruccion.set(item?.articulo?.nombre || '');
+    } else if (objetivo === 'DESCRIPCION_BULTO_LINEA' && index !== null) {
+      const item = this.carrito()[index];
+      this.valorTecladoEnConstruccion.set(item?.descripcionBulto || '');
     } else {
       this.valorTecladoEnConstruccion.set(''); // Para anticipos o aperturas de caja vacíos
     }
@@ -1559,7 +1687,7 @@ confirmarTicketIntroducido() {
     const objetivo = this.inputActivo();
 
     // Filtros numéricos para dinero o porcentajes
-    if (['DESCUENTO', 'DESCUENTO_MANUAL', 'CANTIDAD_ANTICIPO', 'APERTURA_CAJA', 'NUMERO_TICKET', 'NUMERO_CANTIDAD'].includes(objetivo)) {
+    if (['DESCUENTO', 'DESCUENTO_MANUAL', 'CANTIDAD_ANTICIPO', 'APERTURA_CAJA', 'NUMERO_TICKET', 'NUMERO_CANTIDAD', 'PRECIO_LINEA'].includes(objetivo)) {
       if (tecla === '.' && actual.includes('.')) return;
       if (actual.includes('.') && actual.split('.')[1].length >= 2) return;
       if (tecla !== '.' && isNaN(Number(tecla))) return;
@@ -1635,17 +1763,23 @@ confirmarTicketIntroducido() {
     else if (objetivo === 'DESCUENTO_MANUAL' && index !== null) {
       let num = parseFloat(valor) || 0;
       this.carrito.update(items => items.map((item, i) => i === index ? { ...item, porcentajeDescuento: num > 100 ? 100 : num } : item));
-    } else if (objetivo === 'NOTAS_MOSTRADOR') {
-    const index = this.indiceLineaTemporal();
-    if (index !== null) {
-      this.carrito.update(items => items.map((item, i) => i === index ? { ...item, notasReparacion: valor } : item));
-    } else {
-      // Actualiza el estado temporal del modal unificado para que se vea reflejado en el textarea
+    } else if (objetivo === 'NOTAS_MOSTRADOR' && index !== null) {
+      this.carrito.update(items => items.map((item, i) => i === index ? { ...item, notasMostrador: valor } : item));
+    } else if (objetivo === 'NOTAS_REPARACION') {
       this.notaLineaEnConstruccion.set(valor);
-      }
-    }
-    // Volcado de Cantidades para Devoluciones Parciales
-    else if (objetivo === 'NUMERO_CANTIDAD' && index !== null) {
+    } else if (objetivo === 'DESCRIPCION_BULTO') {
+      this.descripcionBultoEnConstruccion.set(valor);
+    } else if (objetivo === 'DESCRIPCION_LINEA' && index !== null) {
+      this.carrito.update(items => items.map((item, i) => i === index ? { ...item, articulo: { ...item.articulo, nombre: valor } } : item));
+    } else if (objetivo === 'DESCRIPCION_BULTO_LINEA' && index !== null) {
+      this.carrito.update(items => items.map((item, i) => i === index ? { ...item, descripcionBulto: valor } : item));
+    } else if (objetivo === 'PRECIO_LINEA' && index !== null) {
+      let num = parseFloat(valor) || 0;
+      this.carrito.update(items => items.map((item, i) => i === index ? { ...item, precioEditado: num < 0 ? 0 : num } : item));
+    } else if (objetivo === 'CANTIDAD_ANTICIPO') {
+      const num = parseFloat(valor) || 0;
+      this.importeAnticipo = num < 0 ? 0 : num;
+    } else if (objetivo === 'NUMERO_CANTIDAD' && index !== null) {
       let num = parseInt(valor, 10) || 0;
       if (num > this.maxUnidadesPermitidas) {
         num = this.maxUnidadesPermitidas;

@@ -14,7 +14,7 @@ export interface TrabajoTallerDTO {
   descripcionTrabajo: string;       // El servicio (ej: "Cambio de tapas")
   precioFinalTrabajo: number;       // Forzado o editado en el mostrador
   notasMostrador: string | null;    // Notas específicas (ej: "Diente de oro")
-  fechaPrometidaRecogida: string;   // Formato YYYY-MM-DD
+  fechaPrometidaRecogida: string | null;   // Formato YYYY-MM-DD (null = sin fecha)
   articuloBaseId: number | null;    // ID del artículo de stock consumido (null si es manual)
   cantidadMaterial: number | null;  // Cantidad consumida del stock
   descripcionBulto: string;         // Descripción física del zapato (ej: "Botas altas negras")
@@ -64,7 +64,7 @@ export interface TrabajoTallerSalidaDTO {
   cantidadMaterial: number | null;
   precioFinalTrabajo: number;
   estadoTaller: EstadoTaller;
-  fechaPrometidaRecogida: string;
+  fechaPrometidaRecogida: string | null;
   descripcionBulto: string;
 }
 

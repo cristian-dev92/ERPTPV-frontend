@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { UiService } from '../../../core/services/ui.service';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
 import { ComponentePaginado } from '../../../core/utils/paginado-base';
+import { EstadoTaller } from '../../../core/models/orden.model';
 
 type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'BIZUM' | 'OTRO';
 
@@ -98,6 +99,37 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   }
 
   // =========================================================================
+  // Helper: determina tipo de orden según datos del backend
+  // =========================================================================
+  private esReparacion(o: any): boolean {
+    return o.trabajosTaller && o.trabajosTaller.length > 0;
+  }
+  private esVentaDirecta(o: any): boolean {
+    // Si también tiene trabajos de taller, es REPARACION (orden mixta), no VENTA_DIRECTA
+    return o.lineasVentaDirecta && o.lineasVentaDirecta.length > 0 && !this.esReparacion(o);
+  }
+  private esDevolucion(o: any): boolean {
+    return o.numeroTicket?.startsWith('DEV-') || o.tipo === 'DEVOLUCION' || o.tipoOrden === 'DEVOLUCION';
+  }
+  getTipoOrden(o: any): string {
+    if (this.esDevolucion(o)) return 'DEVOLUCION';
+    if (this.esReparacion(o)) return 'REPARACION';
+    if (this.esVentaDirecta(o)) return 'VENTA_DIRECTA';
+    return o.tipo || o.tipoOrden || 'VENTA_DIRECTA';
+  }
+  getEstadoTaller(o: any): string {
+    if (o.estadoTaller) return o.estadoTaller;
+    if (this.esReparacion(o)) {
+      const estados: string[] = [...new Set<string>(o.trabajosTaller.map((t: any) => t.estadoTaller as string))];
+      if (estados.length === 1) return estados[0];
+      if (estados.every(e => e === 'ENTREGADO')) return 'ENTREGADO';
+      if (estados.some(e => e === 'EN_TALLER')) return 'EN_TALLER';
+      return estados[0] || 'PENDIENTE';
+    }
+    return '';
+  }
+
+  // =========================================================================
   // Filtro Reactivo Computado (Corregido y sin cierres de llave rotos)
   // =========================================================================
   ordenesAMostrar = computed(() => {
@@ -117,32 +149,36 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
       });
     }
 
-    // 2. Filtrar por Pestaña Principal
+    // 2. Filtrar por Pestaña Principal (inferir tipo desde los datos)
     if (tipo === 'TALLER') {
-      filtradas = filtradas.filter(o => 
-        o.tipo === 'REPARACION' && 
-        o.estadoTaller !== 'LISTO' && 
-        o.estadoTaller !== 'ENTREGADO'
-      );
+      filtradas = filtradas.filter(o => {
+        const estadoT = this.getEstadoTaller(o);
+        return this.esReparacion(o) && estadoT !== 'LISTO' && estadoT !== 'ENTREGADO';
+      });
     } 
     else if (tipo === 'LISTO_RECOGER') {
       filtradas = filtradas.filter(o => 
-        o.tipo === 'REPARACION' && 
-        o.estadoTaller === 'LISTO'
+        this.esReparacion(o) && this.getEstadoTaller(o) === 'LISTO'
       );
     } 
     else if (tipo === 'CERRADOS') {
       filtradas = filtradas.filter(o => 
-        o.tipo === 'VENTA_DIRECTA' || 
-        o.tipo === 'DEVOLUCION' || 
-        (o.tipo === 'REPARACION' && o.estadoTaller === 'ENTREGADO')
+        this.esVentaDirecta(o) || 
+        this.esDevolucion(o) || 
+        (this.esReparacion(o) && this.getEstadoTaller(o) === 'ENTREGADO')
       );
     }
 
     // 3. Filtrar por los Sub-filtros
     if (estado !== 'TODOS') {
       if (tipo === 'CERRADOS') {
-        filtradas = filtradas.filter(o => o.tipo === estado);
+        if (estado === 'VENTA_DIRECTA') filtradas = filtradas.filter(o => this.esVentaDirecta(o));
+        else if (estado === 'REPARACION') filtradas = filtradas.filter(o => this.esReparacion(o) && this.getEstadoTaller(o) === 'ENTREGADO');
+        else if (estado === 'DEVOLUCION') filtradas = filtradas.filter(o => this.esDevolucion(o));
+      } else if (estado === 'PENDIENTE_PAGO') {
+        filtradas = filtradas.filter(o => o.estadoPago === 'PENDIENTE' || o.estadoPago === 'ANTICIPO');
+      } else if (estado === 'PAGADO') {
+        filtradas = filtradas.filter(o => o.estadoPago === 'PAGADO');
       } else {
         filtradas = filtradas.filter(o => o.estadoPago === estado);
       }
@@ -167,7 +203,30 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     this.ordenSeleccionada.set(orden);
     this.idDetalleDesplegado = null;
 
-    const lineas = orden.detalles || orden.lineas || [];
+    const lineasTaller: any[] = (orden.trabajosTaller || []).map((t: any) => ({
+      ...t,
+      esServicio: true,
+      articuloNombre: t.descripcion || t.articuloBaseNombre || 'Servicio de taller',
+      precioUnitario: t.precioFinalTrabajo,
+      cantidad: t.cantidadMaterial || 1,
+      notas: t.notasMostrador || '',
+      notasMostrador: t.notasMostrador || '',
+      descripcionBulto: t.descripcionBulto || '',
+      fechaPrometidaRecogida: t.fechaPrometidaRecogida || orden.fechaPrometidaRecogida,
+    }));
+
+    const lineasVenta: any[] = (orden.lineasVentaDirecta || []).map((l: any) => ({
+      ...l,
+      esServicio: false,
+      articuloNombre: l.articuloNombre || 'Artículo',
+      precioUnitario: l.precioUnitario,
+      cantidad: l.cantidad,
+      notasMostrador: '',
+      descripcionBulto: '',
+    }));
+
+    const lineas = [...lineasTaller, ...lineasVenta];
+
     this.detallesEditados = lineas.map((linea: any, index: number) => {
       let fechaFormateada = '';
       const fechaBase = linea.fechaPrometidaRecogida || orden.fechaPrometidaRecogida;
@@ -175,21 +234,21 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
         fechaFormateada = new Date(fechaBase).toISOString().split('T')[0];
       }
 
-      const precioUnitario = linea.precioUnitario || linea.precioUnidad || linea.precio || 0;
+      const precioUnitario = linea.precioUnitario || linea.precio || 0;
       const cantidad = linea.cantidad || 1;
-      const subtotalLinea = linea.subtotal || linea.total || (cantidad * precioUnitario);
-      const notaExistente = linea.notas || linea.notasReparacion || '';
+      const subtotalLinea = cantidad * precioUnitario;
 
       return {
         id: linea.id || index, 
-        articuloId: linea.articuloId || linea.articulo?.id,
-        nombre: linea.articuloNombre || linea.articulo?.nombre || 'Artículo/Servicio',
+        articuloId: linea.articuloId || linea.articuloBaseId,
+        nombre: linea.articuloNombre || 'Artículo/Servicio',
         cantidad: cantidad,
         precio: precioUnitario,
         subtotal: subtotalLinea,
-        esServicio: linea.esServicio || linea.articulo?.tipo === 'SERVICIO' || orden.tipo === 'REPARACION',
-        notas: notaExistente,
-        notasReparacion: notaExistente,
+        esServicio: linea.esServicio,
+        notas: linea.notas || '',
+        notasMostrador: linea.notasMostrador || '',
+        descripcionBulto: linea.descripcionBulto || '',
         fechaEntrega: fechaFormateada,
         nuevoPrecioInput: '' 
       };
@@ -231,20 +290,48 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     });
   }
 
-  finalizarReparacion(trabajoId: number) {
-    this.uiService.mostrarToast('⚡ Marcando trabajo como completado...', 'warning');
-    
-    this.ordenService.avanzarEstadoTrabajoTaller(trabajoId, 'LISTO').subscribe({
-      next: () => {
-        this.uiService.mostrarToast('Reparación finalizada. Pasado a "Listos para recoger". 📦', 'success');
-        this.cargarDatos();
-        this.cerrarModal();
-      },
-      error: (err) => {
-        console.error(err);
-        this.uiService.mostrarToast('Error al terminar la reparación del bulto', 'error');
-      }
+  finalizarReparacion(orden: any) {
+    const trabajos = orden.trabajosTaller || [];
+    const pendientes = trabajos.filter((t: any) => t.estadoTaller === 'EN_TALLER' || !t.estadoTaller);
+
+    if (pendientes.length === 0) {
+      this.uiService.mostrarToast('No hay trabajos pendientes en esta orden.', 'warning');
+      return;
+    }
+
+    this.uiService.mostrarToast(`⚡ Finalizando ${pendientes.length} trabajo(s)...`, 'warning');
+
+    let completados = 0;
+    pendientes.forEach((trabajo: any) => {
+      this.ordenService.avanzarEstadoTrabajoTaller(trabajo.id, 'LISTO').subscribe({
+        next: () => {
+          completados++;
+          if (completados === pendientes.length) {
+            this.uiService.mostrarToast('Reparación finalizada. Pasado a "Listos para recoger". 📦', 'success');
+            this.cargarDatos();
+            this.cerrarModal();
+          }
+        },
+        error: (err) => {
+          console.error(err);
+          const msg = err.error?.message || err.message || `Error al finalizar trabajo #${trabajo.id}`;
+          this.uiService.mostrarToast(msg, 'error');
+        }
+      });
     });
+  }
+
+  entregarAlCliente(orden: any) {
+    if (orden.importePendiente && orden.importePendiente > 0) {
+      this.ordenSeleccionada.set(orden);
+      this.verDetalle(orden);
+      this.abrirPanelCobro();
+    } else {
+      this.marcarTrabajosComo(orden, 'ENTREGADO', () => {
+        this.uiService.mostrarToast('📦 Pedido entregado al cliente.', 'success');
+        this.cargarDatos();
+      });
+    }
   }
 
   // =========================================================================
@@ -281,6 +368,26 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     if (metodo === 'EFECTIVO') this.importeEntregado.set('');
   }
 
+  private marcarTrabajosComo(orden: any, nuevoEstado: EstadoTaller, onCompletado: () => void) {
+    const trabajos = orden.trabajosTaller?.filter((t: any) => t.estadoTaller !== 'ENTREGADO') || [];
+    if (trabajos.length === 0) { onCompletado(); return; }
+
+    let completados = 0;
+    trabajos.forEach((trabajo: any) => {
+      this.ordenService.avanzarEstadoTrabajoTaller(trabajo.id, nuevoEstado).subscribe({
+        next: () => {
+          completados++;
+          if (completados === trabajos.length) onCompletado();
+        },
+        error: (err) => {
+          completados++;
+          console.error(err);
+          if (completados === trabajos.length) onCompletado();
+        }
+      });
+    });
+  }
+
   finalizarEntregaYCobro() {
     const orden = this.ordenSeleccionada();
     if (!orden) return;
@@ -288,19 +395,12 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     const totalCobrar = orden.importePendiente || 0;
 
     if (totalCobrar === 0) {
-      if (orden.estadoTaller === 'LISTO') {
+      if (this.getEstadoTaller(orden) === 'LISTO') {
         this.uiService.mostrarToast('📦 Registrando entrega de pedido ya pagado...', 'warning');
-        
-        this.ordenService.avanzarEstadoTrabajoTaller(orden.id, 'ENTREGADO').subscribe({
-          next: () => {
-            this.uiService.mostrarToast('¡Pedido entregado con éxito! ✔️', 'success');
-            this.cerrarModal(); 
-            this.cargarDatos();
-          },
-          error: (err) => {
-            console.error(err);
-            this.uiService.mostrarToast('Error al marcar el pedido como ENTREGADO', 'error');
-          }
+        this.marcarTrabajosComo(orden, 'ENTREGADO', () => {
+          this.uiService.mostrarToast('¡Pedido entregado con éxito! ✔️', 'success');
+          this.cerrarModal();
+          this.cargarDatos();
         });
       } else {
         this.uiService.mostrarToast('Este ticket ya está completado y cobrado.', 'success');
@@ -314,32 +414,39 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     if (this.metodoPago() === 'EFECTIVO' && entregado < totalCobrar) {
       this.uiService.mostrarToast(`El importe entregado (${entregado}€) es menor que el total pendiente (${totalCobrar}€)`, 'warning');
       return;
-    } 
-
-    const ejecutarCambioEstado = () => {
-      if (orden.estadoTaller === 'LISTO') {
-        this.ordenService.avanzarEstadoTrabajoTaller(orden.id, 'ENTREGADO').subscribe({
-          next: () => {
-            this.uiService.mostrarToast('¡Ticket completado! Orden cobrada y ENTREGADA.', 'success');
-            this.cerrarPanelCobro();
-            this.cerrarModal(); 
-            this.cargarDatos();
-          },
-          error: () => this.uiService.mostrarToast('El pago se guardó, pero hubo un problema al marcar como ENTREGADO.', 'error')
-        });
-      } else {
-        this.uiService.mostrarToast('¡Pago adelantado registrado! El ticket sigue en proceso.', 'success');
-        this.cerrarPanelCobro();
-        this.cerrarModal(); 
-        this.cargarDatos();
-      }
-    };
+    }
 
     this.ordenService.cobrar(orden.id, this.metodoPago()).subscribe({
-      next: () => ejecutarCambioEstado(),
+      next: () => {
+        if (this.getEstadoTaller(orden) === 'LISTO') {
+          this.marcarTrabajosComo(orden, 'ENTREGADO', () => {
+            this.uiService.mostrarToast('¡Ticket completado! Orden cobrada y ENTREGADA.', 'success');
+            this.cerrarPanelCobro();
+            this.cerrarModal();
+            this.cargarDatos();
+          });
+        } else {
+          this.uiService.mostrarToast('¡Pago adelantado registrado! El ticket sigue en proceso.', 'success');
+          this.cerrarPanelCobro();
+          this.cerrarModal();
+          this.cargarDatos();
+        }
+      },
       error: (errCobro) => {
         if (errCobro.status === 400 && typeof errCobro.error === 'string' && errCobro.error.includes('ya ha sido cobrado')) {
-          ejecutarCambioEstado();
+          if (this.getEstadoTaller(orden) === 'LISTO') {
+            this.marcarTrabajosComo(orden, 'ENTREGADO', () => {
+              this.uiService.mostrarToast('¡Ticket completado! Orden cobrada y ENTREGADA.', 'success');
+              this.cerrarPanelCobro();
+              this.cerrarModal();
+              this.cargarDatos();
+            });
+          } else {
+            this.uiService.mostrarToast('¡Pago adelantado registrado! El ticket sigue en proceso.', 'success');
+            this.cerrarPanelCobro();
+            this.cerrarModal();
+            this.cargarDatos();
+          }
         } else {
           this.uiService.mostrarToast('Error al procesar el pago: ' + (errCobro.error || errCobro.message), 'error');
         }
@@ -409,11 +516,19 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     });
   }
 
-  descargarFacturaA4(ordenId: number) {
+  descargarFacturaA4(orden: any) {
+    const nombreCliente = orden.clienteNombre || orden.cliente?.nombre;
+    if (!nombreCliente || nombreCliente === 'Cliente General') {
+      this.uiService.mostrarToast('No se puede generar factura A4 sin un cliente registrado.', 'warning');
+      return;
+    }
     this.uiService.mostrarToast('Generando Factura A4...');
-    this.ordenService.getFacturaPdf(ordenId).subscribe({
+    this.ordenService.getFacturaPdf(orden.id).subscribe({
       next: (blob: Blob) => this.abrirBlobEnNuevaPestana(blob),
-      error: () => this.uiService.mostrarToast('Error al generar la factura A4. ¡REVISA SI LLEVA CLIENTE!', 'error')
+      error: (err) => {
+        const msg = err.error?.message || err.message || 'Error del servidor';
+        this.uiService.mostrarToast('Error al generar la factura A4: ' + msg, 'error');
+      }
     });
   }
 
@@ -425,19 +540,19 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
 
   getBadgeClass(orden: any): string {
     if (!orden) return 'badge-secondary';
-    if (orden.estadoPago === 'CANCELADO' || (orden.tipoOrden || orden.tipo) === 'DEVOLUCION' || orden.total < 0 || (orden.importeTotal ?? 0) < 0) {
+    if (orden.estadoPago === 'CANCELADO' || this.getTipoOrden(orden) === 'DEVOLUCION' || orden.total < 0 || (orden.importeTotal ?? 0) < 0) {
       return 'badge-danger';
     }
-    if (orden.tipo === 'VENTA_DIRECTA') {
+    if (this.getTipoOrden(orden) === 'VENTA_DIRECTA') {
       return 'badge-success';
     }
-    if (orden.estadoTaller === 'ENTREGADO'){ 
+    if (this.getEstadoTaller(orden) === 'ENTREGADO'){ 
       return 'badge-entregado';
     }
-    if (orden.estadoTaller === 'LISTO'){ 
+    if (this.getEstadoTaller(orden) === 'LISTO'){ 
       return 'badge-warning';
     }
-    if (orden.estadoTaller === 'EN_TALLER') {
+    if (this.getEstadoTaller(orden) === 'EN_TALLER') {
       return 'badge-taller';
     }
     if (orden.estadoPago === 'PAGADO') {
@@ -483,11 +598,9 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     } else if (campo === 'notas-generales') {
       this.notasGenerales.set(this.notasGenerales() + caracterProcesado);
     } else if ((campo === 'notas-mostrador' || campo === 'notas-linea') && idx !== null) {
-      if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
-      if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
+      if (!this.detallesEditados[idx].notasMostrador) this.detallesEditados[idx].notasMostrador = '';
 
-      this.detallesEditados[idx].notasReparacion += caracterProcesado;
-      this.detallesEditados[idx].notas += caracterProcesado;
+      this.detallesEditados[idx].notasMostrador += caracterProcesado;
     } else if (campo === 'precio-linea' && idx !== null) {  
       if (!this.detallesEditados[idx].nuevoPrecioInput) this.detallesEditados[idx].nuevoPrecioInput = '';
       this.detallesEditados[idx].nuevoPrecioInput += caracterProcesado;
@@ -505,11 +618,8 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
       const actual = this.notasGenerales();
       this.notasGenerales.set(actual.slice(0, -1));
     } else if ((campo === 'notas-mostrador' || campo === 'notas-linea') && idx !== null) {
-      const actualRep = this.detallesEditados[idx].notasReparacion || '';
-      this.detallesEditados[idx].notasReparacion = actualRep.slice(0, -1);
-      
-      const actualNot = this.detallesEditados[idx].notas || '';
-      this.detallesEditados[idx].notas = actualNot.slice(0, -1);
+      const actualRep = this.detallesEditados[idx].notasMostrador || '';
+      this.detallesEditados[idx].notasMostrador = actualRep.slice(0, -1);
     } else if (campo === 'precio-linea' && idx !== null) {
       const actual = this.detallesEditados[idx].nuevoPrecioInput || '';
       this.detallesEditados[idx].nuevoPrecioInput = actual.slice(0, -1);  
@@ -525,11 +635,9 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     } else if (campo === 'notas-generales') {
       this.notasGenerales.set(this.notasGenerales() + ' ');
     } else if ((campo === 'notas-mostrador' || campo === 'notas-linea') && idx !== null) {
-      if (!this.detallesEditados[idx].notasReparacion) this.detallesEditados[idx].notasReparacion = '';
-      if (!this.detallesEditados[idx].notas) this.detallesEditados[idx].notas = '';
+      if (!this.detallesEditados[idx].notasMostrador) this.detallesEditados[idx].notasMostrador = '';
 
-      this.detallesEditados[idx].notasReparacion += ' ';
-      this.detallesEditados[idx].notas += ' ';
+      this.detallesEditados[idx].notasMostrador += ' ';
     } else if (campo === 'precio-linea' && idx !== null) {
       if (!this.detallesEditados[idx].nuevoPrecioInput) this.detallesEditados[idx].nuevoPrecioInput = '';
       this.detallesEditados[idx].nuevoPrecioInput += ' ';

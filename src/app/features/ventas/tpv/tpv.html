@@ -182,47 +182,47 @@
       <div class="lineas-ticket" style="flex: 1; overflow-y: auto; padding: 0 18px; max-height: calc(100vh - 360px);">
         @for (item of carrito(); track $index) {
           <div class="linea-ticket-simplificada" [class.linea-taller]="item.articulo.familiaNombre === 'SERVICIO' || item.articulo.familiaNombre === 'TALLER'" 
-               style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background: #fff; margin-bottom: 6px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+               style="display: flex; flex-direction: column; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background: #fff; margin-bottom: 6px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); gap: 8px;">
             
-            <div class="detalles-articulo-linea" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+            <div class="detalles-articulo-linea" style="display: flex; align-items: center; gap: 6px; min-width: 0;">
               <span class="nombre-producto" style="font-weight: 600; color: #1e293b; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.articulo.nombre }}</span>
-              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                @if (item.notasMostrador) {
-                  <span class="badge-nota-taller" style="background: #eff6ff; color: #2563eb; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 500;">📝 Con Nota</span>
-                }
-                @if (item.porcentajeDescuento > 0) {
-                  <span class="badge-dto-linea" style="background: #fef2f2; color: #dc2626; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">-%{{ item.porcentajeDescuento }} Dto.</span>
-                }
+              @if (item.notasMostrador) {
+                <span class="badge-nota-taller" style="background: #eff6ff; color: #2563eb; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 500; flex-shrink: 0;">📝 Con Nota</span>
+              }
+              @if (item.porcentajeDescuento > 0) {
+                <span class="badge-dto-linea" style="background: #fef2f2; color: #dc2626; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0;">-%{{ item.porcentajeDescuento }} Dto.</span>
+              }
+            </div>
+
+            <div class="fila-inferior-linea" style="display: flex; align-items: center; justify-content: space-between;">
+              <div class="controles-cantidad" style="display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 4px 8px; border-radius: 20px;">
+                <button (click)="ajustarCantidad($index, -1)" class="btn-qty" type="button" 
+                        style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">-</button>
+                <span class="cantidad-numero" style="font-weight: 700; color: #0f172a; min-width: 22px; text-align: center; font-size: 0.95rem;">{{ item.cantidad }}</span>
+                <button (click)="ajustarCantidad($index, 1)" class="btn-qty" type="button" 
+                        style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">+</button>
               </div>
-            </div>
 
-            <div class="controles-cantidad" style="display: flex; align-items: center; gap: 10px; margin: 0 10px; background: #f1f5f9; padding: 4px 8px; border-radius: 20px;">
-              <button (click)="ajustarCantidad($index, -1)" class="btn-qty" type="button" 
-                      style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;">-</button>
-              <span class="cantidad-numero" style="font-weight: 700; color: #0f172a; min-width: 22px; text-align: center; font-size: 0.95rem;">{{ item.cantidad }}</span>
-              <button (click)="ajustarCantidad($index, 1)" class="btn-qty" type="button" 
-                      style="width: 24px; height: 24px; border-radius: 50%; border: none; background: #fff; color: #475569; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;">+</button>
-            </div>
-
-            <div class="bloque-valores-finales" style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 85px; margin-right: 12px;">
-              <span class="total-multiplicado" style="font-weight: 700; color: #0f172a; font-size: 1.05rem;">{{ item.precioEditado * item.cantidad | currency:'EUR' }}</span>
-              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
-                <span class="precio-unitario-mutado" style="font-size: 0.75rem; color: #64748b;">({{ item.precioEditado | currency:'EUR' }}/ud)</span>
-                @if (item.porcentajeDescuento > 0) {
-                  <span style="font-size: 0.7rem; color: #dc2626; font-weight: 600;">(Rebajado -{{ item.porcentajeDescuento }}%)</span>
-                }
+              <div class="bloque-valores-finales" style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 85px;">
+                <span class="total-multiplicado" style="font-weight: 700; color: #0f172a; font-size: 1.05rem;">{{ item.precioEditado * item.cantidad | currency:'EUR' }}</span>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+                  <span class="precio-unitario-mutado" style="font-size: 0.75rem; color: #64748b;">({{ item.precioEditado | currency:'EUR' }}/ud)</span>
+                  @if (item.porcentajeDescuento > 0) {
+                    <span style="font-size: 0.7rem; color: #dc2626; font-weight: 600;">(Rebajado -{{ item.porcentajeDescuento }}%)</span>
+                  }
+                </div>
               </div>
-            </div>
 
-            <div class="acciones-linea-tactil" style="display: flex; gap: 6px;">
-              <button type="button" (click)="abrirModalEdicionLinea($index)" class="btn-accion-linea btn-editar-linea" title="Editar precio, descuento o notas"
-                      style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: background 0.2s;">
-                ✏️
-              </button>
-              <button (click)="quitarDelCarrito($index)" class="btn-accion-linea btn-borrar-linea" title="Eliminar artículo"
-                      style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #fee2e2; background: #fff5f5; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: background 0.2s;">
-                🗑️
-              </button>
+              <div class="acciones-linea-tactil" style="display: flex; gap: 6px;">
+                <button type="button" (click)="abrirModalEdicionLinea($index)" class="btn-accion-linea btn-editar-linea" title="Editar precio, descuento o notas"
+                        style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+                  ✏️
+                </button>
+                <button (click)="quitarDelCarrito($index)" class="btn-accion-linea btn-borrar-linea" title="Eliminar artículo"
+                        style="width: 36px; height: 36px; border-radius: 8px; border: 1px solid #fee2e2; background: #fff5f5; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;">
+                  🗑️
+                </button>
+              </div>
             </div>
 
           </div>
@@ -396,7 +396,6 @@
             <textarea 
               id="notaTallerLinea"
               style="width: 100%; height: 95px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.4; background: #fafafa; font-family: inherit;"
-              placeholder="Detalles del arreglo (Ej: hacerle cambio de tapas, coser lateral...)"
               [value]="notaLineaEnConstruccion()"
               (click)="abrirTeclado('NOTAS_REPARACION')"
               (input)="notaLineaEnConstruccion.set($any($event.target).value)">
@@ -411,7 +410,6 @@
             <textarea 
               id="descripcionBultoTaller"
               style="width: 100%; height: 95px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.4; background: #f8fafc; font-family: inherit;"
-              placeholder="Descripción del objeto a reparar (Ej: botas altas negras cremallera rota...)"
               [value]="descripcionBultoEnConstruccion() ? descripcionBultoEnConstruccion() : ''"
               (click)="abrirTeclado('DESCRIPCION_BULTO')"
               (input)="descripcionBultoEnConstruccion.set($any($event.target).value)">
@@ -472,7 +470,7 @@
 <!-- NUEVO: MODAL INTEGRAL "GESTIÓN DE TALLER Y SERVICIOS" (EL PURPURA DE LA IMAGEN) -->
 @if (mostrarModalGestionServicios()) {
   <div class="modal-keypad-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(4px);">
-    <div class="modal-keypad-content" style="background: #fff; border-radius: 16px; width: 95%; max-width: 950px; max-height: 95vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); border: 3px solid #581c87; padding: 0;">
+    <div class="modal-keypad-content" style="background: #fff; border-radius: 16px; width: 98%; max-width: 1500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); border: 3px solid #581c87; padding: 0;">
       
       <!-- Cabecera del Gestor de Servicios -->
       <div style="background: #581c87; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
@@ -483,35 +481,57 @@
       <div style="padding: 20px; display: flex; flex-direction: column; gap: 20px;">
         
         <!-- Bloque 1: Datos del Cliente e Importación automática de entrega -->
-        <div style="background: #f8fafc; border-radius: 10px; border: 1px solid #cbd5e1; padding: 16px;">
-          <h4 style="margin: 0 0 12px 0; font-size: 1rem; color: #1e293b; font-weight: 700; display: flex; align-items: center; gap: 6px;">👤 DATOS DEL CLIENTE Y ENTREGA</h4>
-          <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 1fr; gap: 16px;">
-            <div>
-              <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Nombre Cliente:</label>
-              <input type="text" [disabled]="true" [value]="clienteSeleccionado()?.nombre || 'Cliente General'" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #e2e8f0; font-weight: 600;" />
-            </div>
-            <div>
-              <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Teléfono:</label>
-              <input type="text" [disabled]="true" [value]="clienteSeleccionado()?.telefono || 'No indicado'" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #e2e8f0; font-weight: 600;" />
-            </div>
-            <div>
-              <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">📅 Fecha Prevista de Entrega:</label>
-              <input type="date" [(ngModel)]="fechaPrevistaEntrega" style="width: 100%; padding: 8px 12px; border: 1px solid #581c87; border-radius: 6px; font-weight: 600;" />
+          <div style="background: #f8fafc; border-radius: 10px; border: 1px solid #cbd5e1; padding: 16px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 1rem; color: #1e293b; font-weight: 700; display: flex; align-items: center; gap: 6px;">👤 DATOS DEL CLIENTE Y ENTREGA</h4>
+            <div style="display: grid; grid-template-columns: 1fr 0.5fr 0.9fr; gap: 40px; align-items: end;">
+              <div style="position: relative;">
+                <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Nombre Cliente:</label>
+                <div style="display: flex; gap: 6px;">
+                  @if (clienteSeleccionado()) {
+                    <input type="text" [disabled]="true" [value]="clienteSeleccionado()?.nombre || 'Cliente General'" style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #e2e8f0; font-weight: 600;" />
+                    <button type="button" (click)="deseleccionarCliente()" style="padding: 8px 10px; border: 1px solid #ef4444; border-radius: 6px; background: #fff; color: #ef4444; cursor: pointer; font-size: 0.75rem; white-space: nowrap;">✕</button>
+                  } @else {
+                    <input type="text" [value]="busquedaCliente()" (input)="buscarClientes($any($event.target).value)" (click)="abrirTeclado('CLIENTE')" placeholder="Buscar por nombre o tel..." style="flex: 1; padding: 8px 12px; border: 1px solid #581c87; border-radius: 6px; font-weight: 500;" />
+                  }
+                </div>
+                @if (clientesEncontrados().length > 0 && !clienteSeleccionado()) {
+                  <ul style="position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; margin: 2px 0 0 0; padding: 0; list-style: none; max-height: 150px; overflow-y: auto;">
+                    @for (cliente of clientesEncontrados(); track cliente.id) {
+                      <li (click)="seleccionarCliente(cliente)" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">{{ cliente.nombre }}</span>
+                        <span style="color: #64748b;">📱 {{ cliente.telefono }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; font-weight: 500; color: #475569; display: block; margin-bottom: 4px;">Teléfono:</label>
+                <input type="text" [disabled]="true" [value]="clienteSeleccionado()?.telefono || 'No indicado'" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #e2e8f0; font-weight: 600;" />
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">📅 Fecha Entrega:</label>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <input type="date" [(ngModel)]="fechaPrevistaEntrega" (change)="onFechaRecogidaChange($event)" [disabled]="sinFechaRecogida()" style="flex: 1; padding: 8px 12px; border: 1px solid #581c87; border-radius: 6px; font-weight: 600; box-sizing: border-box;" />
+                  <button type="button" (click)="toggleSinFechaRecogida()" [style.background]="sinFechaRecogida() ? '#581c87' : '#fff'" [style.color]="sinFechaRecogida() ? '#fff' : '#581c87'" [style.borderColor]="'#581c87'" style="padding: 10px 16px; border: 2px solid; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700; white-space: nowrap; transition: all 0.15s; user-select: none; min-height: 42px;">
+                    {{ sinFechaRecogida() ? '✓ Sin fecha' : '☐ Sin fecha' }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
         <!-- Bloque 2: Tabla de trabajos e items traídos del Carrito -->
-        <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+        <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow-y: auto; max-height: 320px;">
           <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
             <thead>
               <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
-                <th style="padding: 12px 16px; color: #475569; font-weight: 700;">DESTINO</th>
-                <th style="padding: 12px 16px; color: #475569; font-weight: 700;">DESCRIPCIÓN / ARTÍCULO</th>
-                <th style="padding: 12px 16px; color: #475569; font-weight: 700; text-align: center;">CANT.</th>
-                <th style="padding: 12px 16px; color: #475569; font-weight: 700; text-align: right;">PRECIO FINAL</th>
-                <th style="padding: 12px 16px; color: #475569; font-weight: 700;">NOTAS DE TALLER</th>
-                <th style="padding: 12px 16px; color: #475569; font-weight: 700; text-align: center;">ACCIONES</th>
+                <th style="padding: 10px 12px; color: #475569; font-weight: 700; font-size: 0.8rem; text-align: center;">DESTINO</th>
+                <th style="padding: 10px 12px; color: #475569; font-weight: 700; font-size: 0.8rem; text-align: center;">DESCRIPCIÓN / ARTÍCULO</th>
+                <th style="padding: 10px 12px; color: #475569; font-weight: 700; font-size: 0.8rem; text-align: center;">CANT.</th>
+                <th style="padding: 10px 12px; color: #475569; font-weight: 700; font-size: 0.8rem; text-align: center;">PRECIO FINAL</th>
+                <th style="padding: 10px 12px; color: #475569; font-weight: 700; font-size: 0.8rem; text-align: center;">NOTAS DE TALLER</th>
+                <th style="padding: 10px 12px; color: #475569; font-weight: 700; font-size: 0.8rem; text-align: center;">ACCIONES</th>
               </tr>
             </thead>
             <tbody>
@@ -522,37 +542,47 @@
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <label class="switch-taller-tienda" style="position: relative; display: inline-block; width: 44px; height: 22px;">
                         <input type="checkbox" 
-                               [checked]="item.articulo.familiaNombre === 'SERVICIO' || item.articulo.familiaNombre === 'TALLER'"
+                               [checked]="item.destino === 'TALLER'"
                                (change)="toggleDestinoLinea($index)"
                                style="opacity: 0; width: 0; height: 0;">
                         <span class="slider-taller" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #a855f7; transition: .4s; border-radius: 34px;"></span>
                       </label>
                       <span style="font-size: 0.75rem; font-weight: bold; color: #581c87;">
-                        {{ item.articulo.familiaNombre === 'SERVICIO' ? '⚙️ TALLER' : '🛍️ TIENDA' }}
+                        {{ item.destino === 'TALLER' ? '⚙️ TALLER' : '🛍️ TIENDA' }}
                       </span>
                     </div>
                   </td>
                   <!-- Descripción o Artículo de Venta -->
-                  <td style="padding: 12px 16px; font-weight: 600;">{{ item.articulo }}</td>
+                  <td style="padding: 8px 12px; position: relative;">
+                    <input type="text" [value]="item.articulo.nombre" (input)="buscarArticuloTaller($index, $any($event.target).value)" (focus)="buscarArticuloTaller($index, item.articulo.nombre)" (click)="abrirTeclado('DESCRIPCION_LINEA', $index)" placeholder="Buscar artículo o escribir nombre..." style="width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem; margin-bottom: 4px; box-sizing: border-box;" />
+                    <textarea [value]="item.descripcionBulto" (input)="item.descripcionBulto = $any($event.target).value; descripcionBultoEnConstruccion.set($any($event.target).value)" (click)="abrirTeclado('DESCRIPCION_BULTO_LINEA', $index)" placeholder="Descripción del bulto..." rows="2" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.75rem; resize: none; box-sizing: border-box; color: #000000;"></textarea>
+                  </td>
                   <!-- Cantidad -->
-                  <td style="padding: 12px 16px; text-align: center; font-weight: bold;">{{ item.cantidad }}</td>
+                  <td style="padding: 8px 12px; text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                      <button type="button" (click)="actualizarCantidadLinea($index, -1)" style="width: 26px; height: 26px; border-radius: 50%; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;">-</button>
+                      <span style="font-weight: bold; min-width: 20px; text-align: center;">{{ item.cantidad }}</span>
+                      <button type="button" (click)="actualizarCantidadLinea($index, 1)" style="width: 26px; height: 26px; border-radius: 50%; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;">+</button>
+                    </div>
+                  </td>
                   <!-- Precio final calculado -->
-                  <td style="padding: 12px 16px; text-align: right; font-weight: bold; color: #0f172a;">
-                    {{ item.precioEditado * item.cantidad | currency:'EUR' }}
+                  <td style="padding: 8px 12px; text-align: center;">
+                    <input type="number" [value]="item.precioEditado" (input)="actualizarPrecioLinea($index, $event)" (click)="abrirTeclado('PRECIO_LINEA', $index)" style="width: 100%; max-width: 110px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.9rem; font-weight: 700; text-align: center; box-sizing: border-box;" step="0.01" min="0" />
                   </td>
                   <!-- Notas de Taller vinculadas directamente a la columna "notasMostrador" del trabajotallerDTO -->
-                  <td style="padding: 12px 16px;">
-                    @if (item.articulo.familiaNombre === 'SERVICIO' || item.articulo.familiaNombre === 'TALLER') {
+                  <td style="padding: 8px 12px; text-align: center;">
+                    @if (item.destino === 'TALLER') {
                       <input type="text" 
-                             [(ngModel)]="item.notasMostrador" 
-                             placeholder="Introduce notas internas del arreglo..." 
-                             style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem;" />
+                             [value]="item.notasMostrador"
+                             (input)="actualizarNotaLinea($index, $any($event.target).value)"
+                             (click)="abrirTeclado('NOTAS_MOSTRADOR', $index)"
+                             style="width: 100%; text-align: center; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem; box-sizing: border-box;" />
                     } @else {
-                      <span style="color: #94a3b8; font-size: 0.8rem; font-style: italic;">No aplicable (Tienda)</span>
+                      <span style="color: #94a3b8; font-size: 0.8rem; font-style: italic;">—</span>
                     }
                   </td>
                   <!-- Quitar de la orden temporalmente -->
-                  <td style="padding: 12px 16px; text-align: center;">
+                  <td style="padding: 8px 12px; text-align: center;">
                     <button type="button" (click)="quitarDelCarrito($index)" style="background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #ef4444;">🗑️</button>
                   </td>
                 </tr>
@@ -560,6 +590,26 @@
             </tbody>
           </table>
         </div>
+
+        @if (filaBuscadorAbierto() !== null) {
+          <div style="border: 2px solid #581c87; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); background: #fff; overflow: hidden;">
+            <div style="padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+              <input type="text" [value]="busquedaArticuloTaller()" (input)="buscarEnPopupTaller(filaBuscadorAbierto()!, $any($event.target).value)" placeholder="Buscar artículo..." style="width: 100%; padding: 8px 10px; border: 1px solid #581c87; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; outline: none;" autofocus />
+            </div>
+            @if (articulosTallerEncontrados().length > 0) {
+              <ul style="list-style: none; margin: 0; padding: 0; max-height: 200px; overflow-y: auto;">
+                @for (art of articulosTallerEncontrados(); track art.id) {
+                  <li (mousedown)="seleccionarArticuloTaller(filaBuscadorAbierto()!, art)" style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;" (mouseenter)="$any($event.target).style.background='#f3f0ff'" (mouseleave)="$any($event.target).style.background=''">
+                    <span style="font-weight: 600;">{{ art.nombre }}</span>
+                    <span style="color: #581c87; font-weight: 700;">{{ art.precioFinal | currency:'EUR' }}</span>
+                  </li>
+                }
+              </ul>
+            } @else if (busquedaArticuloTaller().trim()) {
+              <div style="padding: 16px; text-align: center; color: #94a3b8; font-size: 0.85rem;">Sin resultados</div>
+            }
+          </div>
+        }
 
         <!-- Bloque 3: Notas Generales, Trabajo Manual y Controles de Cobro/Anticipo -->
         <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
@@ -577,6 +627,7 @@
               <label style="font-size: 0.85rem; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">📝 NOTAS GENERALES DE LA ORDEN (notasGenerales):</label>
               <textarea 
                 [(ngModel)]="notasGenerales"
+                (click)="abrirTeclado('NOTAS_GENERALES')"
                 placeholder="Añade aquí observaciones generales del encargo que no sean del arreglo técnico..." 
                 rows="3"
                 style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; resize: none; box-sizing: border-box; background: #fafafa; font-family: inherit;">
@@ -614,7 +665,7 @@
                 </div>
                 <input type="number" 
                        [(ngModel)]="importeAnticipo" 
-                       placeholder="0.00" 
+                       (click)="abrirTeclado('CANTIDAD_ANTICIPO')"
                        style="width: 100%; padding: 10px; border: 1px solid #d8b4fe; border-radius: 8px; font-size: 1.2rem; font-weight: 700; text-align: right; box-sizing: border-box;" />
               </div>
             </div>
@@ -628,13 +679,13 @@
 
               <div style="display: flex; gap: 8px;">
                 <button type="button" 
-                        (click)="generarYPrevisualizarTicket()" 
+                        (click)="confirmarTallerYServicios()" 
                         style="flex: 1.4; background: #16a34a; color: #fff; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
                   ✔️ Confirmar y Generar Tickets
                 </button>
                 <button type="button" 
                         (click)="cerrarModalServicios()" 
-                        style="flex: 1; background: #6b7280; color: #fff; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem;">
+                        style="flex: 1; background: #bb1414; color: #fff; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem;">
                   Cancelar
                 </button>
               </div>
@@ -645,6 +696,62 @@
 
       </div>
     </div>
+
+    @if (mostrarTeclado() && inputActivo() !== 'PREGUNTA_ANTICIPO') {
+      <div class="tpv-teclado-virtual" style="z-index: 999999 !important;">
+        <div class="teclado-header">
+          <span>Escribiendo en: <strong>{{ inputActivo().toUpperCase() || 'SISTEMA' }}</strong></span>
+          <span class="preview-buffer-teclado">[{{ valorTecladoEnConstruccion() || '...' }}]</span>
+          <button class="btn-cerrar-teclado" (click)="cerrarTeclado()">❌ CERRAR</button>
+        </div>
+        
+        <div class="teclado-body">
+          <div class="teclado-fila">
+            @for (num of lineaNumeros; track num) {
+              <button type="button" (click)="escribirTeclado(num)">{{ num }}</button>
+            }
+          </div>
+
+          <div class="teclado-fila">
+            @for (letra of lineaLetras1; track letra) {
+              <button type="button" (click)="escribirTeclado(letra)">
+                {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+              </button>
+            }
+          </div>
+
+          <div class="teclado-fila">
+            @for (letra of lineaLetras2; track letra) {
+              <button type="button" (click)="escribirTeclado(letra)">
+                {{ mayusculas() ? letra.toUpperCase() : letra.toLowerCase() }}
+              </button>
+            }
+          </div>
+
+          <div class="teclado-fila">
+            <button type="button" class="btn-tecla-acento" (click)="escribirTeclado('á')">á</button>
+            <button type="button" class="btn-tecla-acento" (click)="escribirTeclado('é')">é</button>
+            <button type="button" class="btn-tecla-acento" (click)="escribirTeclado('í')">í</button>
+            <button type="button" class="btn-tecla-acento" (click)="escribirTeclado('ó')">ó</button>
+            <button type="button" class="btn-tecla-acento" (click)="escribirTeclado('ú')">ú</button>
+            <button type="button" class="btn-tecla-acento" (click)="escribirTeclado('ü')">ü</button>
+            <button type="button" class="btn-tecla-acento" (click)="escribirTeclado('ñ')">ñ</button>
+            <button type="button" class="btn-tecla-acento" (click)="escribirTeclado('Ñ')">Ñ</button>
+          </div>
+
+          <div class="teclado-fila fila-especial">
+            <button type="button" class="btn-tecla-mayus" (click)="alternarMayusculas()">
+              {{ mayusculas() ? '🔠' : '🔡' }}
+            </button>
+            <button type="button" class="btn-tecla-borrar" (click)="borrarUltimoCaracter()">⌫</button>
+            <button type="button" class="btn-tecla-espacio" (click)="insertarEspacio()">⎵ ESPACIO</button>
+            <button type="button" class="btn-tecla-limpiar" (click)="limpiarTeclado()">🧹 LIMPIAR</button>
+            <button type="button" class="btn-tecla-aceptar" (click)="cerrarTeclado()">✔️ ACEPTAR</button>
+          </div>
+        </div>
+      </div>
+    }
+
   </div>
  }
 
@@ -688,63 +795,10 @@
   </div>
 }
 
-<!-- VENTANA MODAL PREGUNTA ANTICIPO-->
-@if (mostrarModalPreguntaAnticipo()) {
-  <div class="modal-pregunta-overlay">
-    <div class="modal-pregunta-content unificado-numpad">
-      
-      <div class="teclado-header">
-        <span class="titulo-contexto">Cobro de Anticipo / Señal</span>
-        <button class="btn-cancelar-header" (click)="mostrarModalPreguntaAnticipo.set(false)">Cancelar</button>
-      </div>
-
-      <div class="cuerpo-anticipo-split">
-        
-        <div class="zona-info-anticipo">
-          <p class="texto-pregunta">¿El cliente va a dejar un anticipo o señal para la reparación?</p>
-          
-          <div class="pantalla-importe-anticipo">
-            <span class="label-pantalla">Importe Introducido:</span>
-            <div class="cifra-pantalla">{{ valorAnticipoFijo() || '0' }} €</div>
-            <small class="total-maximo">Máximo permitido: {{ totalTicket() }} €</small>
-          </div>
-
-          <div class="wrapper-botones-decision">
-            <button type="button" class="btn-decision btn-si-confirmar" [disabled]="!valorAnticipoFijo() || parseFloat(valorAnticipoFijo()) <= 0" (click)="confirmarAnticipoConNumpad()">✔️ CONFIRMAR ANTICIPO</button>
-            <button type="button" class="btn-decision btn-no" (click)="responderNoAnticipo(); mostrarModalPreguntaAnticipo.set(false)">❌ NO DEJA ANTICIPO</button>
-          </div>
-        </div>
-
-        <div class="zona-numpad-tactil">
-          <div class="numpad-grid">
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('7')">7</button>
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('8')">8</button>
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('9')">9</button>
-            
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('4')">4</button>
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('5')">5</button>
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('6')">6</button>
-            
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('1')">1</button>
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('2')">2</button>
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('3')">3</button>
-            
-            <button type="button" class="btn-num btn-punto" (click)="pulsarNumpadAnticipo('.')">.</button>
-            <button type="button" class="btn-num" (click)="pulsarNumpadAnticipo('0')">0</button>
-            <button type="button" class="btn-num btn-borrar-num" (click)="borrarNumpadAnticipo()">⌫</button>
-          </div>
-          <button type="button" class="btn-limpiar-numpad" (click)="limpiarNumpadAnticipo()">🗑️ Limpiar Cifra</button>
-        </div>
-
-      </div>
-
-    </div>
-  </div>
-}
 
 <!-- TECLADO VIRTUAL -->
-@if (mostrarTeclado() && !mostrarModalPreguntaAnticipo() && inputActivo() !== 'PREGUNTA_ANTICIPO') {
-  <div class="tpv-teclado-virtual">
+@if (mostrarTeclado() && inputActivo() !== 'PREGUNTA_ANTICIPO' && !mostrarModalGestionServicios()) {
+  <div class="tpv-teclado-virtual" style="z-index: 999999 !important;">
     <div class="teclado-header">
       <span>Escribiendo en: <strong>{{ inputActivo().toUpperCase() || 'SISTEMA' }}</strong></span>
       <span class="preview-buffer-teclado">[{{ valorTecladoEnConstruccion() || '...' }}]</span>
@@ -949,7 +1003,7 @@
           </div>
 
           <div class="lista-tickets-recientes">
-            @for (ticket of historialTickets(); track ticket.id) {
+            @for (ticket of historialTickets().filter(t => t.estadoPago !== 'DEVUELTO'); track ticket.id) {
               <div class="fila-devolucion-tactil" (click)="seleccionarTicketDirecto(ticket)">
                 <div class="info-ticket">
                   <span class="num-ticket">#{{ ticket.numeroTicket || ticket.id }}</span>
