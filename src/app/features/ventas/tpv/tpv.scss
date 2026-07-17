@@ -1584,12 +1584,18 @@ app-clientes {
   .tpv-container {
     grid-template-columns: 1fr 320px;
     gap: 10px;
-    height: 100vh;
-    overflow: hidden; /* Evita scroll general en tablets */
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .columna-izquierda-catalogo {
+    min-height: 0 !important;
   }
 
   .catalogo-container {
-    overflow-y: auto; /* El scroll se queda solo dentro del catálogo */
+    flex: 1 !important;
+    min-height: 0;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -1602,40 +1608,48 @@ app-clientes {
 @media (max-width: 820px) {
   .tpv-container {
     grid-template-columns: 1fr;
-    height: 100vh;
-    overflow: hidden; /* Seguimos bloqueando el scroll de la web en móviles */
+    height: auto;
+    overflow: visible;
   }
 
-  /* Cambiamos el fixed bottom (que colapsaba con el teclado del móvil) por un lateral completo */
-  .ticket-section {
-    position: fixed;
+  .catalogo-container {
+    flex: 1 !important;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Sacamos la columna derecha (carrito + historial) del grid y la ponemos como panel fijo */
+  .columna-derecha-mostrador {
+    position: fixed !important;
     top: 0;
-    right: -100%; 
+    right: -100%;
     width: 100%;
-    max-width: 420px; /* Tamaño ideal en móviles */
-    height: 100%;
-    max-height: 100vh;
-    border-radius: 0;
+    max-width: 420px;
+    height: 100vh !important;
     z-index: 1500;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
     box-shadow: -5px 0 20px rgba(0,0,0,0.15);
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
-
-    .total-row .total-amount {
-      font-size: 1.8rem; 
-    }
-
-    .btn-cobrar {
-      padding: 14px; 
-      font-size: 1.1rem;
-    }
   }
 
-  /* Cuando el TPV tiene el ticket abierto (mediante tu clase en Angular) */
-  .tpv-container.ticket-open .ticket-section {
+  .tpv-container.ticket-open .columna-derecha-mostrador {
     right: 0;
+  }
+
+  .ticket-section {
+    position: static !important;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0;
+    padding: 15px;
+  }
+
+  .panel-historial-wrapper {
+    flex-shrink: 0;
   }
 }
 
@@ -2095,66 +2109,6 @@ app-clientes {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-/* =========================================================================
-   4. RESPONSIVE GENERAL Y SECCIÓN MOVIL
-   ========================================================================= */
-@media (max-width: 1024px) {
-  .tpv-container {
-    grid-template-columns: 1fr 320px;
-    gap: 10px;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  .catalogo-container {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .catalogo-container .articulos-grid .articulo-card {
-    min-height: 130px;  
-    padding: 12px;
-  }
-}
-
-@media (max-width: 820px) {
-  .tpv-container {
-    grid-template-columns: 1fr;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  .ticket-section {
-    position: fixed;
-    top: 0;
-    right: -100%; 
-    width: 100%;
-    max-width: 420px;
-    height: 100%;
-    max-height: 100vh;
-    border-radius: 0;
-    z-index: 1500;
-    box-shadow: -5px 0 20px rgba(0,0,0,0.15);
-    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
-
-    .total-row .total-amount {
-      font-size: 1.8rem; 
-    }
-
-    .btn-cobrar {
-      padding: 14px; 
-      font-size: 1.1rem;
-    }
-  }
-
-  .tpv-container.ticket-open .ticket-section {
-    right: 0;
-  }
-}
-
 .btn-toggle-ticket-mobile {
   position: fixed;
   bottom: 20px;
@@ -2327,7 +2281,64 @@ app-clientes {
         border: 1px solid #fecdd3;
         font-weight: 500;
        &:hover { background-color: #ffe4e6;}
-      } 
+      }
+    }
+  }
+}
+
+// =========================================================================
+// PAGINADOR DEL HISTORIAL TPV
+// =========================================================================
+.tpv-historial-paginator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 12px 12px;
+  gap: 10px;
+
+  .info-paginas-historial {
+    font-size: 0.9rem;
+    color: #475569;
+    font-weight: 600;
+  }
+
+  .btn-paginar-historial {
+    background-color: white;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+
+    &:hover:not(:disabled) {
+      background-color: #f1f5f9;
+      border-color: #94a3b8;
+      color: #1e293b;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background-color: #f1f5f9;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .tpv-historial-paginator {
+    padding: 0.5rem 0.75rem;
+    .btn-paginar-historial {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+    }
+    .info-paginas-historial {
+      font-size: 0.8rem;
     }
   }
 }
@@ -3045,7 +3056,7 @@ app-clientes {
 /* --- TABLETS (Hasta 768px) --- */
 @media (max-width: 768px) {
   .modal-ticket-content {
-    height: 90vh; /* Aprovechar más el espacio vertical */
+    height: 90vh;
     max-height: none;
     width: 95%;
   }
@@ -3056,6 +3067,57 @@ app-clientes {
     &.modal-card-seleccion, &.modal-card-busqueda {
       max-width: 92%;
     }
+  }
+
+  .cuerpo-edicion-linea-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .buscador-row input[type="text"] {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .columna-derecha-mostrador {
+    width: 100% !important;
+  }
+}
+
+/* --- TABLETS PEQUEÑAS / MÓVILES GRANDES (Hasta 600px) --- */
+@media (max-width: 600px) {
+  .header-caja-abierta {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    text-align: center;
+
+    .status-box {
+      font-size: 0.8rem;
+      justify-content: center;
+    }
+
+    .btn-cerrar-caja {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+  .tpv-container {
+    padding: 6px;
+    gap: 8px;
+  }
+
+  .catalogo-container {
+    gap: 10px;
+  }
+
+  .articulos-grid {
+    gap: 6px;
+  }
+
+  .panel-historial-wrapper {
+    display: none !important;
   }
 }
 
@@ -3160,5 +3222,10 @@ app-clientes {
         }
       }
     }
+  }
+
+  // 5. Ocultar historial en móvil pequeño (el carrito se abre con botón flotante)
+  .panel-historial-wrapper {
+    display: none !important;
   }
 }

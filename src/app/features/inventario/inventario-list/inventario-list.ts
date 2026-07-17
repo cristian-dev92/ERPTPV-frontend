@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { ArticuloService } from '../../../core/services/articulo.service';
 import { Articulo } from '../../../core/models/articulo.model';
 import { CurrencyPipe } from '@angular/common';
@@ -99,44 +99,36 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
     return resultado;
   });
 
+  articulosAMostrar = computed(() => {
+    const inicio = this.paginaActual() * this.itemsPorPagina();
+    return this.articulosFiltrados().slice(inicio, inicio + this.itemsPorPagina());
+  });
+
   constructor() {
-    super(); // Llama al constructor de la clase base
+    super();
+    effect(() => {
+      const total = this.articulosFiltrados().length;
+      this.totalElementos.set(total);
+      if (this.paginaActual() >= Math.ceil(total / this.itemsPorPagina()) && total > 0) {
+        this.paginaActual.set(Math.ceil(total / this.itemsPorPagina()) - 1);
+      }
+    });
   }
 
   ngOnInit(): void {
     this.cargarDatos();
-    this.cargarDatosIniciales();
   }
 
-  // Obligatorio implementar este método (lo pide la clase base)
   cargarDatos(): void {
     this.loading.set(true);
-    this.articuloService.getArticulosPaginados(this.paginaActual(), this.itemsPorPagina())
-      .subscribe({
-        next: (data: any) => {
-          // data.content contiene la lista de artículos para la página actual
-          this.articulos.set(data.content);
-          this.totalElementos = data.totalElements;
-          this.totalPaginas = data.totalPages;
-          this.loading.set(false);
-        },
-        error: (err) => {
-          this.uiService.mostrarToast('Error al cargar artículos paginados: ' + (err.error || err.message), 'error');
-          this.loading.set(false);
-        }
-      });
-  }
-
-  cargarDatosIniciales(): void {
-    // Cargamos familias e inventario en paralelo
     this.familiaService.obtenerMisFamilias().subscribe({
       next: (fams) => this.todasLasFamilias.set(fams),
       error: () => console.error('Error al precargar familias en catálogo')
     });
-
     this.articuloService.getArticulos().subscribe({
       next: (data) => {
         this.articulos.set(data);
+        this.paginaActual.set(0);
         this.loading.set(false);
       },
       error: () => {
@@ -144,6 +136,23 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
         this.uiService.mostrarToast('Error al cargar los artículos', 'error');
       }
     });
+  }
+
+  override paginaSiguiente(): void {
+    if (this.paginaActual() < this.totalPaginas() - 1) {
+      this.paginaActual.update(p => p + 1);
+    }
+  }
+
+  override paginaAnterior(): void {
+    if (this.paginaActual() > 0) {
+      this.paginaActual.update(p => p - 1);
+    }
+  }
+
+  override cambiarTamanoPagina(nuevoTamano: number): void {
+    this.itemsPorPagina.set(nuevoTamano);
+    this.paginaActual.set(0);
   }
 
   onFamiliaFiltroChange(id: number): void {

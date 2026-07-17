@@ -57,7 +57,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (item of articulosFiltrados(); track item.id) {
+      @for (item of articulosAMostrar(); track item.id) {
         <tr>
           <td class="td-nombre">
             <strong>{{ item.nombre }}</strong>
@@ -107,7 +107,17 @@
       }
     </tbody>
   </table>
- }
+  }
+
+  <footer class="paginacion-footer">
+    <button class="btn-paginar" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">
+      ⬅️ Anterior
+    </button>
+    <span class="info-paginas">Página <strong>{{ paginaActual() + 1 }}</strong> de <strong>{{ totalPaginas() }}</strong></span>
+    <button class="btn-paginar" [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
+      Siguiente ➡️
+    </button>
+  </footer>
 </div>
 
 @if (mostrarModalNuevaFamilia()) {

@@ -19,50 +19,89 @@
            class="search-input">
   </div>
 
-  <!-- LISTADO DE PROVEEDORES -->
-  <div class="tabla-wrapper">
-    <table class="zapatero-table">
-      <thead>
-        <tr>
-          <th>Nombre Comercial</th>
-          <th>C.I.F. / N.I.F.</th>
-          <th>Teléfono</th>
-          <th>Email de Pedidos</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (p of proveedoresFiltrados(); track p.id) {
+  <!-- LISTADO DE PROVEEDORES (Escritorio) -->
+  <div class="desktop-only">
+    <div class="tabla-wrapper">
+      <table class="zapatero-table">
+        <thead>
           <tr>
-            <td class="txt-negrita">{{ p.nombre }}</td>
-            <td class="txt-mutado">{{ p.cif || '-' }}</td>
-            <td>{{ p.telefono || '-' }}</td>
-            <td class="txt-email">{{ p.emailPedidos || '-' }}</td>
-            <td>
-              <span class="badge-activo">🟢 Activo</span>
-            </td>
-            <td>
-            <div class="acciones-wrapper">
-                <button (click)="abrirModalEdicion(p)" class="btn-accion-editar" title="Editar Ficha" type="button">
-                  ✏️ Editar
-                </button>
-                <button (click)="solicitarConfirmacionBorrar(p)" class="btn-accion-eliminar" title="Eliminar Proveedor" type="button">
-                  🗑️ Borrar
-                </button>
-              </div>
-            </td>
+            <th>Nombre Comercial</th>
+            <th>C.I.F. / N.I.F.</th>
+            <th>Teléfono</th>
+            <th>Email de Pedidos</th>
+            <th>Estado</th>
+            <th>Acciones</th>
           </tr>
-        } @empty {
-          <tr>
-            <td colspan="5" class="tabla-vacia">
-              📭 No hay proveedores registrados todavía.
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (p of proveedoresAMostrar(); track p.id) {
+            <tr>
+              <td class="txt-negrita">{{ p.nombre }}</td>
+              <td class="txt-mutado">{{ p.cif || '-' }}</td>
+              <td>{{ p.telefono || '-' }}</td>
+              <td class="txt-email">{{ p.emailPedidos || '-' }}</td>
+              <td>
+                <span class="badge-activo">🟢 Activo</span>
+              </td>
+              <td>
+              <div class="acciones-wrapper">
+                  <button (click)="abrirModalEdicion(p)" class="btn-accion-editar" title="Editar Ficha" type="button">
+                    ✏️ Editar
+                  </button>
+                  <button (click)="solicitarConfirmacionBorrar(p)" class="btn-accion-eliminar" title="Eliminar Proveedor" type="button">
+                    🗑️ Borrar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="tabla-vacia">
+                📭 No hay proveedores registrados todavía.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
+
+  <!-- LISTADO DE PROVEEDORES (Móvil) -->
+  <div class="mobile-only">
+    <div class="proveedores-grid-movil">
+      @if (cargando()) {
+        <div class="card-loading">Cargando proveedores...</div>
+      } @else {
+        @for (p of proveedoresAMostrar(); track p.id) {
+          <div class="proveedor-mobile-card">
+            <div class="card-info">
+              <h3>{{ p.nombre }}</h3>
+              @if (p.cif) { <p class="txt-mutado">🆔 {{ p.cif }}</p> }
+              @if (p.telefono) { <p class="tel">📞 {{ p.telefono }}</p> }
+              @if (p.emailPedidos) { <p class="mail">✉️ {{ p.emailPedidos }}</p> }
+            </div>
+            <div class="card-actions">
+              <button class="btn-edit-movil" (click)="abrirModalEdicion(p)">✏️</button>
+              <button class="btn-delete-movil" (click)="solicitarConfirmacionBorrar(p)">🗑️</button>
+            </div>
+          </div>
+        } @empty {
+          <div class="card-vacia">📭 No hay proveedores registrados todavía.</div>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <footer class="paginacion-footer">
+    <button class="btn-paginar" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">
+      ⬅️ Anterior
+    </button>
+    <span class="info-paginas">Página <strong>{{ paginaActual() + 1 }}</strong> de <strong>{{ totalPaginas() }}</strong></span>
+    <button class="btn-paginar" [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
+      Siguiente ➡️
+    </button>
+  </footer>
 
   <!-- MODAL DE REGISTRO FLOTANTE -->
   @if (mostrarModalRegistro()) {

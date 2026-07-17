@@ -37,7 +37,7 @@
         } @else if (clientesFiltrados().length === 0) {
           <tr><td colspan="6" class="tabla-vacia">No se encontraron clientes coincidentes</td></tr>
         } @else {
-          @for (cliente of clientesFiltrados(); track cliente.id) {
+          @for (cliente of clientesAMostrar(); track cliente.id) {
             <tr>
               <td class="txt-negrita">{{ cliente.nombre }}</td>
               <td class="txt-telefono">{{ cliente.telefono }}</td>
@@ -73,6 +73,7 @@
         </button>
       </footer>
     </div>
+    
  <div class="mobile-only">
   <div class="grid-clientes-movil">
     @if (cargando()) {
@@ -80,7 +81,7 @@
     } @else if (clientesFiltrados().length === 0) {
       <div class="card-vacia">No hay registros coincidentes.</div>
     } @else {
-      @for (cliente of clientesFiltrados(); track cliente.id) {
+      @for (cliente of clientesAMostrar(); track cliente.id) {
         <div class="cliente-mobile-card">
           <div class="card-info">
             <h3>{{ cliente.nombre }}</h3>
@@ -103,11 +104,11 @@
    <!-- Paginación acoplada para Móvil -->
       <footer class="paginacion-footer">
         <button class="btn-paginar" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">
-          Anterior
+          ⬅️ Anterior
         </button>
-        <span class="info-paginas">Pág. {{ paginaActual() + 1 }}/{{ totalPaginas() }}</span>
+        <span class="info-paginas">Página <strong>{{ paginaActual() + 1 }}</strong> de <strong>{{ totalPaginas() }}</strong></span>
         <button class="btn-paginar" [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">
-          Siguiente
+          Siguiente ➡️
         </button>
       </footer>
     </div>

@@ -128,11 +128,11 @@ $danger: #ef4444;
 // =========================================================================
 .zapatero-table {
   width: 100%;
-  margin: 0 auto 140px auto; 
+  margin: 0 auto 20px auto; 
   border-collapse: collapse;
   background: white;
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   border: 1px solid #e2e8f0;
   font-size: 0.95rem;
@@ -472,6 +472,27 @@ $danger: #ef4444;
 // 📱 7. MEDIAS QUERIES RESPONSIVAS (TABLET / MÓVIL)
 // =========================================================================
 @media (max-width: 768px) {
+  .inventario-container {
+    padding: 1rem;
+  }
+
+  .header-section {
+    flex-direction: column;
+    align-items: stretch;
+
+    h1 { font-size: 1.3rem; text-align: center; }
+
+    .header-actions-group {
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .btn-primary, .btn-purple-action {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
   .search-bar-zone {
     flex-direction: column;
     align-items: stretch;
@@ -485,7 +506,7 @@ $danger: #ef4444;
 
   .zapatero-table {
     width: 100%;
-    margin-bottom: 200px;
+    margin-bottom: 20px;
     
     th:nth-child(3), td:nth-child(3) { display: none; } // Oculta código barras en móviles pequeños
   }
@@ -498,6 +519,51 @@ $danger: #ef4444;
       &.fila-dinamica button { height: 38px; }
       &.fila-especial button { height: 42px; font-size: 0.7rem; padding: 0 2px; }
     }
+  }
+}
+
+@media (max-width: 480px) {
+  .inventario-container {
+    padding: 0.5rem;
+  }
+
+  .header-section {
+    h1 { font-size: 1.1rem; }
+    .header-actions-group {
+      gap: 4px;
+    }
+    .btn-primary, .btn-purple-action {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+    }
+  }
+
+  .selectors-filtros {
+    flex-direction: column;
+    gap: 4px;
+    .filtro-select {
+      width: 100%;
+      font-size: 0.8rem;
+      padding: 8px 10px;
+    }
+  }
+
+  .zapatero-table {
+    font-size: 0.8rem;
+    thead th {
+      padding: 0.5rem;
+      font-size: 0.65rem;
+    }
+    tbody td {
+      padding: 0.5rem;
+    }
+    th:nth-child(4), td:nth-child(4) { display: none; } // Oculta columna subfamilia en móviles muy pequeños
+  }
+
+  .paginacion-footer {
+    padding: 0.4rem 0.5rem;
+    .info-paginas { font-size: 0.7rem; }
+    .btn-paginar { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
   }
 }
 
@@ -651,6 +717,62 @@ $danger: #ef4444;
 
   &:active {
     transform: scale(0.98);
+  }
+}
+
+// =========================================================================
+// PAGINACIÓN
+// =========================================================================
+.paginacion-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.25rem;
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+  .info-paginas {
+    font-size: 0.95rem;
+    color: #475569;
+    strong { color: #1e293b; }
+  }
+
+  .btn-paginar {
+    background-color: white;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    padding: 0.6rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+
+    &:hover:not(:disabled) {
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+      color: #1e293b;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background-color: #f1f5f9;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .paginacion-footer {
+    padding: 0.5rem 0.75rem;
+    .btn-paginar {
+      padding: 0.5rem 0.85rem;
+      font-size: 0.85rem;
+    }
+    .info-paginas { font-size: 0.85rem; }
   }
 }
 

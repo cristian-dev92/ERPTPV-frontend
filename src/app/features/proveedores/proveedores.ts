@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProveedorService, ProveedorDTO, NuevoProveedorRequest } from '../../core/services/proveedor.service';
@@ -59,39 +59,56 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
     );
   });
 
+  proveedoresAMostrar = computed(() => {
+    const inicio = this.paginaActual() * this.itemsPorPagina();
+    return this.proveedoresFiltrados().slice(inicio, inicio + this.itemsPorPagina());
+  });
+
   constructor() {
-    super(); // Llama al constructor de la clase base
+    super();
+    effect(() => {
+      const total = this.proveedoresFiltrados().length;
+      this.totalElementos.set(total);
+      if (this.paginaActual() >= Math.ceil(total / this.itemsPorPagina()) && total > 0) {
+        this.paginaActual.set(Math.ceil(total / this.itemsPorPagina()) - 1);
+      }
+    });
   }
 
   ngOnInit() {
     this.cargarDatos();
-    this.cargarProveedores();
   }
 
-  // Obligatorio implementar este método (lo pide la clase base)
   cargarDatos(): void {
     this.cargando.set(true);
-    this.proveedorService.getProveedoresPaginados(this.paginaActual(), this.itemsPorPagina())
-      .subscribe({
-        next: (data: any) => {
-          // data.content trae los 20 registros de la página actual
-          this.proveedores.set(data.content);
-          this.totalElementos = data.totalElements;
-          this.totalPaginas = data.totalPages;
-          this.cargando.set(false);
-        },
-        error: (err) => {
-          this.uiService.mostrarToast('Error al cargar clientes paginados: ' + (err.error || err.message), 'error');
-          this.cargando.set(false);
-        }
-      });
+    this.proveedorService.obtenerMisProveedores().subscribe({
+      next: (data) => {
+        this.proveedores.set(data);
+        this.paginaActual.set(0);
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.uiService.mostrarToast('Error al cargar proveedores: ' + (err.error || err.message), 'error');
+        this.cargando.set(false);
+      }
+    });
   }
 
-  cargarProveedores() {
-    this.proveedorService.obtenerMisProveedores().subscribe({
-      next: (data) => this.proveedores.set(data),
-      error: (err) => this.uiService.mostrarToast('Error al cargar proveedores: ' + err.message, 'error')
-    });
+  override paginaSiguiente(): void {
+    if (this.paginaActual() < this.totalPaginas() - 1) {
+      this.paginaActual.update(p => p + 1);
+    }
+  }
+
+  override paginaAnterior(): void {
+    if (this.paginaActual() > 0) {
+      this.paginaActual.update(p => p - 1);
+    }
+  }
+
+  override cambiarTamanoPagina(nuevoTamano: number): void {
+    this.itemsPorPagina.set(nuevoTamano);
+    this.paginaActual.set(0);
   }
 
   buscarProveedores() {

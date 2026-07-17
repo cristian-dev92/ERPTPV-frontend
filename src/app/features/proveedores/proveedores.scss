@@ -1,3 +1,4 @@
+@use "sass:color";
 $primary: #1e293b; 
 $secondary: #3b82f6;
 $border: #e2e8f0;
@@ -453,8 +454,105 @@ $warning: #f59e0b;
   }
 }
 
-// Media Queries de ajuste fino para pantallas de Tablet y Móvil
+// === RESPONSIVE: MOBILE LAYOUT ===
+.desktop-only { display: block; }
+.mobile-only { display: none; }
+
 @media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block !important; }
+
+  .proveedores-container {
+    padding: 1rem;
+  }
+
+  header.proveedores-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 0.75rem;
+
+    h1 { font-size: 1.4rem; }
+    p { font-size: 0.85rem; }
+    .btn-nuevo-proveedor { width: 100%; text-align: center; }
+  }
+
+  .search-bar-container .search-input { font-size: 0.9rem; padding: 10px 12px; }
+
+  .paginacion-footer {
+    padding: 0.5rem 0.75rem;
+    .btn-paginar { padding: 0.5rem 0.85rem; font-size: 0.85rem; }
+    .info-paginas { font-size: 0.85rem; }
+  }
+
+  .proveedores-grid-movil {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .proveedor-mobile-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+
+    .card-info {
+      h3 { margin: 0 0 6px 0; font-size: 1rem; color: #1e293b; }
+      p { margin: 2px 0; font-size: 0.85rem; color: #475569; }
+      .tel { color: #3b82f6; font-weight: 500; }
+      .mail { color: #64748b; font-size: 0.8rem; }
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+
+      button {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        border: none;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+      }
+
+      .btn-edit-movil {
+        background-color: #eff6ff;
+        color: #3b82f6;
+        &:hover { background-color: #3b82f6; color: white; }
+      }
+
+      .btn-delete-movil {
+        background-color: #fef2f2;
+        color: #ef4444;
+        &:hover { background-color: #ef4444; color: white; }
+      }
+    }
+  }
+
+  .card-vacia {
+    text-align: center;
+    padding: 2rem;
+    color: #94a3b8;
+    font-style: italic;
+  }
+
+  .card-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+  }
+
   .tpv-teclado-virtual {
     padding: 0.5rem;
     gap: 0.3rem;
@@ -474,6 +572,52 @@ $warning: #f59e0b;
       &.fila-especial {
         button { font-size: 0.8rem; }
       }
+    }
+  }
+}
+
+// === ESTILOS DE PAGINACIÓN ===
+.paginacion-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.25rem;
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border: 1px solid $border;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+  .info-paginas {
+    font-size: 0.95rem;
+    color: #475569;
+    
+    strong {
+      color: $primary;
+    }
+  }
+
+  .btn-paginar {
+    background-color: white;
+    color: #475569;
+    border: 1px solid $border;
+    padding: 0.6rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+
+    &:hover:not(:disabled) {
+      background-color: $bg-light;
+      border-color: color.adjust($border, $lightness: -10%); 
+      color: $primary;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background-color: #f1f5f9;
     }
   }
 }

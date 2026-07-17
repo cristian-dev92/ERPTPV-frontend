@@ -288,7 +288,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (ticket of historialTickets(); track ticket.id) {
+              @for (ticket of historialTicketsAMostrar(); track ticket.id) {
                 <tr>
                   <td class="txt-negrita">#{{ ticket.numeroTicket || ticket.id }}</td>
                   <td class="txt-mutado">
@@ -335,6 +335,11 @@
               }
             </tbody>
           </table>
+        </div>
+        <div class="tpv-historial-paginator">
+          <button class="btn-paginar-historial" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">◀️ Anterior</button>
+          <span class="info-paginas-historial">Pág. {{ paginaActual() + 1 }}/{{ totalPaginas() }}</span>
+          <button class="btn-paginar-historial" [disabled]="paginaActual() >= totalPaginas() - 1" (click)="paginaSiguiente()">Siguiente ▶️</button>
         </div>
       }
     </div> 

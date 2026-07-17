@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject, ViewChild } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, ViewChild, effect } from '@angular/core';
 import { CurrencyPipe, DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -282,7 +282,12 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
       return coincideTexto && coincideFamilia && coincideSubfamilia;
     });
   });
-  
+
+  historialTicketsAMostrar = computed(() => {
+    const inicio = this.paginaActual() * this.itemsPorPagina();
+    return this.historialTickets().slice(inicio, inicio + this.itemsPorPagina());
+  });
+
   // Añade este método específico para abrirlo
   abrirModalNuevoCliente() {
   this.mostrarModalCliente.set(true);
@@ -294,37 +299,56 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   }
 
   constructor() {
-    super(); // Llama al constructor de la clase base
+    super();
+    effect(() => {
+      const total = this.historialTickets().length;
+      this.totalElementos.set(total);
+      if (this.paginaActual() >= Math.ceil(total / this.itemsPorPagina()) && total > 0) {
+        this.paginaActual.set(Math.ceil(total / this.itemsPorPagina()) - 1);
+      }
+    });
   }
 
   ngOnInit(): void {
     this.cargarDatos();
     this.cargarArticulos();
     this.obtenerFamiliasConJerarquia();
-    this.cargarHistorialTurno();
     this.refrescarHistorialTrabajosActivos();
     this.cajaService.checkEstadoCaja().subscribe({
       error: (err: any) => console.error("Error al verificar estado de caja inicial en TPV", err)
     });
   }
 
-  // Obligatorio implementar este método (lo pide la clase base)
-  cargarDatos(): void {
+  override cargarDatos(): void {
     this.cargando.set(true);
-    this.ordenService.getOrdenesPaginadas(this.paginaActual(), this.itemsPorPagina())
-      .subscribe({
-        next: (data: any) => {
-          // data.content trae los 20 registros de la página actual
-          this.cargando.set(data.content);
-          this.totalElementos = data.totalElements;
-          this.totalPaginas = data.totalPages;
-          this.cargando.set(false);
-        },
-        error: (err) => {
-          this.uiService.mostrarToast('Error al cargar clientes paginados: ' + (err.error || err.message), 'error');
-          this.cargando.set(false);
-        }
-      });
+    this.ordenService.getOrdenes().subscribe({
+      next: (tickets: OrdenDTO[]) => {
+        this.historialTickets.set(tickets);
+        this.paginaActual.set(0);
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.uiService.mostrarToast('Error al cargar historial: ' + (err.error || err.message), 'error');
+        this.cargando.set(false);
+      }
+    });
+  }
+
+  override paginaSiguiente(): void {
+    if (this.paginaActual() < this.totalPaginas() - 1) {
+      this.paginaActual.update(p => p + 1);
+    }
+  }
+
+  override paginaAnterior(): void {
+    if (this.paginaActual() > 0) {
+      this.paginaActual.update(p => p - 1);
+    }
+  }
+
+  override cambiarTamanoPagina(nuevoTamano: number): void {
+    this.itemsPorPagina.set(nuevoTamano);
+    this.paginaActual.set(0);
   }
 
   refrescarHistorialTrabajosActivos(): void {
@@ -1233,11 +1257,11 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   // Lógica para lanzar la reimpresión de la factura A4 oficial del ticket seleccionado
   reimprimirFacturaA4(ticket: OrdenDTO) {
     //VALIDACIÓN OBLIGATORIA: Evitamos facturas A4 a clientes anónimos
-    const nombreCliente = !ticket.clienteId && !ticket.clienteNombre || 'Cliente General';
+    const nombreCliente = ticket.clienteNombre || ticket.cliente?.nombre || 'Cliente General';
     if (nombreCliente === 'Cliente General') {
       this.uiService.mostrarToast('No se puede generar una factura formal A4 para una venta anónima. Debe registrar un cliente.', 'warning');
       return;
-  }
+    }
     this.uiService.mostrarToast(`🖨️ Reenviando a impresora factura A4 del ticket #${ticket.numeroTicket}...`, 'success');
     this.ordenService.imprimirFacturaA4(ticket.id).subscribe({
       next: () => {

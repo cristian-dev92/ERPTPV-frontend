@@ -1008,3 +1008,47 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
   padding: 6px 12px;
   border-radius: 6px;
 }
+
+// ==========================================
+// 📱 RESPONSIVE MÓVIL
+// ==========================================
+@media (max-width: 768px) {
+  .tpv-container {
+    padding: 1rem;
+  }
+
+  .payment-methods {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+
+    button {
+      padding: 10px 4px;
+      font-size: 0.9rem;
+    }
+  }
+
+  .tpv-paginator {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .paginator-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .payment-methods {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    button { font-size: 0.85rem; padding: 8px 2px; }
+  }
+
+  .tpv-tabs {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

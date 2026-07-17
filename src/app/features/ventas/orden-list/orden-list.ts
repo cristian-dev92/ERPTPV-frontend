@@ -24,7 +24,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   filtroTipo = signal<string>('TALLER');           
   filtroEstado = signal<string>('TODOS');       
   terminoBusqueda = signal<string>('');
-  ordenes = signal<any[]>([]);
+  todasLasOrdenes = signal<any[]>([]);
   ordenSeleccionada = signal<any | null>(null);
   cargando = signal<boolean>(false);
 
@@ -58,14 +58,16 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   // Sincronización en Tiempo Real con el TPV (Constructor)
   // =========================================================================
   constructor() {
-    super(); // Llama al constructor de la clase base
-    
-    // Escuchamos el canal reactivo del OrdenService mediante un efecto
+    super();
+
+    // totalElementos se actualiza reactivamente según el filtro aplicado
     effect(() => {
-      // Accedemos a la signal de forma reactiva invocándola con ()
+      this.totalElementos.set(this.ordenesFiltradas().length);
+    });
+
+    // Recarga completa cuando el TPV procesa un ticket
+    effect(() => {
       this.ordenService.ticketProcesado();
-      
-      // Recargamos silenciosamente los datos
       this.cargarDatos();
     });
   }
@@ -75,19 +77,18 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   }
 
   // =========================================================================
-  // Cargador Unificado de Datos (Respeta la Base de Paginación)
+  // Carga TODAS las órdenes (sin paginación servidor)
+  // La paginación se hace del lado cliente para que los filtros por pestaña
+  // (TALLER / LISTO_RECOGER / CERRADOS) funcionen correctamente.
   // =========================================================================
   cargarDatos(): void {
     this.cargando.set(true);
-    
-    this.ordenService.getOrdenesPaginadas(this.paginaActual(), this.itemsPorPagina())
+
+    this.ordenService.getOrdenes()
       .subscribe({
-        next: (data: any) => {
-          const listaDeOrdenes = data.content || data || [];
-          this.ordenes.set(listaDeOrdenes);
-          
-          this.totalElementos.set(data.totalElements || data.total || 0);
-          
+        next: (data: any[]) => {
+          this.todasLasOrdenes.set(data || []);
+          this.paginaActual.set(0);
           this.cargando.set(false);
         },
         error: (err) => {
@@ -97,6 +98,81 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
         }
       });
   }
+
+  // Paginación 100% cliente — no llamamos al backend al cambiar de página
+  override paginaSiguiente() {
+    if (this.paginaActual() < this.totalPaginas() - 1) {
+      this.paginaActual.update(p => p + 1);
+    }
+  }
+
+  override paginaAnterior() {
+    if (this.paginaActual() > 0) {
+      this.paginaActual.update(p => p - 1);
+    }
+  }
+
+  override cambiarTamanoPagina(nuevoTamano: number) {
+    this.itemsPorPagina.set(nuevoTamano);
+    this.paginaActual.set(0);
+  }
+
+  // =========================================================================
+  // Filtro completo + paginación cliente
+  // =========================================================================
+  ordenesFiltradas = computed(() => {
+    const lista = this.todasLasOrdenes();
+    const tipo = this.filtroTipo();
+    const estado = this.filtroEstado();
+    const busqueda = this.terminoBusqueda().toLowerCase().trim();
+
+    let filtradas = lista;
+
+    // 1. Filtro por búsqueda
+    if (busqueda) {
+      filtradas = filtradas.filter(o => {
+        const numTicket = (o.numeroTicket || o.id || '').toString().toLowerCase();
+        const numFactura = (o.numeroFactura || '').toLowerCase();
+        const cliente = (o.clienteNombre || o.cliente?.nombre || '').toLowerCase();
+        return numTicket.includes(busqueda) || cliente.includes(busqueda) || numFactura.includes(busqueda);
+      });
+    }
+
+    // 2. Filtro por pestaña principal
+    if (tipo === 'TALLER') {
+      filtradas = filtradas.filter(o => {
+        const estadoT = this.getEstadoTaller(o);
+        return this.esReparacion(o) && estadoT !== 'LISTO' && estadoT !== 'ENTREGADO';
+      });
+    } else if (tipo === 'LISTO_RECOGER') {
+      filtradas = filtradas.filter(o =>
+        this.esReparacion(o) && this.getEstadoTaller(o) === 'LISTO'
+      );
+    } else if (tipo === 'CERRADOS') {
+      filtradas = filtradas.filter(o =>
+        this.esVentaDirecta(o) ||
+        this.esDevolucion(o) ||
+        (this.esReparacion(o) && this.getEstadoTaller(o) === 'ENTREGADO')
+      );
+    }
+
+    // 3. Sub-filtros
+    if (estado !== 'TODOS') {
+      if (tipo === 'CERRADOS') {
+        if (estado === 'VENTA_DIRECTA') filtradas = filtradas.filter(o => this.esVentaDirecta(o));
+        else if (estado === 'REPARACION') filtradas = filtradas.filter(o => this.esReparacion(o) && this.getEstadoTaller(o) === 'ENTREGADO');
+        else if (estado === 'DEVOLUCION') filtradas = filtradas.filter(o => this.esDevolucion(o));
+      } else if (estado === 'PENDIENTE_PAGO') {
+        filtradas = filtradas.filter(o => o.estadoPago === 'PENDIENTE' || o.estadoPago === 'ANTICIPO');
+      } else if (estado === 'PAGADO') {
+        filtradas = filtradas.filter(o => o.estadoPago === 'PAGADO');
+      } else {
+        filtradas = filtradas.filter(o => o.estadoPago === estado);
+      }
+    }
+
+    return filtradas;
+  });
 
   // =========================================================================
   // Helper: determina tipo de orden según datos del backend
@@ -133,59 +209,9 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
   // Filtro Reactivo Computado (Corregido y sin cierres de llave rotos)
   // =========================================================================
   ordenesAMostrar = computed(() => {
-    const lista = this.ordenes();
-    const tipo = this.filtroTipo();     // 'TALLER' | 'LISTO_RECOGER' | 'CERRADOS'
-    const estado = this.filtroEstado(); // 'TODOS' | ...
-    const busqueda = this.terminoBusqueda().toLowerCase().trim();
-
-    // 1. Filtrado inteligente por término de búsqueda
-    let filtradas = lista;
-    if (busqueda) {
-      filtradas = filtradas.filter(o => {
-        const numTicket = (o.numeroTicket || o.id || '').toString().toLowerCase();
-        const numFactura = (o.numeroFactura || '').toLowerCase();
-        const cliente = (o.clienteNombre || o.cliente?.nombre || '').toLowerCase();
-        return numTicket.includes(busqueda) || cliente.includes(busqueda) || numFactura.includes(busqueda);
-      });
-    }
-
-    // 2. Filtrar por Pestaña Principal (inferir tipo desde los datos)
-    if (tipo === 'TALLER') {
-      filtradas = filtradas.filter(o => {
-        const estadoT = this.getEstadoTaller(o);
-        return this.esReparacion(o) && estadoT !== 'LISTO' && estadoT !== 'ENTREGADO';
-      });
-    } 
-    else if (tipo === 'LISTO_RECOGER') {
-      filtradas = filtradas.filter(o => 
-        this.esReparacion(o) && this.getEstadoTaller(o) === 'LISTO'
-      );
-    } 
-    else if (tipo === 'CERRADOS') {
-      filtradas = filtradas.filter(o => 
-        this.esVentaDirecta(o) || 
-        this.esDevolucion(o) || 
-        (this.esReparacion(o) && this.getEstadoTaller(o) === 'ENTREGADO')
-      );
-    }
-
-    // 3. Filtrar por los Sub-filtros
-    if (estado !== 'TODOS') {
-      if (tipo === 'CERRADOS') {
-        if (estado === 'VENTA_DIRECTA') filtradas = filtradas.filter(o => this.esVentaDirecta(o));
-        else if (estado === 'REPARACION') filtradas = filtradas.filter(o => this.esReparacion(o) && this.getEstadoTaller(o) === 'ENTREGADO');
-        else if (estado === 'DEVOLUCION') filtradas = filtradas.filter(o => this.esDevolucion(o));
-      } else if (estado === 'PENDIENTE_PAGO') {
-        filtradas = filtradas.filter(o => o.estadoPago === 'PENDIENTE' || o.estadoPago === 'ANTICIPO');
-      } else if (estado === 'PAGADO') {
-        filtradas = filtradas.filter(o => o.estadoPago === 'PAGADO');
-      } else {
-        filtradas = filtradas.filter(o => o.estadoPago === estado);
-      }
-    }
-
-    // Retorna las órdenes filtradas y limita la renderización de la lista por rendimiento (p. ej. a 50)
-    return filtradas.slice(0, 50);
+    const filtradas = this.ordenesFiltradas();
+    const inicio = this.paginaActual() * this.itemsPorPagina();
+    return filtradas.slice(inicio, inicio + this.itemsPorPagina());
   });
 
   cambioAOfrecer = computed(() => {

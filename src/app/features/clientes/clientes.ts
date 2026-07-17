@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, input, output, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, input, output, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteService, ClienteDTO, NuevoClienteRequest } from '../../core/services/cliente.service';
@@ -54,6 +54,11 @@ export class ClientesComponent extends ComponentePaginado implements OnInit {
     );
   });
 
+  clientesAMostrar = computed(() => {
+    const inicio = this.paginaActual() * this.itemsPorPagina();
+    return this.clientesFiltrados().slice(inicio, inicio + this.itemsPorPagina());
+  });
+
   // --- CONFIGURACIÓN TECLADO TÁCTIL ---
   mostrarTeclado = signal<boolean>(false);
   inputActivo = signal<string>('');
@@ -91,7 +96,14 @@ export class ClientesComponent extends ComponentePaginado implements OnInit {
   clienteABorrarNombre = signal<string>('');
 
   constructor() {
-    super(); // Llama al constructor de la clase base
+    super();
+    effect(() => {
+      const total = this.clientesFiltrados().length;
+      this.totalElementos.set(total);
+      if (this.paginaActual() >= Math.ceil(total / this.itemsPorPagina()) && total > 0) {
+        this.paginaActual.set(Math.ceil(total / this.itemsPorPagina()) - 1);
+      }
+    });
   }
 
   ngOnInit() {
@@ -102,23 +114,37 @@ export class ClientesComponent extends ComponentePaginado implements OnInit {
    }
   }
 
-  // Obligatorio implementar este método (lo pide la clase base)
   cargarDatos(): void {
     this.cargando.set(true);
-    this.clienteService.getClientesPaginados(this.paginaActual(), this.itemsPorPagina())
-      .subscribe({
-        next: (data: any) => {
-          // data.content trae los 20 registros de la página actual
-          this.clientes.set(data.content);
-          this.totalElementos.set(data.totalElements || data.total || 0);
-          this.cargando.set(false);
-        },
-        error: (err) => {
-          this.uiService.mostrarToast('Error al cargar clientes paginados: ' + (err.error || err.message), 'error');
-          this.cargando.set(false);
-        }
-      });
-  } 
+    this.clienteService.obtenerMisClientes().subscribe({
+      next: (data) => {
+        this.clientes.set(data);
+        this.paginaActual.set(0);
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.uiService.mostrarToast('Error al cargar clientes: ' + (err.error || err.message), 'error');
+        this.cargando.set(false);
+      }
+    });
+  }
+
+  override paginaSiguiente(): void {
+    if (this.paginaActual() < this.totalPaginas() - 1) {
+      this.paginaActual.update(p => p + 1);
+    }
+  }
+
+  override paginaAnterior(): void {
+    if (this.paginaActual() > 0) {
+      this.paginaActual.update(p => p - 1);
+    }
+  }
+
+  override cambiarTamanoPagina(nuevoTamano: number): void {
+    this.itemsPorPagina.set(nuevoTamano);
+    this.paginaActual.set(0);
+  }
 
   // ⌨️ MÉTODOS DEL TECLADO TÁCTIL
   abrirTeclado(objetivo: string, valorActual: string = '') {
