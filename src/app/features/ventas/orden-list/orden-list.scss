@@ -327,12 +327,33 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
       -webkit-overflow-scrolling: touch;
     }
   }
+  .left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow: hidden;
+  }
 }
 
 // ==========================================
 // SECCIONES INTERNAS DEL MODAL
 // ==========================================
-.info-section, .actions-section {
+.actions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+  }
+}
+.info-section {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -393,7 +414,6 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
       padding: 1rem 1.25rem;
       display: flex;
       flex-direction: column;
-      gap: 24px;
 
       &.es-servicio-item {
         border-left: 5px solid $color-taller;
@@ -411,29 +431,6 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
       white-space: nowrap; /* Fuerza a mantener una línea, pero ahora tiene espacio de sobra */
     }
   }
-
-  // Bloque derecho: Precios + Botones (Imperturbable)
-  > div:last-child {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
-    flex-shrink: 0; 
-    white-space: nowrap; 
-
-    span {
-      font-size: 1.15rem; /* El precio y subtotal también escalan */
-      font-weight: 700;
-    }
-
-    button {
-      flex-shrink: 0;
-      white-space: nowrap;
-      padding: 0.5rem 0.9rem; /* Botones ligeramente más grandes para el dedo */
-      font-size: 0.95rem;
-   }
-  }
- }
 
   .totales-ticket-box { 
     margin-top: 5px;
@@ -456,6 +453,7 @@ $color-pdf: #6b46c1;       // Para indicar PDFs y documentos
     flex-shrink: 0; 
 
     &:hover { background-color: #2c5282; }
+  }
   }
 }
 
@@ -1012,6 +1010,41 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
 // ==========================================
 // 📱 RESPONSIVE MÓVIL
 // ==========================================
+@media (max-width: 850px) {
+  .modal-content {
+    .modal-header h2 {
+      font-size: 1.2rem;
+    }
+  }
+
+  .info-section {
+    h3, .actions-section h3 {
+      font-size: 1rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+    }
+
+    .cliente-header-box {
+      .txt-cliente, .txt-telefono, .txt-registrado {
+        font-size: 0.95rem;
+      }
+    }
+  }
+
+  .actions-section h3 {
+    font-size: 1rem;
+  }
+
+  .workflow-buttons .btn-action,
+  .btn-ir-cobrar,
+  .btn-ir-devolver {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 768px) {
   .tpv-container {
     padding: 1rem;
@@ -1050,5 +1083,33 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
   .tpv-tabs {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+
+  .modal-content .modal-header h2 {
+    font-size: 1rem;
+  }
+
+  .info-section {
+    h3, .actions-section h3 {
+      font-size: 0.9rem;
+    }
+
+    p {
+      font-size: 0.85rem;
+    }
+
+    .cliente-header-box {
+      .txt-cliente, .txt-telefono, .txt-registrado {
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .workflow-buttons .btn-action,
+  .btn-ir-cobrar,
+  .btn-ir-devolver {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
   }
 }

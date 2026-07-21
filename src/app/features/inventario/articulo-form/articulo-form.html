@@ -97,7 +97,7 @@
         (change)="idProveedor.set(+$any($event.target).value)">
         <option value="" disabled selected>Selecciona un proveedor</option>
         @for (prov of proveedores(); track prov.id) {
-          <option [value]="prov.id">{{ prov.nombre }}</option>
+          <option [value]="prov.id">{{ prov.nombreComercial }}</option>
         } @empty {
           <option value="" disabled>⚠️ No hay proveedores asignados</option>
         }

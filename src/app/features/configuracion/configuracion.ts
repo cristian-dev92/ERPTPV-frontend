@@ -387,6 +387,68 @@ export class ConfiguracionComponent implements OnInit {
       }
     });
   }
+
+  // =========================================================================
+  // IMPORTACIÓN / EXPORTACIÓN DE DATOS
+  // =========================================================================
+  exportTipo: 'clientes' | 'proveedores' | 'articulos' = 'clientes';
+  importTipo: 'clientes' | 'proveedores' | 'articulos' = 'clientes';
+  exportFormato = signal<'excel' | 'csv'>('excel');
+  importFormato = signal<'excel' | 'csv'>('excel');
+  exportando = signal<boolean>(false);
+  importando = signal<boolean>(false);
+  importFile = signal<File | null>(null);
+  importResultado = signal<{ mensaje: string; procesados: number; errores: number } | null>(null);
+
+  onImportFileSeleccionado(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.importFile.set(input.files?.[0] ?? null);
+    this.importResultado.set(null);
+  }
+
+  ejecutarExportacion() {
+    this.exportando.set(true);
+    const nombreTipo = { clientes: 'clientes', proveedores: 'proveedores', articulos: 'inventario' }[this.exportTipo];
+    const ext = this.exportFormato() === 'excel' ? 'xlsx' : 'csv';
+
+    this.configService.exportarDatos(this.exportTipo, this.exportFormato()).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${nombreTipo}_export.${ext}`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.exportando.set(false);
+        this.uiService.mostrarToast(`⬇️ Archivo ${nombreTipo} descargado correctamente`, 'success');
+      },
+      error: (err) => {
+        this.exportando.set(false);
+        this.uiService.mostrarToast('Error al exportar: ' + (err.error || err.message), 'error');
+      }
+    });
+  }
+
+  ejecutarImportacion() {
+    const file = this.importFile();
+    if (!file) return;
+
+    this.importando.set(true);
+    this.importResultado.set(null);
+
+    this.configService.importarDatos(this.importTipo, this.importFormato(), file).subscribe({
+      next: (res) => {
+        this.importResultado.set(res);
+        this.importando.set(false);
+        this.importFile.set(null);
+        this.uiService.mostrarToast(res.mensaje, res.errores === 0 ? 'success' : 'warning');
+      },
+      error: (err) => {
+        this.importando.set(false);
+        this.uiService.mostrarToast('Error al importar: ' + (err.error || err.message), 'error');
+      }
+    });
+  }
   
 }
   

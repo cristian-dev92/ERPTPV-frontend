@@ -63,10 +63,17 @@
           <p class="cliente"><strong>👤 {{ orden.clienteNombre || orden.cliente?.nombre || 'Cliente General' }}</strong></p>
           <p class="servicio">👞 {{ orden.descripcionCorto || (getTipoOrden(orden) === 'VENTA_DIRECTA' ? 'VENTA' : (getTipoOrden(orden) === 'REPARACION' ? 'REPARACIÓN' : (getTipoOrden(orden) === 'DEVOLUCION' ? 'DEVOLUCIÓN' : 'Trabajo del taller'))) }}</p>
           
+          @if (orden.trabajosTaller && orden.trabajosTaller.length > 0) {
+            <p class="codigos-servicio" style="font-size: 0.75rem; color: #a78bfa; font-weight: 600; margin: 2px 0;">
+              🔖 {{ codigosEtiqueta(orden.trabajosTaller) }}
+            </p>
+          }
+          
           @if (getTipoOrden(orden) === 'REPARACION') {
-            @if (orden.fechaPrometidaRecogida) {
+            @let fechaTicket = convertirFechaISO(orden.trabajosTaller?.[0]?.fechaPrometidaRecogida);
+            @if (fechaTicket) {
               <p class="fecha-limite" [ngClass]="{'retrasado': getEstadoTaller(orden) !== 'LISTO' && getEstadoTaller(orden) !== 'ENTREGADO'}">
-                📅 Fecha Recogida: {{ orden.fechaPrometidaRecogida | date:'dd/MM/yyyy' }}
+                📅 Fecha Recogida: {{ fechaTicket | date:'dd/MM/yyyy' }}
               </p>
             } @else {
               <p class="fecha-limite">
@@ -147,6 +154,7 @@
 
       <div class="modal-grid">
         
+        <div class="left-column">
           <div class="info-section">
             <div class="cliente-header-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center;">
               <p class="txt-cliente" style="margin: 0;">
@@ -162,82 +170,71 @@
               }
             </div>
 
-        <!-- Bloque táctil de Notas de Taller y Fechas de Recogida por línea -->
-        <div class="observaciones-ticket-row" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-size: 0.85rem; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 4px;">
-            📋 DETALLE POR TRABAJO:
-          </label>
-          @for (item of detallesEditados.filter(d => d.esServicio); track item.id) {
-            <div style="background: #1e293b; border-radius: 6px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #4ade80; font-weight: 600; font-size: 0.85rem;">{{ item.cantidad }}x {{ item.nombre }}</span>
-                @if (item.fechaEntrega) {
-                  <span style="color: #fbbf24; font-size: 0.8rem; font-weight: 600;">📅 Recogida: {{ item.fechaEntrega | date:'dd/MM/yyyy' }}</span>
-                } @else {
-                  <span style="color: #94a3b8; font-size: 0.8rem;">📅 Sin fecha de recogida</span>
-                }
-              </div>
-              @if (item.notasMostrador) {
-                <span style="color: #e2e8f0; font-size: 0.8rem; padding-left: 4px;">📝 {{ item.notasMostrador }}</span>
-              }
-              @if (item.descripcionBulto) {
-                <span style="color: #94a3b8; font-size: 0.8rem; padding-left: 4px;">📦 {{ item.descripcionBulto }}</span>
-              }
-            </div>
-          }
-          @if (detallesEditados.filter(d => d.esServicio).length === 0) {
-            <span style="color: #94a3b8; font-size: 0.85rem; font-style: italic;">Sin trabajos de taller</span>
-          }
-        </div>
-          
-          <hr class="separator-ticket">
-
-          <!-- Notas Generales editables -->
-          <div style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-            <label for="notasGeneralesTicket" style="font-size: 0.85rem; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 4px;">
-              📝 NOTAS GENERALES:
-            </label>
-            <textarea 
-              id="notasGeneralesTicket"
-              style="width: 100%; min-height: 48px; border: 1px solid #475569; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.3; background: #1e293b; color: #e2e8f0; font-family: inherit;"
-              [(ngModel)]="notasGenerales"
-              (click)="activarTeclado('notas-generales', null)">
-            </textarea>
-          </div>
+          <hr class="separator-ticket" style="margin: 8px 0;">
 
           <div class="desglose-ticket-box">
-            <h3>📦 Contenido del Ticket</h3>
-
             <div class="tabla-desglose-tpv">
-              @for (item of detallesEditados; track item.id; let idx = $index) {
-                <div class="linea-desglose-card" [class.es-servicio-item]="item.esServicio">
-     
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                      <span style="color: #4ade80; font-weight: bold; margin-right: 8px;">{{ item.cantidad }}x</span>
-                      <span style="font-weight: 600;">{{ item.nombre }}</span>
-                      @if (item.esServicio) {
-                        <span style="background: #7c3aed; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600;">TALLER</span>
-                      } @else {
-                        <span style="background: #2563eb; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600;">ARTÍCULO</span>
-                      }
+
+              @if (detallesEditados.filter(i => i.esServicio).length > 0) {
+                <h3 style="margin: 0 0 8px 0; font-size: 1.3rem; color: #a78bfa;">🔧 Servicios de Taller</h3>
+                @for (item of detallesEditados; track item.id; let idx = $index) {
+                  @if (item.esServicio) {
+                    <div class="linea-desglose-card es-servicio-item" style="display: flex; flex-direction: column; gap: 6px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                          <span style="color: #4ade80; font-weight: bold;">{{ item.cantidad }}x</span>
+                          <span style="font-weight: 600;">{{ item.nombre }}</span>
+                          <span style="background: #7c3aed; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">TALLER</span>
+                          @if (item.codigoEtiqueta) {
+                            <span style="background: #a78bfa; color: #0f172a; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;">🔖 #{{ item.codigoEtiqueta }}</span>
+                          }
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <span style="font-weight: bold;">{{ item.precio | currency:'EUR' }}</span>
+                          @if (filtroTipo() !== 'CERRADOS') {
+                            <button type="button" (click)="toggleDesplegableServicio(item.id)" style="background-color: #2b6cb0; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">⚙️ Configurar</button>
+                          }
+                        </div>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 4px; font-size: 0.8rem;">
+                        @if (item.fechaEntrega) {
+                          <span style="color: #fbbf24; font-weight: 600;">📅 Recogida: {{ item.fechaEntrega | date:'dd/MM/yyyy' }}</span>
+                        } @else {
+                          <span style="color: #94a3b8;">📅 Sin fecha de recogida</span>
+                        }
+                        @if (item.notasMostrador) {
+                          <span style="color: #e2e8f0;">📝 {{ item.notasMostrador }}</span>
+                        }
+                        @if (item.descripcionBulto) {
+                          <span style="color: #94a3b8;">📦 {{ item.descripcionBulto }}</span>
+                        }
+                      </div>
                     </div>
-                  <div>
-                    <span style="color: #a0aec0; font-size: 0.95rem; margin-right: 10px;">{{ item.precio | currency:'EUR' }}</span>
-                    <span style="font-weight: bold; margin-right: 10px;">{{ item.subtotal | currency:'EUR' }}</span>
+                  }
+                }
+              }
 
-                    @if (filtroTipo() !== 'CERRADOS') {
-                      <button type="button" 
-                              (click)="toggleDesplegableServicio(item.id)"
-                              style="background-color: #2b6cb0; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">
-                        ⚙️ Configurar
-                      </button>
-                    }
-                  </div>
-                </div>
+              @if (detallesEditados.filter(i => !i.esServicio).length > 0) {
+                <h3 style="margin: 12px 0 8px 0; font-size: 1.3rem; color: #60a5fa;">🏪 Artículos de Tienda</h3>
+                @for (item of detallesEditados; track item.id; let idx = $index) {
+                  @if (!item.esServicio) {
+                    <div class="linea-desglose-card" style="display: flex; flex-direction: column; gap: 6px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                          <span style="color: #4ade80; font-weight: bold;">{{ item.cantidad }}x</span>
+                          <span style="font-weight: 600;">{{ item.nombre }}</span>
+                          <span style="background: #2563eb; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ARTÍCULO</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <span style="font-weight: bold;">{{ item.precio | currency:'EUR' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                }
+              }
 
-              </div>
-            }
+            </div>
           </div>
          </div>
 
@@ -280,16 +277,15 @@
 
                 </div>
                </div>
-              }
             }
+          }
 
           <hr class="separator-ticket">
           <div class="totales-ticket-box">
             <div class="total-row"><span class="lbl">TOTAL TICKET: </span> <span class="val-total">{{ orden.total | currency:'EUR' }}</span></div>
             <div class="total-row pendiente"><span class="lbl">PENDIENTE DE CAJA: </span> <span class="val-pendiente">{{ orden.importePendiente | currency:'EUR' }}</span></div>
           </div>
-
-        </div> 
+        </div>
         
         <div class="actions-section">
           <h3>⚙️ Acciones Operativas</h3>
@@ -323,10 +319,7 @@
               </button>
             }
 
-            @if ((orden.estadoPago === 'PAGADO' || getEstadoTaller(orden) === 'ENTREGADO')
-                  && orden.estadoPago !== 'DEVOLUCION' 
-                  && orden.estadoPago !== 'DEVUELTO'
-                  && getTipoOrden(orden) !== 'DEVOLUCION') {
+            @if (puedeDevolverse(orden)) {
               <div class="zona-acciones-devolucion" style="margin-top: 1rem; width: 100%;">
                 <button type="button" class="btn-ir-devolver" (click)="abrirPanelDevolucion()" style="width: 100%;">
                   🔄 Solicitar Devolución (Factura Rectificativa)
@@ -338,7 +331,7 @@
       </div> 
     </div> 
   </div> 
- }
+  }
 
   @if (mostrarModalCobro()) {
     <div class="modal-backdrop keypad-backdrop">

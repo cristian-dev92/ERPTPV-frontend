@@ -57,6 +57,7 @@ export interface LineaVentaDirectaSalidaDTO {
 export interface TrabajoTallerSalidaDTO {
   id: number;
   articuloBaseCodigo: string | null;
+  articuloBaseId: number | null;
   codigoEtiqueta: string;
   descripcion: string;
   notasMostrador: string;

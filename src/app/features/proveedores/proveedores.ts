@@ -51,11 +51,10 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
     if (!filtro) return this.proveedores();
     
     return this.proveedores().filter(p => 
-      p.nombre.toLowerCase().includes(filtro) ||
-      (p.cif && p.cif.toLowerCase().includes(filtro)) ||
+      p.nombreComercial.toLowerCase().includes(filtro) ||
+      (p.nif && p.nif.toLowerCase().includes(filtro)) ||
       (p.telefono && p.telefono.includes(filtro)) ||
-      (p.emailPedidos && p.emailPedidos.toLowerCase().includes(filtro)) ||
-      (p.direccion && p.direccion.toLowerCase().includes(filtro))
+      (p.email && p.email.toLowerCase().includes(filtro))
     );
   });
 
@@ -227,11 +226,11 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
     this.modoEdicion.set(true);
     this.proveedorSeleccionadoId.set(p.id);
     this.nuevoProveedor.set({
-      nombre: p.nombre,
-      cif: p.cif || '',
-      emailPedidos: p.emailPedidos || '',
+      nombre: p.nombreComercial,
+      cif: p.nif || '',
+      emailPedidos: p.email || '',
       telefono: p.telefono || '',
-      direccion: p.direccion || ''
+      direccion: ''
     });
     this.mostrarModalRegistro.set(true);
   }
@@ -251,7 +250,7 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
 
     this.proveedorService.actualizarProveedor(idProv, datos).subscribe({
       next: (proveedorModificado) => {
-        this.uiService.mostrarToast(`📦 Proveedor "${proveedorModificado.nombre}" actualizado con éxito`, 'success');
+        this.uiService.mostrarToast(`📦 Proveedor "${proveedorModificado.nombreComercial}" actualizado con éxito`, 'success');
         // Actualizamos la lista local añadiendo el nuevo al principio
         this.proveedores.update(list => list.map(p => p.id === idProv ? proveedorModificado : p));
         this.cerrarModal();
@@ -264,7 +263,7 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
       // Flujo de Creación Tradicional (POST)
       this.proveedorService.crearProveedor(datos).subscribe({
         next: (proveedorCreado) => {
-          this.uiService.mostrarToast(`📦 Proveedor "${proveedorCreado.nombre}" registrado con éxito`, 'success');
+          this.uiService.mostrarToast(`📦 Proveedor "${proveedorCreado.nombreComercial}" registrado con éxito`, 'success');
           this.proveedores.update(list => [proveedorCreado, ...list]);
           this.cerrarModal();
         },
@@ -293,7 +292,7 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
    // Cambiamos el método original por este para que primero "pregunte"
   solicitarConfirmacionBorrar(p: ProveedorDTO) {
     this.proveedorABorrarId.set(p.id);
-    this.proveedorABorrarNombre.set(p.nombre);
+    this.proveedorABorrarNombre.set(p.nombreComercial);
     this.mostrarModalBorrar.set(true);
   }
 

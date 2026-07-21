@@ -8,6 +8,7 @@
     <button class="btn-nuevo-cliente" (click)="abrirModal()">➕ Nuevo Cliente</button>
   </header>
   }
+  @if (!modoModalSolo()) {
   <div class="search-bar-container">
     <input 
       type="text" 
@@ -17,7 +18,9 @@
       (ngModelChange)="filtroBusqueda.set($event)"
       (focus)="abrirTeclado('BUSQUEDA', filtroBusqueda())">
   </div>
+  }
 
+  @if (!modoModalSolo()) {
   <div class="desktop-only">
    <div class="tabla-wrapper">
     <table class="zapatero-table">
@@ -73,7 +76,9 @@
         </button>
       </footer>
     </div>
+    }
     
+ @if (!modoModalSolo()) {
  <div class="mobile-only">
   <div class="grid-clientes-movil">
     @if (cargando()) {
@@ -112,6 +117,7 @@
         </button>
       </footer>
     </div>
+    }
 
 @if (mostrarModalRegistro()) {
   <div class="modal-overlay" [class.teclado-abierto]="mostrarTeclado()">

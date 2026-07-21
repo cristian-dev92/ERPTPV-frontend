@@ -42,6 +42,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
 
   mostrarModalDevolucion = signal<boolean>(false);
   metodoDevolucion = signal<MetodoPago>('EFECTIVO');
+  ordenesDevueltas = signal<Set<number>>(new Set());
 
   // CONFIGURACIÓN TECLADO TÁCTIL
   mostrarTeclado = signal<boolean>(false);
@@ -193,6 +194,18 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     if (this.esVentaDirecta(o)) return 'VENTA_DIRECTA';
     return o.tipo || o.tipoOrden || 'VENTA_DIRECTA';
   }
+  codigosEtiqueta(trabajos: any[]): string {
+    return trabajos.map((t: any) => '#' + t.codigoEtiqueta).join(', ');
+  }
+  convertirFechaISO(fecha: string): string {
+    if (!fecha) return '';
+    const partes = fecha.split('-');
+    if (partes.length === 3 && partes[0].length === 2 && partes[1].length === 2 && partes[2].length === 4) {
+      return `${partes[2]}-${partes[1]}-${partes[0]}`;
+    }
+    const d = new Date(fecha);
+    return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+  }
   getEstadoTaller(o: any): string {
     if (o.estadoTaller) return o.estadoTaller;
     if (this.esReparacion(o)) {
@@ -238,6 +251,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
       notas: t.notasMostrador || '',
       notasMostrador: t.notasMostrador || '',
       descripcionBulto: t.descripcionBulto || '',
+      codigoEtiqueta: t.codigoEtiqueta || '',
       fechaPrometidaRecogida: t.fechaPrometidaRecogida || orden.fechaPrometidaRecogida,
     }));
 
@@ -257,7 +271,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
       let fechaFormateada = '';
       const fechaBase = linea.fechaPrometidaRecogida || orden.fechaPrometidaRecogida;
       if (fechaBase) {
-        fechaFormateada = new Date(fechaBase).toISOString().split('T')[0];
+        fechaFormateada = this.convertirFechaISO(fechaBase);
       }
 
       const precioUnitario = linea.precioUnitario || linea.precio || 0;
@@ -275,6 +289,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
         notas: linea.notas || '',
         notasMostrador: linea.notasMostrador || '',
         descripcionBulto: linea.descripcionBulto || '',
+        codigoEtiqueta: linea.codigoEtiqueta || '',
         fechaEntrega: fechaFormateada,
         nuevoPrecioInput: '' 
       };
@@ -488,6 +503,14 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     this.mostrarModalDevolucion.set(true);
   }
 
+  puedeDevolverse(orden: any): boolean {
+    if (!orden) return false;
+    if (this.ordenesDevueltas().has(orden.id)) return false;
+    if (orden.estadoPago === 'DEVOLUCION' || orden.estadoPago === 'DEVUELTO') return false;
+    if (this.getTipoOrden(orden) === 'DEVOLUCION') return false;
+    return orden.estadoPago === 'PAGADO' || this.getEstadoTaller(orden) === 'ENTREGADO';
+  }
+
   cerrarPanelDevolucion() { 
     this.mostrarModalDevolucion.set(false); 
   }
@@ -501,13 +524,17 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
       return;
     }
 
-    const detallesOriginales = orden.detalles || [];
-    const lineasDev = detallesOriginales.map((l: any) => {
-      return {
-        articuloId: l.articuloId || l.articulo?.id,
-        cantidad: l.cantidad
-      }
-    }).filter((l: any) => l.articuloId != null);
+    const lineasProducto: any[] = (orden.lineasVentaDirecta || []).map((l: any) => ({
+      articuloId: l.articuloId,
+      cantidad: l.cantidad
+    })).filter((l: any) => l.articuloId != null);
+
+    const lineasTaller: any[] = (orden.trabajosTaller || []).map((t: any) => ({
+      articuloId: t.articuloBaseId,
+      cantidad: t.cantidadMaterial || 1
+    })).filter((l: any) => l.articuloId != null);
+
+    const lineasDev = [...lineasProducto, ...lineasTaller];
 
     if (lineasDev.length === 0) {
       this.uiService.mostrarToast('Este ticket no contiene ningún detalle o artículo para devolver', 'warning');
@@ -523,6 +550,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     this.ordenService.procesarDevolucion(peticion).subscribe({
       next: () => {
         this.uiService.mostrarToast(`¡Devolución registrada! Factura Rectificativa generada.`, 'success');
+        this.ordenesDevueltas.update(s => new Set(s).add(orden.id));
         this.cerrarPanelDevolucion();
         this.cerrarModal();
         this.cargarDatos();

@@ -1651,20 +1651,79 @@ app-clientes {
   .panel-historial-wrapper {
     flex-shrink: 0;
   }
-}
 
-.btn-toggle-ticket-mobile {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 2000;
-  padding: 15px 25px;
-  background: #3b82f6;
-  color: white;
-  border-radius: 50px;
-  border: none;
-  font-weight: bold;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  /* Overlay oscuro detrás del carrito móvil */
+  .cart-overlay-mobile {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1499;
+  }
+
+  /* Select familias en móvil */
+  .select-familias-mobile {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    background: #fff;
+    color: #1e293b;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+
+  .fila-familias, .fila-subfamilias {
+    display: none !important;
+  }
+
+  /* Botón flotante carrito */
+  .btn-toggle-ticket-mobile {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2000;
+    padding: 14px 22px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 50px;
+    border: none;
+    font-weight: bold;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+
+  /* Cards más pequeñas en móvil */
+  .articulos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    max-height: none;
+
+    .articulo-card {
+      padding: 10px;
+      min-height: 80px;
+
+      .info-producto .nombre {
+        font-size: 0.75rem;
+        -webkit-line-clamp: 2;
+      }
+
+      .precio, .precio-rebajado-vivo {
+        font-size: 0.85rem;
+      }
+    }
+  }
 }
 
 .modal-acciones-ticket {
@@ -2109,18 +2168,19 @@ app-clientes {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
+// Select familias: oculto en desktop, visible en móvil
+.select-familias-mobile {
+  display: none;
+}
+
+// Overlay carrito móvil: oculto en desktop, visible en móvil
+.cart-overlay-mobile {
+  display: none;
+}
+
+// Botón flotante carrito: oculto en desktop, visible en móvil
 .btn-toggle-ticket-mobile {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 2000;
-  padding: 15px 25px;
-  background: #3b82f6;
-  color: white;
-  border-radius: 50px;
-  border: none;
-  font-weight: bold;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  display: none;
 }
 
 .modal-acciones-ticket {
@@ -3228,4 +3288,21 @@ app-clientes {
   .panel-historial-wrapper {
     display: none !important;
   }
+}
+
+// Toggle switch (TALLER / TIENDA) - bolita deslizante
+.switch-taller-tienda .slider-taller {
+  background-color: #16a34a !important;
+}
+
+.switch-taller-tienda .slider-taller span {
+  background-color: white !important;
+}
+
+.switch-taller-tienda input:checked + .slider-taller {
+  background-color: #a855f7 !important;
+}
+
+.switch-taller-tienda input:checked + .slider-taller span {
+  transform: translateX(22px);
 }

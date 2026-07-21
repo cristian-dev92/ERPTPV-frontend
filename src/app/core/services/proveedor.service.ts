@@ -12,10 +12,9 @@ export interface NuevoProveedorRequest {
 
 export interface ProveedorDTO {
   id: number;
-  nombre: string;
-  cif?: string;
-  direccion?: string;
-  emailPedidos?: string;
+  nombreComercial: string;
+  nif?: string;
+  email?: string;
   telefono?: string;
   activo: boolean;
 }

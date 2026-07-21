@@ -52,4 +52,20 @@ export class ConfiguracionService {
     formData.append('file', file);
     return this.http.post<{ url: string }>(`${this.baseUrl}/upload/${tipo}`, formData);
   }
+
+  // =========================================================================
+  // 3. IMPORTACIÓN / EXPORTACIÓN DE DATOS
+  // =========================================================================
+
+  exportarDatos(tipo: 'clientes' | 'proveedores' | 'articulos', formato: 'excel' | 'csv'): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${tipo}/exportar/${formato}`, { responseType: 'blob' });
+  }
+
+  importarDatos(tipo: 'clientes' | 'proveedores' | 'articulos', formato: 'excel' | 'csv', file: File): Observable<{ mensaje: string; procesados: number; errores: number }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ mensaje: string; procesados: number; errores: number }>(
+      `${this.baseUrl}/${tipo}/importar/${formato}`, formData
+    );
+  }
 }

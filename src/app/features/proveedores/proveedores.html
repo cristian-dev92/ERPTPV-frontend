@@ -36,10 +36,10 @@
         <tbody>
           @for (p of proveedoresAMostrar(); track p.id) {
             <tr>
-              <td class="txt-negrita">{{ p.nombre }}</td>
-              <td class="txt-mutado">{{ p.cif || '-' }}</td>
+              <td class="txt-negrita">{{ p.nombreComercial }}</td>
+              <td class="txt-mutado">{{ p.nif || '-' }}</td>
               <td>{{ p.telefono || '-' }}</td>
-              <td class="txt-email">{{ p.emailPedidos || '-' }}</td>
+              <td class="txt-email">{{ p.email || '-' }}</td>
               <td>
                 <span class="badge-activo">🟢 Activo</span>
               </td>
@@ -75,10 +75,10 @@
         @for (p of proveedoresAMostrar(); track p.id) {
           <div class="proveedor-mobile-card">
             <div class="card-info">
-              <h3>{{ p.nombre }}</h3>
-              @if (p.cif) { <p class="txt-mutado">🆔 {{ p.cif }}</p> }
+              <h3>{{ p.nombreComercial }}</h3>
+              @if (p.nif) { <p class="txt-mutado">🆔 {{ p.nif }}</p> }
               @if (p.telefono) { <p class="tel">📞 {{ p.telefono }}</p> }
-              @if (p.emailPedidos) { <p class="mail">✉️ {{ p.emailPedidos }}</p> }
+              @if (p.email) { <p class="mail">✉️ {{ p.email }}</p> }
             </div>
             <div class="card-actions">
               <button class="btn-edit-movil" (click)="abrirModalEdicion(p)">✏️</button>

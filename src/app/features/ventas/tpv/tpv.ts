@@ -53,6 +53,9 @@ interface LineaCarritoMostrador {
   notasMostrador: string;
   descripcionBulto: string; // Exclusivo si se trata como trabajo de reparación
   destino: 'TIENDA' | 'TALLER';
+  busquedaArticulo: string;
+  mostrarResultados: boolean;
+  resultadosBusqueda: Articulo[];
 }
 
 // Interfaz para representar clientes en el TPV (puede ser extendida según necesidades)
@@ -110,6 +113,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   // Modales e interfaces
   mostrarHistorial = signal<boolean>(false);
   isTicketVisible = signal<boolean>(false);
+  cartPanelAbierto = signal<boolean>(false);
   mostrarModalPedirTicket = false;
   mostrarModalSeleccionDevolucion = false;
   mostrarModalMetodosPago = false;
@@ -288,9 +292,11 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     return this.historialTickets().slice(inicio, inicio + this.itemsPorPagina());
   });
 
-  // Añade este método específico para abrirlo
   abrirModalNuevoCliente() {
-  this.mostrarModalCliente.set(true);
+    this.mostrarModalCliente.set(true);
+    if (this.clientesComponent) {
+      this.clientesComponent.abrirModal();
+    }
   }
   // Método que se ejecutará cuando el componente de clientes termine de guardar e inserte automáticamente el nuevo cliente en el TPV
   onClienteRegistradoDelModal(cliente: any) {
@@ -373,7 +379,10 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     porcentajeDescuento: 0,
     notasMostrador: '',
     descripcionBulto: '',
-    destino: 'TALLER'
+    destino: 'TALLER',
+    busquedaArticulo: '',
+    mostrarResultados: false,
+    resultadosBusqueda: []
   };
   // Usamos .update() que es más limpio y seguro para los Signals de Angular
     this.carrito.update(items => [...items, nuevoTrabajo]);
@@ -448,7 +457,10 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     this.indiceLineaEnEdicion.set(null);
     const hoy = new Date();
     hoy.setDate(hoy.getDate() + 7);
-    this.fechaPrevistaEntrega.set(hoy.toISOString().split('T')[0]);
+    const fechaStr = hoy.toISOString().split('T')[0];
+    this.fechaPrevistaEntrega.set(fechaStr);
+    this.fechaRecogida.set(fechaStr);
+    this.sinFechaRecogida.set(false);
     
     this.mostrarModalGestionServicios.set(true);
   }
@@ -461,8 +473,21 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   }
 
   confirmarTallerYServicios() {
+    if (this.carrito().length === 0) {
+      this.cerrarModalServicios();
+      return;
+    }
     if (this.tieneServicioEnCarrito() && !this.clienteSeleccionadoId()) {
       this.uiService.mostrarToast('Taller: Es obligatorio asignar un cliente para guardar el bulto.', 'warning');
+      return;
+    }
+    if (this.tieneServicioEnCarrito() && !this.sinFechaRecogida() && !this.fechaRecogida()) {
+      this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
+      return;
+    }
+    const lineaSinPrecio = this.carrito().findIndex(item => item.destino === 'TALLER' && item.precioEditado <= 0);
+    if (lineaSinPrecio !== -1) {
+      this.uiService.mostrarToast('El trabajo manual tiene precio 0. Debes asignar un precio antes de confirmar.', 'warning');
       return;
     }
     this.cerrarModalServicios();
@@ -507,11 +532,56 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
           porcentajeDescuento: 0,
           notasMostrador: '',
           descripcionBulto: destinoInicial === 'TALLER' ? `Par de ${articulo.nombre.toLowerCase()}` : '',
-          destino: destinoInicial
+          destino: destinoInicial,
+          busquedaArticulo: '',
+          mostrarResultados: false,
+          resultadosBusqueda: []
         }];
       }
     });
     this.uiService.mostrarToast(`🛒 ${articulo.nombre} añadido al mostrador.`, 'success');
+  }
+
+  buscarArticuloEnLinea(index: number): void {
+    const items = [...this.carrito()];
+    const item = items[index];
+    if (!item) return;
+    const termino = item.busquedaArticulo.toLowerCase().trim();
+    if (!termino) {
+      item.mostrarResultados = false;
+      item.resultadosBusqueda = [];
+      this.carrito.set(items);
+      return;
+    }
+    item.resultadosBusqueda = this.articulosTotales().filter(a =>
+      a.nombre.toLowerCase().includes(termino) ||
+      (a.codigo && a.codigo.toLowerCase().includes(termino))
+    ).slice(0, 15);
+    item.mostrarResultados = item.resultadosBusqueda.length > 0;
+    this.carrito.set(items);
+  }
+
+  sustituirArticuloLinea(index: number, articulo: Articulo): void {
+    this.carrito.update(items => {
+      const nuevos = [...items];
+      const item = { ...nuevos[index] };
+      item.articulo = articulo;
+      item.precioEditado = articulo.precioFinal;
+      item.busquedaArticulo = '';
+      item.mostrarResultados = false;
+      item.resultadosBusqueda = [];
+      nuevos[index] = item;
+      return nuevos;
+    });
+    this.uiService.mostrarToast(`Artículo sustituido por ${articulo.nombre}`, 'success');
+  }
+
+  cerrarResultadosLinea(index: number): void {
+    this.carrito.update(items => {
+      const nuevos = [...items];
+      nuevos[index] = { ...nuevos[index], mostrarResultados: false, resultadosBusqueda: [] };
+      return nuevos;
+    });
   }
 
   incrementarCantidad(index: number): void {
@@ -627,16 +697,14 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
 
     if (this.carrito().length === 0) return;
 
-    const tipoActual = this.tipoOrdenSeleccionada();
-
-    // CONTROL DE SEGURIDAD: CLIENTE OBLIGATORIO
-    if (tipoActual !== 'VENTA_DIRECTA' && !this.clienteSeleccionado()) {
+    // CONTROL DE SEGURIDAD: CLIENTE OBLIGATORIO (si hay artículos de taller)
+    if (this.tieneServicioEnCarrito() && !this.clienteSeleccionado()) {
       this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
       return;
     }
 
     // CONTROL DE SEGURIDAD: FECHA DE RECOGIDA OBLIGATORIA
-    if (tipoActual === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
+    if (this.tieneServicioEnCarrito() && !this.sinFechaRecogida() && !this.fechaRecogida()) {
       this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
       return;
     }
@@ -679,16 +747,14 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     }
 
     if (this.carrito().length > 0) {
-      const tipoActual = this.tipoOrdenSeleccionada();
-
-      // CONTROL DE SEGURIDAD: CLIENTE OBLIGATORIO
-      if (tipoActual !== 'VENTA_DIRECTA' && !this.clienteSeleccionado()) {
+      // CONTROL DE SEGURIDAD: CLIENTE OBLIGATORIO (si hay artículos de taller)
+      if (this.tieneServicioEnCarrito() && !this.clienteSeleccionado()) {
         this.uiService.mostrarToast('Debes asignar un cliente para guardar la orden de taller.', 'warning');
         return;
       }
 
       // CONTROL DE SEGURIDAD: FECHA DE RECOGIDA OBLIGATORIA
-      if (tipoActual === 'REPARACION' && !this.sinFechaRecogida() && !this.fechaRecogida()) {
+      if (this.tieneServicioEnCarrito() && !this.sinFechaRecogida() && !this.fechaRecogida()) {
         this.uiService.mostrarToast('Por favor, selecciona una fecha de recogida para la reparación.', 'warning');
         return;
       }
@@ -725,8 +791,14 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
       return;
     }
 
-    if (this.tipoOrdenSeleccionada() === 'REPARACION' && !this.clienteSeleccionadoId()) {
+    if (this.tieneServicioEnCarrito() && !this.clienteSeleccionadoId()) {
       this.uiService.mostrarToast('Taller: Es obligatorio asignar un cliente para guardar el bulto.', 'warning');
+      return;
+    }
+
+    const lineaSinPrecio = this.carrito().findIndex(item => item.destino === 'TALLER' && item.precioEditado <= 0);
+    if (lineaSinPrecio !== -1) {
+      this.uiService.mostrarToast('El trabajo manual tiene precio 0. Debes asignar un precio antes de confirmar.', 'warning');
       return;
     }
 
@@ -1099,41 +1171,35 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     });
   }
 
+  // Cache local de todos los clientes para búsqueda por nombre y teléfono
+  clientesCache = signal<Cliente[]>([]);
+
   // === BÚSQUEDA Y MANEJO DE CLIENTES ===
   buscarClientes(termino: string) {
     this.busquedaCliente.set(termino);
-    if (termino.trim().length < 2) {
+    const limpio = termino.trim().toLowerCase();
+    if (limpio.length < 2) {
       this.clientesEncontrados.set([]);
       return;
     }
-    const terminoLimpio = termino.trim().toUpperCase();
-    this.clienteService.buscarPorNombre(terminoLimpio).subscribe({
-      next: (porNombre) => {
-        if (/[0-9]/.test(terminoLimpio)) {
-          this.clienteService.buscarPorTelefono(terminoLimpio).subscribe({
-            next: (porTelefono) => {
-              const merged = [...porNombre];
-              if (!merged.some(c => c.id === porTelefono.id)) {
-                merged.push(porTelefono);
-              }
-              this.clientesEncontrados.set(merged);
-            },
-            error: () => this.clientesEncontrados.set(porNombre)
-          });
-        } else {
-          this.clientesEncontrados.set(porNombre);
-        }
+
+    const filtrar = (clientes: Cliente[]) =>
+      clientes.filter(c =>
+        c.nombre.toLowerCase().includes(limpio) ||
+        c.telefono.includes(limpio)
+      );
+
+    if (this.clientesCache().length > 0) {
+      this.clientesEncontrados.set(filtrar(this.clientesCache()));
+      return;
+    }
+
+    this.clienteService.obtenerMisClientes().subscribe({
+      next: (clientes) => {
+        this.clientesCache.set(clientes);
+        this.clientesEncontrados.set(filtrar(clientes));
       },
-      error: () => {
-        if (/[0-9]/.test(terminoLimpio)) {
-          this.clienteService.buscarPorTelefono(terminoLimpio).subscribe({
-            next: (porTelefono) => this.clientesEncontrados.set([porTelefono]),
-            error: () => this.clientesEncontrados.set([])
-          });
-        } else {
-          this.clientesEncontrados.set([]);
-        }
-      }
+      error: () => this.clientesEncontrados.set([])
     });
   }
 
@@ -1160,7 +1226,8 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.value) {
     this.fechaRecogida.set(input.value);
-    this.sinFechaRecogida.set(false); // Si selecciona una fecha del calendario, quitamos el "Sin fecha"
+    this.fechaPrevistaEntrega.set(input.value);
+    this.sinFechaRecogida.set(false);
    }
   }
 
@@ -1168,9 +1235,12 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   toggleSinFechaRecogida(): void {
     this.sinFechaRecogida.update(value => !value);
     if (this.sinFechaRecogida()) {
-      this.fechaRecogida.set(''); 
+      this.fechaRecogida.set('');
+      this.fechaPrevistaEntrega.set('');
     } else {
-      this.fechaRecogida.set(new Date().toISOString().split('T')[0]);
+      const hoy = new Date().toISOString().split('T')[0];
+      this.fechaRecogida.set(hoy);
+      this.fechaPrevistaEntrega.set(hoy);
     }
   }
 
@@ -1303,18 +1373,6 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     }
   }
 
-  buscarEnPopupTaller(index: number, texto: string) {
-    this.busquedaArticuloTaller.set(texto);
-    this.carrito.update(items => {
-      const nuevosItems = [...items];
-      nuevosItems[index] = {
-        ...nuevosItems[index],
-        articulo: { ...nuevosItems[index].articulo, nombre: texto }
-      };
-      return nuevosItems;
-    });
-  }
-
   cerrarBuscadorTallerConDelay() {
     setTimeout(() => this.filaBuscadorAbierto.set(null), 200);
   }
@@ -1325,8 +1383,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
       nuevosItems[index] = {
         ...nuevosItems[index],
         articulo: { ...articulo },
-        precioEditado: articulo.precioFinal,
-        destino: 'TALLER'
+        precioEditado: articulo.precioFinal
       };
       return nuevosItems;
     });
@@ -1400,6 +1457,10 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
 
   toggleTicket() {
   this.isTicketVisible.update(v => !v);
+}
+
+toggleCartPanel() {
+  this.cartPanelAbierto.update(v => !v);
 }
 
 abrirKeypadPrecio(index: number) {

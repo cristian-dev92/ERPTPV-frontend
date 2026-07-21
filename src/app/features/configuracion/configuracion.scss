@@ -6,14 +6,14 @@ $danger: #e74c3c;
 $accent-blue: #3498db;
 
 .config-panel-container {
-  padding: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 2rem;
   background-color: #ffffff;
-  min-height: 100vh;
-  padding-bottom: 320px;
   transition: padding-bottom 0.2s ease;
 
   &.teclado-abierto {
-    padding-bottom: 340px; // Solo se añade el colchón cuando el teclado está activo abajo
+    padding-bottom: 340px;
   }
 
   .config-header {
@@ -93,7 +93,7 @@ $accent-blue: #3498db;
 
   .config-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 2rem;
     align-items: start;
   }
@@ -497,77 +497,412 @@ $accent-blue: #3498db;
   }
 }
 
-// Ajuste responsivo para el selector de teclado en cabecera
-  @media (max-width: 768px) {
-    .config-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.75rem;
+// Ajuste responsivo
+@media (max-width: 768px) {
+  .config-panel-container {
+    padding: 1rem;
+  }
 
-      h2 { font-size: 1.2rem; }
-      p { font-size: 0.85rem; }
+  .config-panel-container.teclado-abierto {
+    padding-bottom: 260px;
+  }
+
+  .tpv-teclado-virtual {
+    padding: 0.5rem;
+    gap: 0.3rem;
+
+    .teclado-header {
+      font-size: 0.75rem;
+      padding-bottom: 0.3rem;
+
+      .btn-cerrar-teclado {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    .teclado-fila {
+      gap: 0.2rem;
+
+      button {
+        height: 36px;
+        font-size: 0.85rem;
+        min-width: 30px;
+      }
+
+      .btn-tecla-borrar {
+        max-width: 100px;
+      }
+    }
+  }
+
+  .config-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+
+      h2 { font-size: 1rem; margin: 0; }
+      p { font-size: 0.75rem; margin: 2px 0 0; }
       
       .dispositivo-selector-wrapper {
         width: 100%;
+        padding: 0.35rem 0.5rem;
+
+        .selector-label { font-size: 0.65rem; }
+
         .tabs-container {
-          .tab-btn { flex: 1; justify-content: center; font-size: 0.8rem; padding: 6px 10px; }
+          .tab-btn { flex: 1; justify-content: center; font-size: 0.7rem; padding: 4px 8px; }
         }
       }
     }
 
     .config-grid {
       grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-
-    .config-card {
-      padding: 0.75rem;
-    }
-
-    .card-section-title {
-      margin-bottom: 0.75rem;
-      h3 { font-size: 1rem; }
-    }
-
-    .sub-section-form {
-      padding: 0.5rem 0;
-    }
-
-    .form-grid-inputs {
       gap: 0.5rem;
     }
 
+    .config-card {
+      padding: 0.5rem;
+      border-radius: 8px;
+    }
+
+    .card-section-title {
+      margin-bottom: 0.5rem;
+      h3 { font-size: 0.9rem; }
+      span { font-size: 0.7rem; }
+
+      &.card-title-flex {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.35rem;
+        .btn-alta-toggle { width: 100%; text-align: center; font-size: 0.8rem; padding: 6px; }
+      }
+    }
+
+    .sub-section-form {
+      padding: 0.35rem 0;
+
+      h4 { font-size: 0.85rem; margin-bottom: 0.4rem; }
+      .info-text-sec { font-size: 0.75rem; margin-bottom: 0.5rem; }
+    }
+
+    .divider-config {
+      margin: 0.75rem 0;
+    }
+
+    .form-grid-inputs {
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .input-block {
+      gap: 0.2rem;
+      label { font-size: 0.7rem; }
+    }
+
+    .input-block input, .input-block select {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.5rem;
+      height: 34px;
+    }
+
+    .btn-config {
+      width: 100%;
+      text-align: center;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    .upload-firma-area {
+      gap: 0.5rem;
+      .custom-file-upload {
+        width: 100%;
+        text-align: center;
+        padding: 0.6rem;
+        span {
+          font-size: 0.75rem;
+          word-break: break-word;
+        }
+      }
+      .badge-firma-ok {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        max-width: 100%;
+        word-break: break-word;
+      }
+    }
+
     .panel-edicion-usuario {
-      padding: 0.75rem;
-      .panel-user-header h4 { font-size: 0.95rem; }
+      padding: 0.5rem;
+      .panel-user-header {
+        flex-direction: column;
+        gap: 0.35rem;
+        h4 { font-size: 0.85rem; }
+        .btn-close-panel { align-self: flex-end; }
+      }
+      .user-details-box p { font-size: 0.8rem; }
+      .panel-acciones-flex {
+        flex-direction: column;
+        gap: 4px;
+        button { width: 100%; padding: 6px 10px; font-size: 0.8rem; }
+      }
+    }
+
+    .tabla-usuarios-mini {
+      max-height: none;
+
+      .usuario-row-item {
+        padding: 0.3rem 0.4rem;
+        .u-name { font-size: 0.75rem; }
+        .u-mail { font-size: 0.65rem; }
+        .badge-rol { font-size: 0.6rem; padding: 0.15rem 0.3rem; }
+      }
+    }
+
+    .no-user-selected-placeholder p {
+      font-size: 0.8rem;
+    }
+
+    .alerta-password-temporal {
+      padding: 0.5rem;
+      .alerta-clave { font-size: 0.85rem; }
+      .alerta-sub { font-size: 0.7rem; }
+    }
+
+    .import-export-grid {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    .formato-tabs .tab-btn-sm {
+      font-size: 0.7rem;
+      padding: 0.3rem 0.5rem;
+    }
+
+    .upload-import-area {
+      margin: 0.25rem 0;
+      .custom-file-upload {
+        width: 100%;
+        text-align: center;
+        padding: 0.6rem;
+        span {
+          font-size: 0.75rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 100%;
+          display: block;
+        }
+      }
+    }
+
+    .import-resultado {
+      margin-top: 0.4rem;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.75rem;
     }
   }
 
   @media (max-width: 480px) {
     .config-panel-container {
       padding: 0.5rem;
-      padding-bottom: 200px;
+    }
 
-      &.teclado-abierto {
-        padding-bottom: 260px;
-      }
+    .config-panel-container.teclado-abierto {
+      padding-bottom: 240px;
     }
 
     .config-header {
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.75rem;
-    }
-
-    .config-grid {
-      gap: 0.5rem;
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+      h2 { font-size: 0.9rem; }
+      p { font-size: 0.7rem; }
     }
 
     .config-card {
-      padding: 0.5rem;
+      padding: 0.35rem;
+      border-radius: 6px;
     }
 
-    .panel-acciones-flex {
-      gap: 6px;
-      button { padding: 6px 12px; font-size: 0.8rem; }
+    .card-section-title {
+      margin-bottom: 0.3rem;
+      h3 { font-size: 0.85rem; }
+    }
+
+    .sub-section-form h4 {
+      font-size: 0.8rem;
+    }
+
+    .input-block input, .input-block select {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.4rem;
+      height: 30px;
+    }
+
+    .btn-config {
+      font-size: 0.75rem;
+      padding: 0.35rem 0.6rem;
+    }
+
+    .panel-acciones-flex button {
+      font-size: 0.75rem;
+      padding: 5px 8px;
+    }
+
+    .tabla-usuarios-mini .usuario-row-item {
+      padding: 0.2rem 0.3rem;
+      .u-name { font-size: 0.7rem; }
+      .u-mail { font-size: 0.6rem; }
+      .badge-rol { font-size: 0.55rem; padding: 0.1rem 0.25rem; }
+    }
+
+    .upload-firma-area .custom-file-upload {
+      padding: 0.4rem;
+      span { font-size: 0.7rem; }
+    }
+
+    .upload-import-area .custom-file-upload {
+      padding: 0.4rem;
+      span { font-size: 0.7rem; }
+    }
+
+    .tpv-teclado-virtual {
+      padding: 0.35rem;
+      gap: 0.2rem;
+
+      .teclado-header {
+        font-size: 0.65rem;
+        padding-bottom: 0.2rem;
+
+        .btn-cerrar-teclado {
+          padding: 0.15rem 0.4rem;
+          font-size: 0.8rem;
+        }
+      }
+
+      .teclado-fila {
+        gap: 0.15rem;
+
+        button {
+          height: 30px;
+          font-size: 0.75rem;
+          min-width: 24px;
+        }
+
+        .btn-tecla-borrar {
+          max-width: 70px;
+        }
+
+        .btn-tecla-espacio {
+          flex: 2;
+        }
+      }
     }
   }
+
+// =========================================================================
+// IMPORTACIÓN / EXPORTACIÓN
+// =========================================================================
+.import-export-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formato-tabs {
+  display: flex;
+  background-color: #ffffff;
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid $border-color;
+  gap: 3px;
+
+  .tab-btn-sm {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #64748b;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    &:hover {
+      color: $primary-dark;
+      background-color: #f1f5f9;
+    }
+
+    &.active {
+      background-color: $accent-blue;
+      color: #ffffff;
+    }
+  }
+}
+
+.upload-import-area {
+  margin: 0.5rem 0;
+
+  .custom-file-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    border: 2px dashed $border-color;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: $bg-light;
+
+    &:hover {
+      border-color: $accent-blue;
+      background: #eef2ff;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    span {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #475569;
+    }
+  }
+}
+
+.import-resultado {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+
+  &.import-ok {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    color: #166534;
+  }
+
+  &.import-warn {
+    background: #fefce8;
+    border: 1px solid #fde047;
+    color: #854d0e;
+  }
+
+  p {
+    margin: 0.25rem 0;
+  }
+}

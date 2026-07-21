@@ -1,30 +1,36 @@
 <div class="app-container">
   <header class="top-bar">
     <div class="brand">ERP ZAPATERO</div>
+
+    <button class="hamburger" (click)="toggleMenu(); $event.stopPropagation()" aria-label="Menú">
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
     
     <nav class="top-nav">
-      <a routerLink="/ventas" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="nav-item">
+      <a routerLink="/ventas" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="nav-item" (click)="cerrarMenu()">
         <span class="icon">💰</span> TPV
       </a>
-      <a routerLink="/ventas/tickets" routerLinkActive="active" class="nav-item">
+      <a routerLink="/ventas/tickets" routerLinkActive="active" class="nav-item" (click)="cerrarMenu()">
         <span class="icon">🧾</span> TICKETS
       </a>
-      <a routerLink="/inventario" routerLinkActive="active" class="nav-item">
+      <a routerLink="/inventario" routerLinkActive="active" class="nav-item" (click)="cerrarMenu()">
         <span class="icon">📦</span> INVENTARIO
       </a>
-      <a routerLink="/caja" routerLinkActive="active" class="nav-item">
+      <a routerLink="/caja" routerLinkActive="active" class="nav-item" (click)="cerrarMenu()">
         <span class="icon">🏧</span> CAJA
       </a>
-      <a routerLink="/contabilidad" routerLinkActive="active" class="nav-item">
+      <a routerLink="/contabilidad" routerLinkActive="active" class="nav-item" (click)="cerrarMenu()">
         <span class="icon">📊</span> CONTABILIDAD
       </a>
-      <a routerLink="/proveedores" routerLinkActive="active" class="nav-item">
+      <a routerLink="/proveedores" routerLinkActive="active" class="nav-item" (click)="cerrarMenu()">
         <span class="icon">👥</span> PROVEEDORES
       </a>
-      <a routerLink="/clientes" routerLinkActive="active" class="nav-item">
+      <a routerLink="/clientes" routerLinkActive="active" class="nav-item" (click)="cerrarMenu()">
         <span class="icon">👤</span> CLIENTES
       </a>
-      <a routerLink="/configuracion" routerLinkActive="active" class="nav-item">
+      <a routerLink="/configuracion" routerLinkActive="active" class="nav-item" (click)="cerrarMenu()">
         <span class="icon">⚙️</span> CONFIGURACIÓN
       </a>
     </nav>
@@ -38,6 +44,36 @@
       <button (click)="onLogout()" class="btn-logout">Cerrar Sesión</button>
     </div>
   </header>
+
+  @if (menuAbierto()) {
+    <div class="mobile-menu-overlay" (click)="cerrarMenu()"></div>
+    <nav class="mobile-menu-panel" (click)="$event.stopPropagation()">
+      <a routerLink="/ventas" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active" class="mobile-nav-item" (click)="cerrarMenu()">
+        <span class="icon">💰</span> TPV
+      </a>
+      <a routerLink="/ventas/tickets" routerLinkActive="active" class="mobile-nav-item" (click)="cerrarMenu()">
+        <span class="icon">🧾</span> TICKETS
+      </a>
+      <a routerLink="/inventario" routerLinkActive="active" class="mobile-nav-item" (click)="cerrarMenu()">
+        <span class="icon">📦</span> INVENTARIO
+      </a>
+      <a routerLink="/caja" routerLinkActive="active" class="mobile-nav-item" (click)="cerrarMenu()">
+        <span class="icon">🏧</span> CAJA
+      </a>
+      <a routerLink="/contabilidad" routerLinkActive="active" class="mobile-nav-item" (click)="cerrarMenu()">
+        <span class="icon">📊</span> CONTABILIDAD
+      </a>
+      <a routerLink="/proveedores" routerLinkActive="active" class="mobile-nav-item" (click)="cerrarMenu()">
+        <span class="icon">👥</span> PROVEEDORES
+      </a>
+      <a routerLink="/clientes" routerLinkActive="active" class="mobile-nav-item" (click)="cerrarMenu()">
+        <span class="icon">👤</span> CLIENTES
+      </a>
+      <a routerLink="/configuracion" routerLinkActive="active" class="mobile-nav-item" (click)="cerrarMenu()">
+        <span class="icon">⚙️</span> CONFIGURACIÓN
+      </a>
+    </nav>
+  }
 
   <main class="content">
     <router-outlet></router-outlet>

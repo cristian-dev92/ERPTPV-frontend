@@ -1,4 +1,4 @@
-<div class="config-panel-container">
+<div class="config-panel-container" [class.teclado-abierto]="mostrarTeclado()">
   
   <div class="config-header">
     <div class="header-main-info">
@@ -253,6 +253,83 @@
           </div>
         </div>
       }
+    </div>
+  }
+
+  @if (authService.getRolActual() === 'ROLE_ADMIN') {
+    <div class="config-card">
+      <div class="card-section-title">
+        <h3>📦 Importar / Exportar Datos</h3>
+        <span>Transfiere clientes, proveedores o inventario desde/hacia archivos</span>
+      </div>
+
+      <div class="import-export-grid">
+        <!-- EXPORTAR -->
+        <div class="sub-section-form">
+          <h4>⬇️ Exportar Datos</h4>
+          <div class="form-grid-inputs">
+            <div class="input-block">
+              <label>Tipo de datos</label>
+              <select [(ngModel)]="exportTipo">
+                <option value="clientes">Clientes</option>
+                <option value="proveedores">Proveedores</option>
+                <option value="articulos">Inventario (Artículos)</option>
+              </select>
+            </div>
+            <div class="input-block">
+              <label>Formato</label>
+              <div class="formato-tabs">
+                <button type="button" class="tab-btn-sm" [class.active]="exportFormato() === 'excel'" (click)="exportFormato.set('excel')">📗 Excel</button>
+                <button type="button" class="tab-btn-sm" [class.active]="exportFormato() === 'csv'" (click)="exportFormato.set('csv')">📄 CSV</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn-config save" [disabled]="exportando()" (click)="ejecutarExportacion()">
+            {{ exportando() ? '⏳ Exportando...' : '⬇️ Descargar Archivo' }}
+          </button>
+        </div>
+
+        <!-- IMPORTAR -->
+        <div class="sub-section-form">
+          <h4>⬆️ Importar Datos</h4>
+          <div class="form-grid-inputs">
+            <div class="input-block">
+              <label>Tipo de datos</label>
+              <select [(ngModel)]="importTipo">
+                <option value="clientes">Clientes</option>
+                <option value="proveedores">Proveedores</option>
+                <option value="articulos">Inventario (Artículos)</option>
+              </select>
+            </div>
+            <div class="input-block">
+              <label>Formato</label>
+              <div class="formato-tabs">
+                <button type="button" class="tab-btn-sm" [class.active]="importFormato() === 'excel'" (click)="importFormato.set('excel')">📗 Excel</button>
+                <button type="button" class="tab-btn-sm" [class.active]="importFormato() === 'csv'" (click)="importFormato.set('csv')">📄 CSV</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="upload-import-area">
+            <label class="custom-file-upload btn-upload-import">
+              <input type="file" (change)="onImportFileSeleccionado($event)" [accept]="importFormato() === 'excel' ? '.xlsx,.xls' : '.csv'">
+              <span>📁 {{ importFile() ? importFile()?.name : 'Seleccionar archivo...' }}</span>
+            </label>
+          </div>
+
+          <button class="btn-config save" [disabled]="importando() || !importFile()" (click)="ejecutarImportacion()">
+            {{ importando() ? '⏳ Importando...' : '⬆️ Subir e Importar' }}
+          </button>
+
+          @let res = importResultado();
+          @if (res) {
+            <div class="import-resultado" [class.import-ok]="res.errores === 0" [class.import-warn]="res.errores > 0">
+              <p>✅ {{ res.mensaje }}</p>
+              <p><strong>Procesados:</strong> {{ res.procesados }} | <strong>Errores:</strong> {{ res.errores }}</p>
+            </div>
+          }
+        </div>
+      </div>
     </div>
   }
   </div>
