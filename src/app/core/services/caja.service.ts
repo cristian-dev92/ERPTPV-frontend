@@ -28,9 +28,11 @@ export interface TurnoCajaResponseDTO {
 }
 
 export interface MovimientoManualRequest {
-  tipoMovimiento: 'INGRESO_EXTRA' | 'GASTO_EXTRA';
+  tipoMovimiento: 'INGRESO' | 'GASTO';
+  metodoPago: string;
   importe: number;
   descripcion: string;
+  ordenId?: number;
 }
 
 @Injectable({ providedIn: 'root' })

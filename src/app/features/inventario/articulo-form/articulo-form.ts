@@ -155,9 +155,11 @@ export class ArticuloFormComponent implements OnInit {
     this.familiaService.obtenerMisFamilias().subscribe({
       next: (data: FamiliaDTO[]) => {
         this.todasLasFamilias.set(data);
-        // Si estábamos esperando a que cargaran los datos en modo edición, re-ejecutamos la comprobación
-        if (this.route.snapshot.paramMap.get('id')) {
+        const idParam = this.route.snapshot.paramMap.get('id');
+        if (idParam) {
           this.comprobarModoEdicion();
+        } else if (!this.codigoReferencia()) {
+          this.codigoReferencia.set(`ART-${Date.now().toString().slice(-6)}`);
         }
       },
       error: (err: any) => {

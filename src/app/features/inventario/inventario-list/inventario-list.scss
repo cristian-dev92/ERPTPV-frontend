@@ -56,7 +56,23 @@ $danger: #ef4444;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s ease;
+}
 
+.btn-secondary-action {
+  background-color: #475569;
+  color: #f1f5f9;
+  border: 1px solid #64748b;
+  padding: 0.7rem 1.4rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover { background-color: #64748b; color: white; }
+}
+
+.btn-purple-action {
   &:hover {
     background-color: #6d28d9; // Morado más oscuro al pasar el ratón
   }
@@ -168,11 +184,11 @@ $danger: #ef4444;
       &.td-nombre {
         text-align: center;
         font-size: 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        border-bottom: none;
+        white-space: nowrap;
+
+        strong {
+          vertical-align: middle;
+        }
 
         .nota-interna-badge {
           font-size: 0.75rem;
@@ -182,6 +198,8 @@ $danger: #ef4444;
           border-radius: 4px;
           font-weight: 500;
           cursor: help;
+          vertical-align: middle;
+          margin-left: 6px;
         }
       }
 
@@ -214,6 +232,12 @@ $danger: #ef4444;
       }
 
       &.txt-proveedor {
+        color: #0f172a;
+        font-size: 0.85rem;
+        font-weight: 400;
+      }
+
+      &.txt-stock-minimo {
         color: #0f172a;
         font-size: 0.85rem;
         font-weight: 400;
@@ -298,31 +322,31 @@ $danger: #ef4444;
 
 .acciones-wrapper {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
 
   button {
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.8rem;
-    cursor: pointer;
     border: 1px solid transparent;
-    transition: all 0.15s ease-in-out;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.15s;
   }
 
   .btn-delete {
-    background-color: #fff5f5;
+    background-color: #fef2f2;
     color: $danger;
-    border-color: #fee2e2;
+    border-color: #fca5a5;
     &:hover { background-color: $danger; color: white; }
   }
 
   .btn-edit {
-    background-color: #f0fdf4;
-    color: #16a34a;
-    border-color: #dcfce7;
-    &:hover { background-color: #16a34a; color: white; }
+    background-color: #eff6ff;
+    color: $secondary;
+    border-color: #bfdbfe;
+    &:hover { background-color: $secondary; color: white; }
   }
 }
 
@@ -510,7 +534,7 @@ $danger: #ef4444;
       gap: 6px;
     }
 
-    .btn-primary, .btn-purple-action {
+    .btn-primary, .btn-purple-action, .btn-secondary-action {
       width: 100%;
       text-align: center;
     }
@@ -816,6 +840,10 @@ $danger: #ef4444;
   overflow-y: auto;
 }
 
+.family-create-only {
+  max-width: 400px;
+}
+
 .family-list-section {
   margin-bottom: 1rem;
 }
@@ -927,6 +955,62 @@ $danger: #ef4444;
   border: none;
   border-top: 1px solid #334155;
   margin: 0.75rem 0;
+}
+
+.family-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding: 0.4rem 0.5rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+
+  .btn-paginar-family {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.12s;
+
+    &:hover:not(:disabled) {
+      background: #334155;
+      color: #f1f5f9;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
+  .info-paginas-family {
+    color: #94a3b8;
+    font-size: 0.75rem;
+  }
+
+  .size-select-family {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    padding: 0.15rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    outline: none;
+  }
+}
+
+.family-count {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-left: 0.4rem;
 }
 
 .confir-backdrop {

@@ -135,7 +135,7 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
         const numTicket = (o.numeroTicket || o.id || '').toString().toLowerCase();
         const numFactura = (o.numeroFactura || '').toLowerCase();
         const cliente = (o.clienteNombre || o.cliente?.nombre || '').toLowerCase();
-        return numTicket.includes(busqueda) || cliente.includes(busqueda) || numFactura.includes(busqueda);
+        return numTicket.startsWith(busqueda) || cliente.startsWith(busqueda) || numFactura.startsWith(busqueda);
       });
     }
 

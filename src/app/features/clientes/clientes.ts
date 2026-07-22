@@ -44,13 +44,13 @@ export class ClientesComponent extends ComponentePaginado implements OnInit {
     if (!filtro) return this.clientes();
     
     return this.clientes().filter(c => 
-      c.nombre.toLowerCase().includes(filtro) ||
-      (c.documentoIdentidad && c.documentoIdentidad.toLowerCase().includes(filtro)) ||
-      (c.telefono && c.telefono.includes(filtro)) ||
-      (c.email && c.email.toLowerCase().includes(filtro)) ||
-      (c.direccion && c.direccion.toLowerCase().includes(filtro)) ||
-      (c.codigoPostal && c.codigoPostal.includes(filtro)) ||
-      (c.ciudad && c.ciudad.toLowerCase().includes(filtro))
+      c.nombre.toLowerCase().startsWith(filtro) ||
+      (c.documentoIdentidad && c.documentoIdentidad.toLowerCase().startsWith(filtro)) ||
+      (c.telefono && c.telefono.startsWith(filtro)) ||
+      (c.email && c.email.toLowerCase().startsWith(filtro)) ||
+      (c.direccion && c.direccion.toLowerCase().startsWith(filtro)) ||
+      (c.codigoPostal && c.codigoPostal.startsWith(filtro)) ||
+      (c.ciudad && c.ciudad.toLowerCase().startsWith(filtro))
     );
   });
 

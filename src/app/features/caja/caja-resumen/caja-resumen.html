@@ -109,11 +109,11 @@
         }
 
         <button class="pad-btn btn-blue" [disabled]="!datosInforme()" (click)="datosInforme() && verPdf(datosInforme()!.id, '80mm')">
-          <span class="icon">🖨️</span> Ticket (80mm)
+          <span class="icon">🖨️</span> Informe X (80mm)
         </button>
         
         <button class="pad-btn btn-purple" [disabled]="!datosInforme()" (click)="datosInforme() && verPdf(datosInforme()!.id, 'a4')">
-          <span class="icon">📄</span> Factura (A4)
+          <span class="icon">📄</span> Informe X (A4)
         </button>
         
         @if (cajaActual() !== null) {
@@ -140,13 +140,13 @@
           <div class="tactil-form">
             <div class="selector-tactil-grid">
               <button type="button" class="select-opt positivo" 
-                      [class.active]="tipoMovimientoSeleccionado === 'INGRESO_EXTRA'"
-                      (click)="tipoMovimientoSeleccionado = 'INGRESO_EXTRA'">
+                      [class.active]="tipoMovimientoSeleccionado === 'INGRESO'"
+                      (click)="tipoMovimientoSeleccionado = 'INGRESO'">
                 🟢 INGRESO
               </button>
               <button type="button" class="select-opt negativo" 
-                      [class.active]="tipoMovimientoSeleccionado === 'GASTO_EXTRA'"
-                      (click)="tipoMovimientoSeleccionado = 'GASTO_EXTRA'">
+                      [class.active]="tipoMovimientoSeleccionado === 'GASTO'"
+                      (click)="tipoMovimientoSeleccionado = 'GASTO'">
                 🔴 GASTO
               </button>
             </div>

@@ -147,7 +147,7 @@
             </div>
 
             <div class="form-group">
-              <label for="p-email">Email para Pedidos Directos</label>
+              <label for="p-email">Email</label>
               <input type="email" id="p-email" name="email" 
                      [(ngModel)]="nuevoProveedor().emailPedidos" 
                      (input)="sincronizarTecladoFisico('EMAIL', $any($event.target).value)"
@@ -156,7 +156,7 @@
             </div>
 
             <div class="form-group">
-              <label for="p-direccion">Dirección Postal / Almacén</label>
+              <label for="p-direccion">Dirección</label>
               <input type="text" id="p-direccion" name="direccion" 
                      [(ngModel)]="nuevoProveedor().direccion" 
                      (input)="sincronizarTecladoFisico('DIRECCION', $any($event.target).value)"

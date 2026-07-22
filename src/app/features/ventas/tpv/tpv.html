@@ -189,7 +189,6 @@
         
       <div class="lineas-ticket" style="flex: 1; overflow-y: auto; padding: 0 18px; max-height: calc(100vh - 360px);">
         @for (item of carrito(); track $index) {
-          @let lineaIdx = $index;
           <div class="linea-ticket-simplificada" [class.linea-taller]="item.articulo.familiaNombre === 'SERVICIO' || item.articulo.familiaNombre === 'TALLER'" 
                style="display: flex; flex-direction: column; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; background: #fff; margin-bottom: 6px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); gap: 8px;">
             
@@ -200,29 +199,6 @@
               }
               @if (item.porcentajeDescuento > 0) {
                 <span class="badge-dto-linea" style="background: #fef2f2; color: #dc2626; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0;">-%{{ item.porcentajeDescuento }} Dto.</span>
-              }
-            </div>
-
-            <div class="buscador-articulo-linea" style="position: relative; width: 100%;">
-              <input type="text"
-                     [(ngModel)]="item.busquedaArticulo"
-                     (input)="buscarArticuloEnLinea($index)"
-                     (focus)="buscarArticuloEnLinea($index)"
-                     (blur)="cerrarResultadosLinea($index)"
-                     placeholder="🔍 Buscar/reemplazar artículo..."
-                     style="width: 100%; padding: 6px 10px; font-size: 0.8rem; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; outline: none; box-sizing: border-box;">
-              @if (item.mostrarResultados && item.resultadosBusqueda.length > 0) {
-                <div style="position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: white; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto;">
-                     @for (art of item.resultadosBusqueda; track art.id) {
-                    <div (mousedown)="sustituirArticuloLinea(lineaIdx, art)"
-                         style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; transition: background 0.15s;"
-                         (mouseenter)="$any($event.target).style.background = '#f1f5f9'"
-                         (mouseleave)="$any($event.target).style.background = ''">
-                      <span style="font-weight: 500; color: #1e293b;">{{ art.nombre }}</span>
-                      <span style="color: #64748b; font-size: 0.8rem;">{{ art.precioFinal | currency:'EUR' }}</span>
-                    </div>
-                  }
-                </div>
               }
             </div>
 
@@ -346,7 +322,7 @@
                       <button type="button" (click)="reimprimirTicket(ticket)" class="btn-accion-tvc ticket" title="Reimprimir ticket de 80mm">🖨️ 80mm</button>
                       
                       @if (ticket.clienteNombre && ticket.clienteNombre !== 'Cliente General'|| (ticket.cliente && ticket.cliente.nombre !== 'Cliente General')) {
-                        <button type="button" (click)="reimprimirFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 A4</button>
+                        <button type="button" (click)="reimprimirFacturaA4(ticket)" class="btn-accion-tvc factura" title="Generar Factura de formato A4">📑 Factura</button>
                       }
                       
                       @if (ticket.estadoPago === 'PAGADO' && ticket.trabajosTaller) {

@@ -138,8 +138,8 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     const termino = this.busquedaArticuloTaller().toLowerCase().trim();
     if (!termino) return [];
     return this.articulosTotales().filter(a =>
-      a.nombre.toLowerCase().includes(termino) ||
-      (a.codigo && a.codigo.toLowerCase().includes(termino))
+      a.nombre.toLowerCase().startsWith(termino) ||
+      (a.codigo && a.codigo.toLowerCase().startsWith(termino))
     ).slice(0, 20);
   });
 
@@ -264,8 +264,8 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     return this.articulosTotales().filter(articulo => {
       // 1. Filtro de búsqueda por texto
       const coincideTexto = !busqueda || 
-        articulo.nombre.toLowerCase().includes(busqueda) || 
-        (articulo.codigo && articulo.codigo.toLowerCase().includes(busqueda));
+        articulo.nombre.toLowerCase().startsWith(busqueda) || 
+        (articulo.codigo && articulo.codigo.toLowerCase().startsWith(busqueda));
 
       // 2. Filtro por Familia (Padre) o sus Subfamilias hijas
       let coincideFamilia = true;
@@ -554,8 +554,8 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
       return;
     }
     item.resultadosBusqueda = this.articulosTotales().filter(a =>
-      a.nombre.toLowerCase().includes(termino) ||
-      (a.codigo && a.codigo.toLowerCase().includes(termino))
+      a.nombre.toLowerCase().startsWith(termino) ||
+      (a.codigo && a.codigo.toLowerCase().startsWith(termino))
     ).slice(0, 15);
     item.mostrarResultados = item.resultadosBusqueda.length > 0;
     this.carrito.set(items);
@@ -1178,14 +1178,14 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   buscarClientes(termino: string) {
     this.busquedaCliente.set(termino);
     const limpio = termino.trim().toLowerCase();
-    if (limpio.length < 2) {
+    if (limpio.length < 1) {
       this.clientesEncontrados.set([]);
       return;
     }
 
     const filtrar = (clientes: Cliente[]) =>
       clientes.filter(c =>
-        c.nombre.toLowerCase().includes(limpio) ||
+        c.nombre.toLowerCase().startsWith(limpio) ||
         c.telefono.includes(limpio)
       );
 
@@ -1366,7 +1366,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
       return nuevosItems;
     });
     this.busquedaArticuloTaller.set(texto);
-    if (texto.trim().length >= 2) {
+    if (texto.trim().length >= 1) {
       this.filaBuscadorAbierto.set(index);
     } else {
       this.filaBuscadorAbierto.set(null);

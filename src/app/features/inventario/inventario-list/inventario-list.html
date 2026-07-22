@@ -3,6 +3,7 @@
   <h1>📦 Inventario</h1>
   <div class="header-actions-group" style="display: flex; gap: 10px;">
     <button class="btn-purple-action" (click)="abrirModalNuevaFamilia()">📂 + Nueva Familia</button>
+    <button class="btn-secondary-action" (click)="abrirModalConfigurarFamilias()">⚙️ Configurar Familias</button>
     <button class="btn-primary" routerLink="nuevo">+ Nuevo Artículo</button>
   </div>
 </div>
@@ -49,20 +50,22 @@
   <table class="zapatero-table">
     <thead>
       <tr>
+        <th>Código Ref.</th>
         <th>Nombre</th>
         <th>Familia</th>
         <th>Subfamilia</th>
         <th>Código de Barras</th>
-        <th>Código Ref.</th>
         <th>Precio</th>
         <th>Proveedor</th>
         <th>Stock</th>
+        <th>Stock Mín.</th>
         <th>Acciones</th>
       </tr>
     </thead>
     <tbody>
       @for (item of articulosAMostrar(); track item.id) {
         <tr>
+          <td class="txt-referencia">{{ item.codigoReferencia || '—' }}</td>
           <td class="td-nombre">
             <strong>{{ item.nombre }}</strong>
             @if (item.notas) {
@@ -72,7 +75,6 @@
           <td class="txt-familia">{{ getFamiliaNombre(item.familiaId) }}</td>
           <td class="txt-subfamilia">{{ getSubfamiliaNombre(item.familiaId) }}</td>
           <td class="txt-barcode">{{ item.codigoBarras || '—' }}</td>
-          <td class="txt-referencia">{{ item.codigoReferencia || '—' }}</td>
           <td class="txt-precio">{{ item.precioFinal | currency:'EUR' }}</td>
           <td class="txt-proveedor">{{ item.proveedorNombre || '—' }}</td>
           <td>
@@ -97,6 +99,7 @@
               <span class="txt-servicio-na">🛠️ Servicio / Taller</span>
             }
           </td>
+          <td class="txt-stock-minimo">{{ item.stockMinimo !== null && item.stockMinimo !== undefined ? item.stockMinimo + ' u.' : '—' }}</td>
           <td>
             <div class="acciones-wrapper">
               <button class="btn-edit" [routerLink]="['editar', item.id]">
@@ -110,7 +113,7 @@
         </tr>
       } @empty {
         <tr>
-          <td colspan="9" class="txt-vacio">No se encontraron artículos que coincidan con los filtros aplicados.</td>
+          <td colspan="10" class="txt-vacio">No se encontraron artículos que coincidan con los filtros aplicados.</td>
         </tr>
       }
     </tbody>
@@ -130,20 +133,65 @@
 
 @if (mostrarModalNuevaFamilia()) {
   <div class="modal-backdrop-blur">
+    <div class="modal-sheet-tactil family-management-sheet family-create-only">
+      <div class="sheet-header">
+        <h3>📂 Nueva Categoría</h3>
+        <button type="button" class="close-tactil" (click)="cerrarModalNuevaFamilia()">✕</button>
+      </div>
+
+      <div class="tactil-form">
+        <p class="instruction-modal">Introduce el nombre y decide si será una familia raíz o colgará de otra existente.</p>
+
+        <div class="input-field-tactil unique-huge">
+          <label>NOMBRE DE LA CATEGORÍA *</label>
+          <input type="text" 
+                 [value]="nuevoNombreFamilia()"
+                 (click)="abrirTecladoBusqueda('NUEVA_FAMILIA')"
+                 (input)="sincronizarTecladoFisicoFamily('NUEVA_FAMILIA', $any($event.target).value)">
+        </div>
+
+        <div class="input-field-tactil">
+          <label>Estructura / Jerarquía</label>
+          <select [value]="padreFamiliaIdSeleccionada() ?? ''" 
+                  (change)="padreFamiliaIdSeleccionada.set($any($event.target).value || null)">
+            <option value="">📂 Crear como Familia Principal (Raíz)</option>
+            @for (fam of familiasPadre(); track fam.id) {
+              <option [value]="fam.id">↳ Colgar dentro de: {{ fam.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="modal-actions-tactil-grid" style="margin-top: 20px;">
+          <button type="button" class="btn-confirm-tactil-action success" (click)="crearNuevaFamilia()">
+            💾 Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (mostrarModalConfigurarFamilias()) {
+  <div class="modal-backdrop-blur">
     <div class="modal-sheet-tactil family-management-sheet">
       <div class="sheet-header">
         <h3>📁 Configuración de Categorías</h3>
-        <button type="button" class="close-tactil" (click)="cerrarModalNuevaFamilia()">✕</button>
+        <button type="button" class="close-tactil" (click)="cerrarModalConfigurarFamilias()">✕</button>
       </div>
       
       <!-- LISTADO DE FAMILIAS EXISTENTES -->
       <div class="family-list-section">
-        <h4 class="family-list-title">Categorías existentes</h4>
+        <h4 class="family-list-title">
+          Categorías existentes
+          @if (todasLasFamilias().length > 0) {
+            <span class="family-count">({{ todasLasFamilias().length }} categorías)</span>
+          }
+        </h4>
         @if (todasLasFamilias().length === 0) {
           <p class="family-list-empty">No hay categorías creadas todavía.</p>
         } @else {
           <div class="family-list">
-            @for (fam of familiasPadre(); track fam.id) {
+            @for (fam of familiasPadrePaginadas(); track fam.id) {
               <div class="family-item">
                 <div class="family-item-info">
                   <span class="family-name">📂 {{ fam.nombre }}</span>
@@ -167,6 +215,25 @@
                 </div>
               </div>
             }
+          </div>
+          <!-- Paginación de familias -->
+          <div class="family-pagination">
+            <button class="btn-paginar-family" [disabled]="familiaPaginaActual() === 0" (click)="familiaPaginaAnterior()">
+              ⬅️ Anterior
+            </button>
+            <span class="info-paginas-family">
+              Pág. {{ familiaPaginaActual() + 1 }} de {{ familiaTotalPaginas() }}
+              &nbsp;|&nbsp; Ver:
+              <select [value]="familiaItemsPorPagina()" (change)="familiaCambiarTamanoPagina(+$any($event.target).value)" class="size-select-family">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </span>
+            <button class="btn-paginar-family" [disabled]="familiaPaginaActual() >= familiaTotalPaginas() - 1" (click)="familiaPaginaSiguiente()">
+              Siguiente ➡️
+            </button>
           </div>
         }
       </div>

@@ -39,6 +39,7 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
 
   // Gestión del nuevo modal de creación/edición de familias y subfamilias
   mostrarModalNuevaFamilia = signal<boolean>(false);
+  mostrarModalConfigurarFamilias = signal<boolean>(false);
   editandoFamilia = signal<FamiliaDTO | null>(null);
   nuevoNombreFamilia = signal<string>('');
   padreFamiliaIdSeleccionada = signal<number | null>(null);
@@ -46,6 +47,16 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
   // Estado para confirmar eliminación de familia
   mostrarModalConfirmarFamilia = signal<boolean>(false);
   familiaAEliminar = signal<FamiliaDTO | null>(null);
+
+  // Paginación específica para el listado de familias en el modal
+  familiaPaginaActual = signal<number>(0);
+  familiaItemsPorPagina = signal<number>(10);
+  familiaTotalElementos = computed(() => this.familiasPadre().length);
+  familiaTotalPaginas = computed(() => Math.max(1, Math.ceil(this.familiaTotalElementos() / this.familiaItemsPorPagina())));
+  familiasPadrePaginadas = computed(() => {
+    const inicio = this.familiaPaginaActual() * this.familiaItemsPorPagina();
+    return this.familiasPadre().slice(inicio, inicio + this.familiaItemsPorPagina());
+  });
 
   // Listas de caracteres fijas para el renderizado consistente del teclado
   lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -111,9 +122,9 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
     // 2. Filtrado por Entrada de Texto o Lector de Barras
     if (buscar) {
       resultado = resultado.filter(item => 
-        item.nombre.toLowerCase().includes(buscar) || 
-        (item.notas && item.notas.toLowerCase().includes(buscar)) ||
-        (item.codigoBarras && item.codigoBarras.toLowerCase().includes(buscar))
+        item.nombre.toLowerCase().startsWith(buscar) || 
+        (item.notas && item.notas.toLowerCase().startsWith(buscar)) ||
+        (item.codigoBarras && item.codigoBarras.toLowerCase().startsWith(buscar))
       );
     }
     
@@ -262,11 +273,25 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
     this.mostrarModalNuevaFamilia.set(true);
   }
 
+  abrirModalConfigurarFamilias(): void {
+    this.editandoFamilia.set(null);
+    this.nuevoNombreFamilia.set('');
+    this.padreFamiliaIdSeleccionada.set(null);
+    this.familiaPaginaActual.set(0);
+    this.mostrarModalConfigurarFamilias.set(true);
+  }
+
+  cerrarModalConfigurarFamilias(): void {
+    this.mostrarModalConfigurarFamilias.set(false);
+    this.editandoFamilia.set(null);
+    this.cerrarTeclado();
+  }
+
   editarFamilia(fam: FamiliaDTO): void {
     this.editandoFamilia.set(fam);
     this.nuevoNombreFamilia.set(fam.nombre);
     this.padreFamiliaIdSeleccionada.set(fam.familiaPadreId);
-    this.mostrarModalNuevaFamilia.set(true);
+    this.mostrarModalConfigurarFamilias.set(true);
   }
 
   eliminarFamilia(fam: FamiliaDTO): void {
@@ -303,6 +328,13 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
     this.cerrarTeclado();
   }
 
+  cerrarModalFamiliaActivo(): void {
+    this.mostrarModalNuevaFamilia.set(false);
+    this.mostrarModalConfigurarFamilias.set(false);
+    this.editandoFamilia.set(null);
+    this.cerrarTeclado();
+  }
+
   crearNuevaFamilia(): void {
     const nombre = this.nuevoNombreFamilia().trim();
     if (!nombre) {
@@ -326,11 +358,16 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
           this.todasLasFamilias.update(lista =>
             lista.map(f => f.id === actualizada.id ? actualizada : f)
           );
-          this.cerrarModalNuevaFamilia();
+          this.cerrarModalConfigurarFamilias();
         },
         error: (err) => {
           console.error('Error al actualizar categoría:', err);
-          this.uiService.mostrarToast('No se pudo actualizar la categoría.', 'error');
+          const mensajeError = err?.error || '';
+          if (typeof mensajeError === 'string' && mensajeError.includes('duplicate key')) {
+            this.uiService.mostrarToast(`Ya existe una categoría con el nombre "${nombre}"`, 'error');
+          } else {
+            this.uiService.mostrarToast('No se pudo actualizar la categoría.', 'error');
+          }
         }
       });
       return;
@@ -367,7 +404,12 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
       },
       error: (err) => {
         console.error('Error al guardar la nueva categoría:', err);
-        this.uiService.mostrarToast('No se pudo guardar la familia. Inténtalo de nuevo.', 'error');
+        const mensajeError = err?.error || '';
+        if (typeof mensajeError === 'string' && mensajeError.includes('duplicate key')) {
+          this.uiService.mostrarToast(`Ya existe una categoría llamada "${this.nuevoNombreFamilia().trim()}"`, 'error');
+        } else {
+          this.uiService.mostrarToast('No se pudo guardar la familia. Inténtalo de nuevo.', 'error');
+        }
       }
     });
   }
@@ -404,5 +446,23 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
   this.mostrarModalConfirmar.set(false);
   this.articuloAAnticipar.set(null);
  }
+
+  // Paginación de familias en el modal
+  familiaPaginaSiguiente(): void {
+    if (this.familiaPaginaActual() < this.familiaTotalPaginas() - 1) {
+      this.familiaPaginaActual.update(p => p + 1);
+    }
+  }
+
+  familiaPaginaAnterior(): void {
+    if (this.familiaPaginaActual() > 0) {
+      this.familiaPaginaActual.update(p => p - 1);
+    }
+  }
+
+  familiaCambiarTamanoPagina(nuevoTamano: number): void {
+    this.familiaItemsPorPagina.set(nuevoTamano);
+    this.familiaPaginaActual.set(0);
+  }
 
 }

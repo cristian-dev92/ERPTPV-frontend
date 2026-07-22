@@ -53,10 +53,10 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
     if (!filtro) return this.proveedores();
     
     return this.proveedores().filter(p => 
-      p.nombreComercial.toLowerCase().includes(filtro) ||
-      (p.nif && p.nif.toLowerCase().includes(filtro)) ||
-      (p.telefono && p.telefono.includes(filtro)) ||
-      (p.email && p.email.toLowerCase().includes(filtro))
+      p.nombreComercial.toLowerCase().startsWith(filtro) ||
+      (p.nif && p.nif.toLowerCase().startsWith(filtro)) ||
+      (p.telefono && p.telefono.startsWith(filtro)) ||
+      (p.email && p.email.toLowerCase().startsWith(filtro))
     );
   });
 

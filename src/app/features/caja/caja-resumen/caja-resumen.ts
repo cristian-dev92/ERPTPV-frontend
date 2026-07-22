@@ -33,7 +33,7 @@ export class CajaResumenComponent implements OnInit {
   idCajaCerrada = signal<number | null>(null); // 🚀 Corregido a Signal
   montoMovimiento: number = 0;
   descripcionMovimiento: string = '';
-  tipoMovimientoSeleccionado: 'INGRESO_EXTRA' | 'GASTO_EXTRA' = 'INGRESO_EXTRA';
+  tipoMovimientoSeleccionado: 'INGRESO' | 'GASTO' = 'INGRESO';
   
   saldoFinalRealContado: number = 0;
   montoApertura: number = 0;
@@ -70,11 +70,11 @@ export class CajaResumenComponent implements OnInit {
 }
 
   claseMovimiento(tipo: string): string {
-    return tipo === 'INGRESO_EXTRA' ? 'badge-ingreso' : 'badge-gasto';
+    return tipo === 'INGRESO' ? 'badge-ingreso' : 'badge-gasto';
   }
 
   iconoMovimiento(tipo: string): string {
-    return tipo === 'INGRESO_EXTRA' ? '📥' : '📤';
+    return tipo === 'INGRESO' ? '📥' : '📤';
   }
 
   ngOnInit(): void {
@@ -120,6 +120,7 @@ export class CajaResumenComponent implements OnInit {
 
     const payload = {
       tipoMovimiento: this.tipoMovimientoSeleccionado,
+      metodoPago: 'EFECTIVO',
       importe: this.montoMovimiento,
       descripcion: this.descripcionMovimiento
     };
@@ -132,7 +133,15 @@ export class CajaResumenComponent implements OnInit {
         this.uiService.mostrarToast('Movimiento registrado en el cajón.', 'success');
         this.cargarCaja();
       },
-      error: (err: any) => this.uiService.mostrarToast("Error al registrar movimiento: " + err.error, 'error')
+      error: (err: any) => {
+        console.error('Error al registrar movimiento manual:', err);
+        const cuerpo = err.error;
+        let mensaje = 'Error al registrar movimiento.';
+        if (typeof cuerpo === 'string') mensaje = cuerpo;
+        else if (cuerpo?.message) mensaje = cuerpo.message;
+        else if (cuerpo?.error) mensaje = cuerpo.error;
+        this.uiService.mostrarToast(mensaje, 'error');
+      }
     });
   }
 
