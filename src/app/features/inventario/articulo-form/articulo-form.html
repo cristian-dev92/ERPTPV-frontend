@@ -19,6 +19,14 @@
       />
     </div>
 
+    <div class="form-group full-width">
+      <label for="codigoReferencia">Código de Referencia <span class="txt-mutado">(Autogenerado si se deja vacío)</span></label>
+      <input type="text" id="codigoReferencia" [value]="codigoReferencia()" placeholder="Ej: ART-001 o código de barras del fabricante"
+        (click)="abrirTecladoGeneralForm('CODIGO_REFERENCIA')"
+        (input)="sincronizarTecladoFisico('CODIGO_REFERENCIA', $any($event.target).value)" 
+      />
+    </div>
+
     <div class="form-group">
       <label for="familiaPadre">Familia</label>
       <select id="familiaPadre" [value]="familiaSeleccionadaId() ?? ''"

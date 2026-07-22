@@ -42,7 +42,9 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
     cif: '',
     emailPedidos: '',
     telefono: '',
-    direccion: ''
+    direccion: '',
+    codigoPostal: '',
+    ciudad: ''
   });
 
   // 🎯 FILTRADO AUTOMÁTICO EN TIEMPO REAL (Client-side con Signals)
@@ -117,7 +119,7 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
 
   // === LÓGICA DEL TECLADO TÁCTIL VIRTUAL ===
   abrirTecladoGeneralForm(
-    objetivo: 'NOMBRE' | 'TELEFONO' | 'CIF' | 'EMAIL' | 'DIRECCION' | 'BUSQUEDA', 
+    objetivo: 'NOMBRE' | 'TELEFONO' | 'CIF' | 'EMAIL' | 'DIRECCION' | 'CP' | 'CIUDAD' | 'BUSQUEDA', 
     index?: number | null, 
     valorActualForm: string = ''
   ) {
@@ -194,6 +196,8 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
         if (objetivo === 'TELEFONO') actualizado.telefono = valor;
         if (objetivo === 'EMAIL') actualizado.emailPedidos = valor.toLowerCase();
         if (objetivo === 'DIRECCION') actualizado.direccion = valor;
+        if (objetivo === 'CP') actualizado.codigoPostal = valor;
+        if (objetivo === 'CIUDAD') actualizado.ciudad = valor;
         return actualizado;
       });
     }
@@ -213,7 +217,9 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
       cif: '',
       emailPedidos: '',
       telefono: '',
-      direccion: ''
+      direccion: '',
+      codigoPostal: '',
+      ciudad: ''
     });
     this.mostrarModalRegistro.set(true);
   }
@@ -230,7 +236,9 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
       cif: p.nif || '',
       emailPedidos: p.email || '',
       telefono: p.telefono || '',
-      direccion: ''
+      direccion: p.direccion || '',
+      codigoPostal: p.codigoPostal || '',
+      ciudad: p.ciudad || ''
     });
     this.mostrarModalRegistro.set(true);
   }
@@ -243,6 +251,13 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
       return;
     }
 
+    const mergeConDatos = (res: ProveedorDTO): ProveedorDTO => ({
+      ...res,
+      direccion: res.direccion ?? datos.direccion,
+      codigoPostal: res.codigoPostal ?? datos.codigoPostal,
+      ciudad: res.ciudad ?? datos.ciudad,
+    });
+
     if (this.modoEdicion()) {
       // Flujo de Edición / Modificación en Backend (PUT)
       const idProv = this.proveedorSeleccionadoId();
@@ -250,9 +265,10 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
 
     this.proveedorService.actualizarProveedor(idProv, datos).subscribe({
       next: (proveedorModificado) => {
-        this.uiService.mostrarToast(`📦 Proveedor "${proveedorModificado.nombreComercial}" actualizado con éxito`, 'success');
+        const final = mergeConDatos(proveedorModificado);
+        this.uiService.mostrarToast(`📦 Proveedor "${final.nombreComercial}" actualizado con éxito`, 'success');
         // Actualizamos la lista local añadiendo el nuevo al principio
-        this.proveedores.update(list => list.map(p => p.id === idProv ? proveedorModificado : p));
+        this.proveedores.update(list => list.map(p => p.id === idProv ? final : p));
         this.cerrarModal();
       },
       error: (err) => {
@@ -263,8 +279,9 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
       // Flujo de Creación Tradicional (POST)
       this.proveedorService.crearProveedor(datos).subscribe({
         next: (proveedorCreado) => {
-          this.uiService.mostrarToast(`📦 Proveedor "${proveedorCreado.nombreComercial}" registrado con éxito`, 'success');
-          this.proveedores.update(list => [proveedorCreado, ...list]);
+          const final = mergeConDatos(proveedorCreado);
+          this.uiService.mostrarToast(`📦 Proveedor "${final.nombreComercial}" registrado con éxito`, 'success');
+          this.proveedores.update(list => [final, ...list]);
           this.cerrarModal();
         },
         error: (err) => {

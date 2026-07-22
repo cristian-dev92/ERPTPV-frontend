@@ -29,7 +29,8 @@
             <th>C.I.F. / N.I.F.</th>
             <th>Teléfono</th>
             <th>Email de Pedidos</th>
-            <th>Estado</th>
+            <th>Dirección</th>
+            <th>Ciudad / CP</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -40,9 +41,8 @@
               <td class="txt-mutado">{{ p.nif || '-' }}</td>
               <td>{{ p.telefono || '-' }}</td>
               <td class="txt-email">{{ p.email || '-' }}</td>
-              <td>
-                <span class="badge-activo">🟢 Activo</span>
-              </td>
+              <td class="txt-mutado">{{ p.direccion || '-' }}</td>
+              <td>{{ p.ciudad }}{{ p.codigoPostal ? ' ('+p.codigoPostal+')' : '' }}</td>
               <td>
               <div class="acciones-wrapper">
                   <button (click)="abrirModalEdicion(p)" class="btn-accion-editar" title="Editar Ficha" type="button">
@@ -56,7 +56,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="tabla-vacia">
+              <td colspan="6" class="tabla-vacia">
                 📭 No hay proveedores registrados todavía.
               </td>
             </tr>
@@ -79,6 +79,8 @@
               @if (p.nif) { <p class="txt-mutado">🆔 {{ p.nif }}</p> }
               @if (p.telefono) { <p class="tel">📞 {{ p.telefono }}</p> }
               @if (p.email) { <p class="mail">✉️ {{ p.email }}</p> }
+              @if (p.direccion) { <p class="dir">📍 {{ p.direccion }}</p> }
+              @if (p.ciudad || p.codigoPostal) { <p class="loc">🏙️ {{ p.ciudad }}{{ p.codigoPostal ? ' ('+p.codigoPostal+')' : '' }}</p> }
             </div>
             <div class="card-actions">
               <button class="btn-edit-movil" (click)="abrirModalEdicion(p)">✏️</button>
@@ -160,6 +162,26 @@
                      (input)="sincronizarTecladoFisico('DIRECCION', $any($event.target).value)"
                      (click)="abrirTecladoGeneralForm('DIRECCION', undefined, nuevoProveedor().direccion)"
                      >
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-cp">Código Postal</label>
+                <input type="text" id="p-cp" name="codigoPostal" 
+                       [(ngModel)]="nuevoProveedor().codigoPostal"
+                       (input)="sincronizarTecladoFisico('CP', $any($event.target).value)"
+                       (click)="abrirTecladoGeneralForm('CP', undefined, nuevoProveedor().codigoPostal)"
+                       >
+              </div>
+
+              <div class="form-group">
+                <label for="p-ciudad">Ciudad</label>
+                <input type="text" id="p-ciudad" name="ciudad" 
+                       [(ngModel)]="nuevoProveedor().ciudad"
+                       (input)="sincronizarTecladoFisico('CIUDAD', $any($event.target).value)"
+                       (click)="abrirTecladoGeneralForm('CIUDAD', undefined, nuevoProveedor().ciudad)"
+                       >
+              </div>
             </div>
 
             <div class="modal-footer">

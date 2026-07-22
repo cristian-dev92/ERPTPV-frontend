@@ -50,8 +50,12 @@
     <thead>
       <tr>
         <th>Nombre</th>
+        <th>Familia</th>
+        <th>Subfamilia</th>
         <th>Código de Barras</th>
+        <th>Código Ref.</th>
         <th>Precio</th>
+        <th>Proveedor</th>
         <th>Stock</th>
         <th>Acciones</th>
       </tr>
@@ -65,8 +69,12 @@
               <span class="nota-interna-badge" [title]="item.notas">📝 Con notas</span>
             }
           </td>
+          <td class="txt-familia">{{ getFamiliaNombre(item.familiaId) }}</td>
+          <td class="txt-subfamilia">{{ getSubfamiliaNombre(item.familiaId) }}</td>
           <td class="txt-barcode">{{ item.codigoBarras || '—' }}</td>
+          <td class="txt-referencia">{{ item.codigoReferencia || '—' }}</td>
           <td class="txt-precio">{{ item.precioFinal | currency:'EUR' }}</td>
+          <td class="txt-proveedor">{{ item.proveedorNombre || '—' }}</td>
           <td>
             <!-- ⚡ Cambiado: Evaluamos si tiene stock asignado en lugar de depender del tipo antiguo -->
             @if (item.stock !== undefined && item.stock !== null) {
@@ -102,7 +110,7 @@
         </tr>
       } @empty {
         <tr>
-          <td colspan="5" class="txt-vacio">No se encontraron artículos que coincidan con los filtros aplicados.</td>
+          <td colspan="9" class="txt-vacio">No se encontraron artículos que coincidan con los filtros aplicados.</td>
         </tr>
       }
     </tbody>
@@ -128,8 +136,49 @@
         <button type="button" class="close-tactil" (click)="cerrarModalNuevaFamilia()">✕</button>
       </div>
       
+      <!-- LISTADO DE FAMILIAS EXISTENTES -->
+      <div class="family-list-section">
+        <h4 class="family-list-title">Categorías existentes</h4>
+        @if (todasLasFamilias().length === 0) {
+          <p class="family-list-empty">No hay categorías creadas todavía.</p>
+        } @else {
+          <div class="family-list">
+            @for (fam of familiasPadre(); track fam.id) {
+              <div class="family-item">
+                <div class="family-item-info">
+                  <span class="family-name">📂 {{ fam.nombre }}</span>
+                  @if (fam.subfamilias && fam.subfamilias.length > 0) {
+                    <div class="sub-family-list">
+                      @for (sub of fam.subfamilias; track sub.id) {
+                        <div class="sub-family-item">
+                          <span class="family-name">↳ {{ sub.nombre }}</span>
+                          <div class="family-item-actions">
+                            <button class="btn-sm-edit" (click)="editarFamilia(sub)" title="Editar">✏️</button>
+                            <button class="btn-sm-delete" (click)="eliminarFamilia(sub)" title="Eliminar">🗑️</button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+                <div class="family-item-actions">
+                  <button class="btn-sm-edit" (click)="editarFamilia(fam)" title="Editar">✏️</button>
+                  <button class="btn-sm-delete" (click)="eliminarFamilia(fam)" title="Eliminar">🗑️</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <hr class="family-divider">
+
       <div class="tactil-form">
-        <p class="instruction-modal">Introduce el nombre y decide si será una familia raíz o colgará de otra existente.</p>
+        @if (editandoFamilia(); as famEdit) {
+          <p class="instruction-modal">Editando: <strong>{{ famEdit.nombre }}</strong></p>
+        } @else {
+          <p class="instruction-modal">Introduce el nombre y decide si será una familia raíz o colgará de otra existente.</p>
+        }
 
         <div class="input-field-tactil unique-huge">
           <label>NOMBRE DE LA CATEGORÍA *</label>
@@ -145,16 +194,35 @@
                   (change)="padreFamiliaIdSeleccionada.set($any($event.target).value || null)">
             <option value="">📂 Crear como Familia Principal (Raíz)</option>
             @for (fam of familiasPadre(); track fam.id) {
-              <option [value]="fam.id">↳ Colgar dentro de: {{ fam.nombre }}</option>
+              <option [value]="fam.id" [disabled]="editandoFamilia()?.id === fam.id">↳ Colgar dentro de: {{ fam.nombre }}</option>
             }
           </select>
         </div>
 
         <div class="modal-actions-tactil-grid" style="margin-top: 20px;">
           <button type="button" class="btn-confirm-tactil-action success" (click)="crearNuevaFamilia()">
-            💾 Guardar
+            {{ editandoFamilia() ? '💾 Actualizar' : '💾 Guardar' }}
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (mostrarModalConfirmarFamilia()) {
+  <div class="modal-backdrop confir-backdrop">
+    <div class="modal-confirm-content">
+      <div class="modal-confirm-icon">⚠️</div>
+      <h2>¿Eliminar categoría?</h2>
+      <p>Vas a eliminar la categoría <strong>"{{ familiaAEliminar()?.nombre }}"</strong>.</p>
+      @if (familiaAEliminar()?.subfamilias && familiaAEliminar()!.subfamilias!.length > 0) {
+        <p class="advertencia-sub">⚠️ Esta categoría tiene subcategorías. Se eliminarán también.</p>
+      }
+      <p class="advertencia-sub">Esta acción no se puede deshacer.</p>
+
+      <div class="confirm-actions">
+        <button class="btn-cancel-modal" (click)="cerrarModalConfirmarFamilia()">No, cancelar</button>
+        <button class="btn-confirm-modal" (click)="confirmarEliminacionFamilia()">Sí, eliminar categoría</button>
       </div>
     </div>
   </div>

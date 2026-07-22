@@ -67,19 +67,19 @@ $warning: #f59e0b;
   thead {
     background-color: $bg-light;
     border-bottom: 1px solid $border;
-    th { padding: 1rem; font-weight: 600; color: #475569; }
+    th { padding: 1rem; font-weight: 600; color: #0f172a; }
   }
 
   tbody tr {
     border-bottom: 1px solid $border;
     &:last-child { border-bottom: none; }
     &:hover { background-color: $bg-light; }
-    td { padding: 1rem; color: #334155; vertical-align: middle; }
+    td { padding: 1rem; color: #0f172a; vertical-align: middle; }
   }
 
-  .txt-negrita { font-weight: 600; color: $primary; }
-  .txt-mutado { color: #64748b; }
-  .txt-email { color: $secondary; font-weight: 500; }
+  .txt-negrita { font-weight: 600; color: #0f172a; }
+  .txt-mutado { color: #0f172a; }
+  .txt-email { font-weight: 500; color: #0f172a; }
   
   .badge-activo {
     display: inline-block;

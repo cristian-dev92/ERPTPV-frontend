@@ -9,21 +9,14 @@
 - **orden-list.ts**: Métodos `codigosEtiqueta()`, `convertirFechaISO()` (soporta `dd-MM-yyyy` e ISO). `verDetalle()` usa `convertirFechaISO()`.
 - **tpv.ts/tpv.html**: Validaciones precio cero, sincronización fecha recogida/entrega, fix `$index` shadowing con `@let lineaIdx`, validación cliente con `tieneServicioEnCarrito()`.
 - **Backend**: `TrabajoTallerDTO.java` con `@JsonFormat(pattern = "yyyy-MM-dd")`. Recompilado con `mvn clean compile`. Ya no hay error 400 al seleccionar fecha.
+- **Devoluciones**: `LineaDevolucionDTO.trabajoId` añadido. Servicios de taller envían `trabajoId`, productos físicos envían `articuloId`.
+- **Artículos**: `codigoReferencia`, `familiaId`, `familiaNombre` integrados en formulario y tabla.
+- **Proveedores**: `codigoPostal`, `ciudad` añadidos al DTO y formulario.
+- **Layout**: Menú hamburguesa hasta 1200px, `overflow-x: hidden` en menú móvil.
 
 ## Backend — Tareas para el compañero
-1. **Añadir `articuloBaseId` a `TrabajoTallerSalidaDTO.java`**
-   - Campo: `private Long articuloBaseId;`
-   - En el constructor: `this.articuloBaseId = trabajo.getArticuloBase() != null ? trabajo.getArticuloBase().getId() : null;`
-   - Motivo: necesario para que el frontend pueda incluir servicios de taller (que consumen material) en las devoluciones, mandando `articuloBaseId` como `articuloId` en `DevolucionRequest.LineaDevolucion`.
-
-2. **Actualizar `estadoPago` de la orden original al procesar devolución**
-   - En `OrdenServiceImpl.procesarDevolucion()`, cuando `peticion.ordenOrigenId != null`, actualizar `ordenOriginal.setEstadoPago(EstadoPago.DEVUELTO)` y guardarla.
-   - Motivo: el frontend consulta `orden.estadoPago` para saber si el botón "Solicitar Devolución" debe mostrarse. Si el backend no lo actualiza, el botón sigue visible aunque ya se haya devuelto.
-
-3. **Añadir `direccion` a `ProveedorDTO.java`**
-   - Campo: `private String direccion;`
-   - En el constructor: `this.direccion = proveedor.getDireccion();`
-   - Motivo: el frontend muestra el campo "Dirección Postal / Almacén" en el formulario de proveedores, pero el DTO de respuesta no lo incluye, por lo que al editar un proveedor la dirección aparece siempre vacía.
+1. **`ProveedorDTO.java`**: Añadir `this.direccion = proveedor.getDireccion();` en el constructor. El campo `direccion` está declarado en la clase pero nunca se mapea (línea 38 de `ProveedorDTO.java`).
+2. **`ProveedorDTO.java`**: Verificar que `email` se mapea correctamente — el frontend envía `emailPedidos` en el request, el backend debería mapearlo al campo correcto de la entidad.
 
 ## Pendiente / Bloqueado
 - (ninguno)

@@ -8,6 +8,8 @@ export interface NuevoProveedorRequest {
   emailPedidos: string;
   telefono: string;
   direccion: string;
+  codigoPostal: string;
+  ciudad: string;
 }
 
 export interface ProveedorDTO {
@@ -16,6 +18,9 @@ export interface ProveedorDTO {
   nif?: string;
   email?: string;
   telefono?: string;
+  direccion?: string;
+  codigoPostal?: string;
+  ciudad?: string;
   activo: boolean;
 }
 

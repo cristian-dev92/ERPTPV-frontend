@@ -161,7 +161,7 @@ $danger: #ef4444;
 
     td {
       padding: 1rem;
-      color: #334155;
+      color: #0f172a;
       vertical-align: middle;
       text-align: center;
 
@@ -186,14 +186,37 @@ $danger: #ef4444;
       }
 
       &.txt-barcode {
-        font-family: monospace;
-        color: #64748b;
+        color: #0f172a;
         letter-spacing: 0.5px;
       }
 
       &.txt-precio {
         font-weight: 700;
         color: #0f172a;
+      }
+
+      &.txt-familia {
+        color: #0f172a;
+        font-size: 0.85rem;
+        font-weight: 400;
+      }
+
+      &.txt-subfamilia {
+        color: #0f172a;
+        font-size: 0.85rem;
+        font-weight: 400;
+      }
+
+      &.txt-referencia {
+        color: #0f172a;
+        font-size: 0.85rem;
+        font-weight: 400;
+      }
+
+      &.txt-proveedor {
+        color: #0f172a;
+        font-size: 0.85rem;
+        font-weight: 400;
       }
     }
   }
@@ -231,7 +254,7 @@ $danger: #ef4444;
   align-items: center;
 
   .cantidad-stock {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1.2em;
   }
 }
@@ -785,4 +808,131 @@ $danger: #ef4444;
 @keyframes scaleUpModal {
   from { transform: scale(0.96); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+// Family list styles
+.family-management-sheet {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.family-list-section {
+  margin-bottom: 1rem;
+}
+
+.family-list-title {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.family-list-empty {
+  color: #64748b;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 0.75rem;
+}
+
+.family-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.family-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: #475569;
+  }
+}
+
+.family-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.family-name {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.sub-family-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.2rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid #334155;
+}
+
+.sub-family-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.family-item-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.btn-sm-edit,
+.btn-sm-delete {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  transition: all 0.12s;
+
+  &:hover {
+    transform: scale(1.15);
+  }
+}
+
+.btn-sm-edit {
+  color: #38bdf8;
+
+  &:hover {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: #38bdf8;
+  }
+}
+
+.btn-sm-delete {
+  color: #ef4444;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+  }
+}
+
+.family-divider {
+  border: none;
+  border-top: 1px solid #334155;
+  margin: 0.75rem 0;
+}
+
+.confir-backdrop {
+  animation: fadeInBackdrop 0.15s ease;
+}
+
+.modal-confirm-content {
+  animation: scaleUpModal 0.15s ease;
 }

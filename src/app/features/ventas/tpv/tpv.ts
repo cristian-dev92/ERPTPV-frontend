@@ -1607,7 +1607,7 @@ abrirModal() {
       } else {
         // 2. Si no es venta, asumimos que es un servicio o trabajo de taller usando su ID de línea
         lineasDevolucionPayload.push({
-          trabajoTallerId: clave, // Mandamos el ID del trabajo de taller
+          trabajoId: clave,
           cantidad: control.cantidadADevolver
         });
       }

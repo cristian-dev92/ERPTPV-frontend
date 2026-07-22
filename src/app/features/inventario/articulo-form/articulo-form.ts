@@ -232,6 +232,7 @@ export class ArticuloFormComponent implements OnInit {
   // Métodos auxiliares para mapear dinámicamente según el foco activo
   private obtenerValorActualPorObjetivo(objetivo: string): string {
     if (objetivo === 'NOMBRE') return this.nombre();
+    if (objetivo === 'CODIGO_REFERENCIA') return this.codigoReferencia();
     if (objetivo === 'CODIGO_BARRAS') return this.codigoBarras();
     if (objetivo === 'NOTAS') return this.notas();
     if (objetivo === 'BUSCAR_PROVEEDOR') return this.filtroProveedor();
@@ -245,6 +246,7 @@ export class ArticuloFormComponent implements OnInit {
 
   private actualizarValorSeñal(objetivo: string, valor: string) {
     if (objetivo === 'NOMBRE') this.nombre.set(valor);
+    if (objetivo === 'CODIGO_REFERENCIA') this.codigoReferencia.set(valor);
     if (objetivo === 'CODIGO_BARRAS') this.codigoBarras.set(valor);
     if (objetivo === 'NOTAS') this.notas.set(valor);
     if (objetivo === 'BUSCAR_PROVEEDOR') this.filtroProveedor.set(valor);

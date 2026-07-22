@@ -30,15 +30,16 @@
           <th>Teléfono</th>
           <th>Documento / DNI</th>
           <th>Email</th>
+          <th>Dirección</th>
           <th>Ubicación</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         @if (cargando()) {
-          <tr><td colspan="6" class="tabla-loading">Cargando base de datos de clientes...</td></tr>
+          <tr><td colspan="7" class="tabla-loading">Cargando base de datos de clientes...</td></tr>
         } @else if (clientesFiltrados().length === 0) {
-          <tr><td colspan="6" class="tabla-vacia">No se encontraron clientes coincidentes</td></tr>
+          <tr><td colspan="7" class="tabla-vacia">No se encontraron clientes coincidentes</td></tr>
         } @else {
           @for (cliente of clientesAMostrar(); track cliente.id) {
             <tr>
@@ -46,6 +47,7 @@
               <td class="txt-telefono">{{ cliente.telefono }}</td>
               <td class="txt-mutado">{{ cliente.documentoIdentidad || '-' }}</td>
               <td class="txt-email">{{ cliente.email || '-' }}</td>
+              <td class="txt-mutado">{{ cliente.direccion || '-' }}</td>
               <td>{{ cliente.ciudad }}{{ cliente.codigoPostal ? ' ('+cliente.codigoPostal+')' : '' }}</td>
               <td>
                 <div class="acciones-celda">
@@ -92,6 +94,7 @@
             <h3>{{ cliente.nombre }}</h3>
             <p class="tel">📞 {{ cliente.telefono }}</p>
             @if (cliente.email) { <p class="mail">✉️ {{ cliente.email }}</p> }
+            @if (cliente.direccion) { <p class="dir">📍 {{ cliente.direccion }}</p> }
             @if (cliente.documentoIdentidad) { <p class="dni">🪪 DNI: {{ cliente.documentoIdentidad }}</p> }
           </div>
           <div class="card-actions">

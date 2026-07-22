@@ -30,8 +30,9 @@ export interface NuevaOrdenDTO {
 }
 
 export interface LineaDevolucionDTO {
-  articuloId: number;
-  cantidad: number;                 // Siempre en positivo desde el Front
+  articuloId?: number;
+  trabajoId?: number;
+  cantidad: number;
 }
 
 export interface DevolucionRequest {

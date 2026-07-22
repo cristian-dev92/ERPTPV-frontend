@@ -111,20 +111,20 @@ $warning: #f59e0b;
   thead {
     background-color: $bg-light;
     border-bottom: 1px solid $border;
-    th { padding: 1rem; font-weight: 600; color: #475569; text-align: center; }
+    th { padding: 1rem; font-weight: 600; color: #0f172a; text-align: center; }
   }
 
   tbody tr {
     border-bottom: 1px solid $border;
     &:last-child { border-bottom: none; }
     &:hover { background-color: $bg-light; }
-    td { padding: 1rem; color: #334155; vertical-align: middle; text-align: center;}
+    td { padding: 1rem; color: #0f172a; vertical-align: middle; text-align: center;}
   }
 
-  .txt-negrita { font-weight: 600; color: $primary; }
+  .txt-negrita { font-weight: 600; color: #0f172a; }
   .txt-telefono { font-weight: 700; color: #0f172a; }
-  .txt-email { color: $secondary; font-weight: 500; }
-  .txt-mutado { color: #64748b; }
+  .txt-email { font-weight: 500; color: #0f172a; }
+  .txt-mutado { color: #0f172a; }
   
   .acciones-celda { display: flex; align-items: center; gap: 0.75rem; justify-content: center;}
 

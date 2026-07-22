@@ -530,9 +530,9 @@ export class OrdenListComponent extends ComponentePaginado implements OnInit {
     })).filter((l: any) => l.articuloId != null);
 
     const lineasTaller: any[] = (orden.trabajosTaller || []).map((t: any) => ({
-      articuloId: t.articuloBaseId,
+      trabajoId: t.id,
       cantidad: t.cantidadMaterial || 1
-    })).filter((l: any) => l.articuloId != null);
+    })).filter((l: any) => l.trabajoId != null);
 
     const lineasDev = [...lineasProducto, ...lineasTaller];
 

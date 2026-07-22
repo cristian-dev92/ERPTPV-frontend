@@ -37,10 +37,15 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
   mayusculas = signal<boolean>(true);
   valorTecladoEnConstruccion = signal<string>('');
 
-  // Gestión del nuevo modal de creación de familias y subfamilias
+  // Gestión del nuevo modal de creación/edición de familias y subfamilias
   mostrarModalNuevaFamilia = signal<boolean>(false);
+  editandoFamilia = signal<FamiliaDTO | null>(null);
   nuevoNombreFamilia = signal<string>('');
   padreFamiliaIdSeleccionada = signal<number | null>(null);
+
+  // Estado para confirmar eliminación de familia
+  mostrarModalConfirmarFamilia = signal<boolean>(false);
+  familiaAEliminar = signal<FamiliaDTO | null>(null);
 
   // Listas de caracteres fijas para el renderizado consistente del teclado
   lineaNumeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -65,6 +70,22 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
     if (!padreId) return [];
     return this.todasLasFamilias().filter(f => f.familiaPadreId === padreId);
   });
+
+  // HELPERS para resolver jerarquía de familias desde familiaId del artículo
+  getFamiliaNombre(familiaId: number | null | undefined): string {
+    if (!familiaId) return '—';
+    const fam = this.todasLasFamilias().find(f => f.id === familiaId);
+    if (!fam) return '—';
+    if (!fam.familiaPadreId) return fam.nombre;
+    return fam.familiaPadreNombre || '—';
+  }
+
+  getSubfamiliaNombre(familiaId: number | null | undefined): string {
+    if (!familiaId) return '—';
+    const fam = this.todasLasFamilias().find(f => f.id === familiaId);
+    if (!fam || !fam.familiaPadreId) return '—';
+    return fam.nombre;
+  }
 
   // COMPUTED MOTOR DE FILTRADO UNIFICADO (Filtra por Texto, Código de Barras y Familias)
   articulosFiltrados = computed(() => {
@@ -235,13 +256,50 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
 
   // Acciones y ciclo de vida de la ventana de familias
   abrirModalNuevaFamilia(): void {
+    this.editandoFamilia.set(null);
     this.nuevoNombreFamilia.set('');
     this.padreFamiliaIdSeleccionada.set(null);
     this.mostrarModalNuevaFamilia.set(true);
   }
 
+  editarFamilia(fam: FamiliaDTO): void {
+    this.editandoFamilia.set(fam);
+    this.nuevoNombreFamilia.set(fam.nombre);
+    this.padreFamiliaIdSeleccionada.set(fam.familiaPadreId);
+    this.mostrarModalNuevaFamilia.set(true);
+  }
+
+  eliminarFamilia(fam: FamiliaDTO): void {
+    this.familiaAEliminar.set(fam);
+    this.mostrarModalConfirmarFamilia.set(true);
+  }
+
+  confirmarEliminacionFamilia(): void {
+    const fam = this.familiaAEliminar();
+    if (!fam) return;
+
+    this.familiaService.eliminarFamilia(fam.id).subscribe({
+      next: () => {
+        this.uiService.mostrarToast('🗑️ Familia eliminada correctamente', 'success');
+        this.todasLasFamilias.update(lista => lista.filter(f => f.id !== fam.id));
+        this.cerrarModalConfirmarFamilia();
+      },
+      error: (err) => {
+        console.error('Error al eliminar familia:', err);
+        this.uiService.mostrarToast('No se pudo eliminar la familia. Puede que tenga artículos asociados.', 'error');
+        this.cerrarModalConfirmarFamilia();
+      }
+    });
+  }
+
+  cerrarModalConfirmarFamilia(): void {
+    this.mostrarModalConfirmarFamilia.set(false);
+    this.familiaAEliminar.set(null);
+  }
+
   cerrarModalNuevaFamilia(): void {
     this.mostrarModalNuevaFamilia.set(false);
+    this.editandoFamilia.set(null);
     this.cerrarTeclado();
   }
 
@@ -252,7 +310,33 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
       return;
     }
 
-    // VALIDACIÓN PREVENTIVA: Comprobamos si ya existe una categoría con ese nombre exacto
+    const editing = this.editandoFamilia();
+
+    if (editing) {
+      // MODO EDICIÓN
+      const payload: NuevaFamiliaRequest = {
+        nombre: nombre,
+        descripcion: editing.descripcion,
+        familiaPadreId: this.padreFamiliaIdSeleccionada()
+      };
+
+      this.familiaService.actualizarFamilia(editing.id, payload).subscribe({
+        next: (actualizada) => {
+          this.uiService.mostrarToast('📁 Categoría actualizada correctamente', 'success');
+          this.todasLasFamilias.update(lista =>
+            lista.map(f => f.id === actualizada.id ? actualizada : f)
+          );
+          this.cerrarModalNuevaFamilia();
+        },
+        error: (err) => {
+          console.error('Error al actualizar categoría:', err);
+          this.uiService.mostrarToast('No se pudo actualizar la categoría.', 'error');
+        }
+      });
+      return;
+    }
+
+    // MODO CREACIÓN (código existente)
     const nombreExiste = this.todasLasFamilias().some(
       f => f.nombre.toLowerCase().trim() === nombre.toLowerCase()
     );
@@ -262,25 +346,22 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
       return;
     }
 
-    // 1. Forzamos la obtención del id del padre limpiando cualquier residuo del DOM
     const idPadreRaw: any = this.padreFamiliaIdSeleccionada();
     let idPadreFormateado: number | null = null;
-    
+
     if (idPadreRaw !== null && idPadreRaw !== undefined && idPadreRaw !== '') {
       idPadreFormateado = Number(idPadreRaw);
     }
 
-    // 2. Construimos el JSON mapeando explícitamente cada campo que el DTO de Spring espera
     const payload: NuevaFamiliaRequest = {
       nombre: nombre,
-      descripcion: 'Categoría autogenerada desde TPV', // Mandamos un string por si el backend valida vacíos
-      familiaPadreId: idPadreFormateado // Enviará el número entero limpio o un null explícito para ramas raíz
+      descripcion: 'Categoría autogenerada desde TPV',
+      familiaPadreId: idPadreFormateado
     };
 
     this.familiaService.crearFamilia(payload).subscribe({
       next: (nuevaFam) => {
         this.uiService.mostrarToast('📁 Nueva categoría guardada correctamente', 'success');
-        // Actualizamos de forma reactiva la lista de familias para refrescar los selectores al instante
         this.todasLasFamilias.update(lista => [...lista, nuevaFam]);
         this.cerrarModalNuevaFamilia();
       },
