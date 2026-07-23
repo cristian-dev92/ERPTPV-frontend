@@ -43,20 +43,20 @@
         } @else {
           @for (cliente of clientesAMostrar(); track cliente.id) {
             <tr>
-              <td class="txt-negrita">{{ cliente.nombre }}</td>
-              <td class="txt-telefono">{{ cliente.telefono }}</td>
-              <td class="txt-mutado">{{ cliente.documentoIdentidad || '-' }}</td>
-              <td class="txt-email">{{ cliente.email || '-' }}</td>
-              <td class="txt-mutado">{{ cliente.direccion || '-' }}</td>
-              <td>{{ cliente.ciudad }}{{ cliente.codigoPostal ? ' ('+cliente.codigoPostal+')' : '' }}</td>
-              <td>
+              <td class="txt-negrita" data-label="Nombre">{{ cliente.nombre }}</td>
+              <td class="txt-telefono" data-label="Teléfono">{{ cliente.telefono }}</td>
+              <td class="txt-mutado" data-label="DNI/NIF">{{ cliente.documentoIdentidad || '-' }}</td>
+              <td class="txt-email" data-label="Email">{{ cliente.email || '-' }}</td>
+              <td class="txt-mutado" data-label="Dirección">{{ cliente.direccion || '-' }}</td>
+              <td data-label="Ubicación">{{ cliente.ciudad }}{{ cliente.codigoPostal ? ' ('+cliente.codigoPostal+')' : '' }}</td>
+              <td data-label="Acciones">
                 <div class="acciones-celda">
                   @if (modoModalSolo()) {
                     <button class="btn-seleccionar-cliente-tvc" (click)="seleccionarCliente(cliente)">Seleccionar</button>
                   }
                   <div class="botones-gestion">
-                    <button class="btn-accion-editar" (click)="editarCliente(cliente)">✏️ Editar</button>
-                    <button class="btn-accion-eliminar" (click)="solicitarConfirmacionBorrar(cliente)">🗑️ Borrar</button>
+                    <button class="btn-accion-editar" (click)="editarCliente(cliente)">✏️ <span class="btn-label">Editar</span></button>
+                    <button class="btn-accion-eliminar" (click)="solicitarConfirmacionBorrar(cliente)">🗑️ <span class="btn-label">Borrar</span></button>
                   </div>
                 </div>
               </td>
@@ -90,19 +90,22 @@
     } @else {
       @for (cliente of clientesAMostrar(); track cliente.id) {
         <div class="cliente-mobile-card">
-          <div class="card-info">
+          <div class="card-header">
             <h3>{{ cliente.nombre }}</h3>
-            <p class="tel">📞 {{ cliente.telefono }}</p>
-            @if (cliente.email) { <p class="mail">✉️ {{ cliente.email }}</p> }
-            @if (cliente.direccion) { <p class="dir">📍 {{ cliente.direccion }}</p> }
-            @if (cliente.documentoIdentidad) { <p class="dni">🪪 DNI: {{ cliente.documentoIdentidad }}</p> }
+            <div class="card-actions">
+              @if (modoModalSolo()) {
+                <button class="btn-vincular-movil" (click)="seleccionarCliente(cliente)" title="Vincular">🔗</button>
+              }
+              <button class="btn-edit-movil" (click)="editarCliente(cliente)" title="Editar">✏️</button>
+              <button class="btn-delete-movil" (click)="solicitarConfirmacionBorrar(cliente)" title="Borrar">🗑️</button>
+            </div>
           </div>
-          <div class="card-actions">
-            @if (modoModalSolo()) {
-              <button class="btn-seleccionar-movil" (click)="seleccionarCliente(cliente)">Vincular</button>
-            }
-            <button class="btn-edit-movil" (click)="editarCliente(cliente)">✏️</button>
-            <button class="btn-delete-movil" (click)="solicitarConfirmacionBorrar(cliente)">🗑️</button>
+          <div class="card-body">
+            @if (cliente.documentoIdentidad) { <p><span class="card-label">DNI/NIF</span><span class="card-value">{{ cliente.documentoIdentidad }}</span></p> }
+            <p><span class="card-label">Teléfono</span><span class="card-value">{{ cliente.telefono }}</span></p>
+            @if (cliente.email) { <p><span class="card-label">Email</span><span class="card-value">{{ cliente.email }}</span></p> }
+            @if (cliente.direccion) { <p><span class="card-label">Dirección</span><span class="card-value">{{ cliente.direccion }}</span></p> }
+            @if (cliente.ciudad || cliente.codigoPostal) { <p><span class="card-label">Ubicación</span><span class="card-value">{{ cliente.ciudad }}{{ cliente.codigoPostal ? ' ('+cliente.codigoPostal+')' : '' }}</span></p> }
           </div>
         </div>
        }

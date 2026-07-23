@@ -110,6 +110,10 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
     return fam.nombre;
   }
 
+  subfamiliasDePadre(padreId: number): FamiliaDTO[] {
+    return this.todasLasFamilias().filter(f => f.familiaPadreId === padreId);
+  }
+
   // COMPUTED MOTOR DE FILTRADO UNIFICADO (Filtra por Texto, Código de Barras y Familias)
   articulosFiltrados = computed(() => {
     let resultado = this.articulos().filter(item => item.activo !== false);

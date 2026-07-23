@@ -21,6 +21,9 @@ export class ConfiguracionComponent implements OnInit {
   // Estado reactivo del teclado guardado en el dispositivo
   tecladoNativoForzado = signal<boolean>(false);
 
+  // Pestaña activa
+  activeTab = signal<'perfil' | 'usuarios' | 'import-export'>('perfil');
+
   // --- ESTADOS DE CARGA ---
   loading = signal<boolean>(false);
   mostrarFormularioNuevo = signal<boolean>(false);

@@ -19,29 +19,30 @@ $warning: #f39c12;
   // Grid de Métricas (Tarjetas de totales) - Forzamos 4 columnas balanceadas
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
     margin-bottom: 2rem;
 
     .kpi-card {
       background: $bg-light;
       border: 1px solid $border-color;
       border-radius: 8px;
-      padding: 1.25rem;
+      padding: 1rem 1.25rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      min-width: 0;
 
       .kpi-info {
-        .label { font-size: 0.85rem; color: #7f8c8d; text-transform: uppercase; font-weight: 600; }
-        h3 { margin: 0.4rem 0 0 0; font-size: 1.4rem; font-weight: 700; }
+        .label { font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; font-weight: 600; }
+        h3 { margin: 0.4rem 0 0 0; font-size: 1.3rem; font-weight: 700; }
       }
-      .kpi-icon { font-size: 1.8rem; opacity: 0.8; }
+      .kpi-icon { font-size: 1.6rem; opacity: 0.8; }
 
       &.ingresos h3 { color: $success; }
       &.gastos h3 { color: $danger; }
-      &.impuesto h3 { color: #b45309; } // 🟢 Nuevo color corporativo para la tarjeta del IVA
+      &.impuesto h3 { color: #b45309; }
       &.balance.positivo h3 { color: $success; }
       &.balance.negativo h3 { color: $danger; }
     }
@@ -172,3 +173,39 @@ $warning: #f39c12;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+// =========================================================================
+// RESPONSIVE
+// =========================================================================
+@media (max-width: 768px) {
+  .kpi-grid {
+    gap: 0.75rem;
+
+    .kpi-card {
+      padding: 0.75rem 0.9rem;
+
+      .kpi-info {
+        .label { font-size: 0.65rem; }
+        h3 { font-size: 1rem; }
+      }
+      .kpi-icon { font-size: 1.2rem; }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+
+    .kpi-card {
+      padding: 0.6rem 0.75rem;
+
+      .kpi-info {
+        .label { font-size: 0.6rem; }
+        h3 { font-size: 0.9rem; }
+      }
+      .kpi-icon { font-size: 1rem; }
+    }
+  }
+}

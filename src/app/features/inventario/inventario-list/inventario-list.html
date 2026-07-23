@@ -47,6 +47,7 @@
 @if (loading()) {
   <p class="txt-cargando">Cargando catálogo de artículos y materiales...</p>
 } @else {
+  <div class="table-responsive">
   <table class="zapatero-table">
     <thead>
       <tr>
@@ -65,19 +66,19 @@
     <tbody>
       @for (item of articulosAMostrar(); track item.id) {
         <tr>
-          <td class="txt-referencia">{{ item.codigoReferencia || '—' }}</td>
-          <td class="td-nombre">
+          <td class="txt-referencia" data-label="Código Ref.">{{ item.codigoReferencia || '—' }}</td>
+          <td class="td-nombre" data-label="Nombre">
             <strong>{{ item.nombre }}</strong>
             @if (item.notas) {
               <span class="nota-interna-badge" [title]="item.notas">📝 Con notas</span>
             }
           </td>
-          <td class="txt-familia">{{ getFamiliaNombre(item.familiaId) }}</td>
-          <td class="txt-subfamilia">{{ getSubfamiliaNombre(item.familiaId) }}</td>
-          <td class="txt-barcode">{{ item.codigoBarras || '—' }}</td>
-          <td class="txt-precio">{{ item.precioFinal | currency:'EUR' }}</td>
-          <td class="txt-proveedor">{{ item.proveedorNombre || '—' }}</td>
-          <td>
+          <td class="txt-familia" data-label="Familia">{{ getFamiliaNombre(item.familiaId) }}</td>
+          <td class="txt-subfamilia" data-label="Subfamilia">{{ getSubfamiliaNombre(item.familiaId) }}</td>
+          <td class="txt-barcode" data-label="Código Barras">{{ item.codigoBarras || '—' }}</td>
+          <td class="txt-precio" data-label="Precio">{{ item.precioFinal | currency:'EUR' }}</td>
+          <td class="txt-proveedor" data-label="Proveedor">{{ item.proveedorNombre || '—' }}</td>
+          <td data-label="Stock">
             <!-- ⚡ Cambiado: Evaluamos si tiene stock asignado en lugar de depender del tipo antiguo -->
             @if (item.stock !== undefined && item.stock !== null) {
               <div class="stock-container">
@@ -99,8 +100,8 @@
               <span class="txt-servicio-na">🛠️ Servicio / Taller</span>
             }
           </td>
-          <td class="txt-stock-minimo">{{ item.stockMinimo !== null && item.stockMinimo !== undefined ? item.stockMinimo + ' u.' : '—' }}</td>
-          <td>
+          <td class="txt-stock-minimo" data-label="Stock Mín.">{{ item.stockMinimo !== null && item.stockMinimo !== undefined ? item.stockMinimo + ' u.' : '—' }}</td>
+          <td data-label="Acciones">
             <div class="acciones-wrapper">
               <button class="btn-edit" [routerLink]="['editar', item.id]">
                 ✏️ Editar
@@ -118,6 +119,7 @@
       }
     </tbody>
   </table>
+  </div>
   }
 
   <footer class="paginacion-footer">
@@ -205,9 +207,9 @@
               <div class="family-item">
                 <div class="family-item-info">
                   <span class="family-name">📂 {{ fam.nombre }}</span>
-                  @if (fam.subfamilias && fam.subfamilias.length > 0) {
+                  @if (subfamiliasDePadre(fam.id).length > 0) {
                     <div class="sub-family-list">
-                      @for (sub of fam.subfamilias; track sub.id) {
+                      @for (sub of subfamiliasDePadre(fam.id); track sub.id) {
                         <div class="sub-family-item">
                           <span class="family-name">↳ {{ sub.nombre }}</span>
                           <div class="family-item-actions">

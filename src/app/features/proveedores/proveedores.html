@@ -22,6 +22,7 @@
   <!-- LISTADO DE PROVEEDORES (Escritorio) -->
   <div class="desktop-only">
     <div class="tabla-wrapper">
+      <div class="table-responsive">
       <table class="zapatero-table">
         <thead>
           <tr>
@@ -37,32 +38,33 @@
         <tbody>
           @for (p of proveedoresAMostrar(); track p.id) {
             <tr>
-              <td class="txt-negrita">{{ p.nombreComercial }}</td>
-              <td class="txt-mutado">{{ p.nif || '-' }}</td>
-              <td>{{ p.telefono || '-' }}</td>
-              <td class="txt-email">{{ p.email || '-' }}</td>
-              <td class="txt-mutado">{{ p.direccion || '-' }}</td>
-              <td>{{ p.ciudad }}{{ p.codigoPostal ? ' ('+p.codigoPostal+')' : '' }}</td>
-              <td>
+              <td class="txt-negrita" data-label="Nombre">{{ p.nombreComercial }}</td>
+              <td class="txt-mutado" data-label="CIF">{{ p.nif || '-' }}</td>
+              <td data-label="Teléfono">{{ p.telefono || '-' }}</td>
+              <td class="txt-email" data-label="Email">{{ p.email || '-' }}</td>
+              <td class="txt-mutado" data-label="Dirección">{{ p.direccion || '-' }}</td>
+              <td data-label="Ciudad">{{ p.ciudad }}{{ p.codigoPostal ? ' ('+p.codigoPostal+')' : '' }}</td>
+              <td data-label="Acciones">
               <div class="acciones-wrapper">
                   <button (click)="abrirModalEdicion(p)" class="btn-accion-editar" title="Editar Ficha" type="button">
-                    ✏️ Editar
+                    ✏️ <span class="btn-label">Editar</span>
                   </button>
                   <button (click)="solicitarConfirmacionBorrar(p)" class="btn-accion-eliminar" title="Eliminar Proveedor" type="button">
-                    🗑️ Borrar
+                    🗑️ <span class="btn-label">Borrar</span>
                   </button>
                 </div>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="tabla-vacia">
+              <td colspan="7" class="tabla-vacia">
                 📭 No hay proveedores registrados todavía.
               </td>
             </tr>
           }
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 
@@ -74,17 +76,19 @@
       } @else {
         @for (p of proveedoresAMostrar(); track p.id) {
           <div class="proveedor-mobile-card">
-            <div class="card-info">
+            <div class="card-header">
               <h3>{{ p.nombreComercial }}</h3>
-              @if (p.nif) { <p class="txt-mutado">🆔 {{ p.nif }}</p> }
-              @if (p.telefono) { <p class="tel">📞 {{ p.telefono }}</p> }
-              @if (p.email) { <p class="mail">✉️ {{ p.email }}</p> }
-              @if (p.direccion) { <p class="dir">📍 {{ p.direccion }}</p> }
-              @if (p.ciudad || p.codigoPostal) { <p class="loc">🏙️ {{ p.ciudad }}{{ p.codigoPostal ? ' ('+p.codigoPostal+')' : '' }}</p> }
+              <div class="card-actions">
+                <button class="btn-edit-movil" (click)="abrirModalEdicion(p)" title="Editar">✏️</button>
+                <button class="btn-delete-movil" (click)="solicitarConfirmacionBorrar(p)" title="Borrar">🗑️</button>
+              </div>
             </div>
-            <div class="card-actions">
-              <button class="btn-edit-movil" (click)="abrirModalEdicion(p)">✏️</button>
-              <button class="btn-delete-movil" (click)="solicitarConfirmacionBorrar(p)">🗑️</button>
+            <div class="card-body">
+              @if (p.nif) { <p><span class="card-label">CIF</span><span class="card-value">{{ p.nif }}</span></p> }
+              @if (p.telefono) { <p><span class="card-label">Teléfono</span><span class="card-value">{{ p.telefono }}</span></p> }
+              @if (p.email) { <p class="email-row"><span class="card-label">Email</span><span class="card-value">{{ p.email }}</span></p> }
+              @if (p.direccion) { <p class="dir-row"><span class="card-label">Dirección</span><span class="card-value">{{ p.direccion }}</span></p> }
+              @if (p.ciudad || p.codigoPostal) { <p><span class="card-label">Ciudad</span><span class="card-value">{{ p.ciudad }}{{ p.codigoPostal ? ' ('+p.codigoPostal+')' : '' }}</span></p> }
             </div>
           </div>
         } @empty {

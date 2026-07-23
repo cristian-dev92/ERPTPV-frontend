@@ -130,22 +130,22 @@
     </div>
 
     <!-- Paginador de artículos -->
-    @if (articulosFiltrados().length > itemsPorPaginaArticulo()) {
-      <div class="articulos-paginator">
-        <div class="paginator-size-selector">
-          <span class="paginator-label">Ver</span>
-          <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 25" (click)="cambiarTamanoPaginaArticulo(25)">25</button>
-          <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 50" (click)="cambiarTamanoPaginaArticulo(50)">50</button>
-          <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 75" (click)="cambiarTamanoPaginaArticulo(75)">75</button>
-          <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 100" (click)="cambiarTamanoPaginaArticulo(100)">100</button>
-        </div>
+    <div class="articulos-paginator">
+      <div class="paginator-size-selector">
+        <span class="paginator-label">Ver</span>
+        <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 25" (click)="cambiarTamanoPaginaArticulo(25)">25</button>
+        <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 50" (click)="cambiarTamanoPaginaArticulo(50)">50</button>
+        <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 75" (click)="cambiarTamanoPaginaArticulo(75)">75</button>
+        <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 100" (click)="cambiarTamanoPaginaArticulo(100)">100</button>
+      </div>
+      @if (articulosFiltrados().length > itemsPorPaginaArticulo()) {
         <div class="paginator-nav">
           <button class="btn-paginar-articulos" [disabled]="paginaArticulo() === 0" (click)="paginaArticuloAnterior()">◀️ Anterior</button>
           <span class="info-paginas-articulos">Pág. {{ paginaArticulo() + 1 }}/{{ totalPaginasArticulos() }}</span>
           <button class="btn-paginar-articulos" [disabled]="paginaArticulo() >= totalPaginasArticulos() - 1" (click)="paginaArticuloSiguiente()">Siguiente ▶️</button>
         </div>
-      </div>
-    }
+      }
+    </div>
   </div>
 
   <!--SECCION CARRITO (TICKET ACTUAL)-->
@@ -478,50 +478,50 @@
 <!-- NUEVO: MODAL INTEGRAL "GESTIÓN DE TALLER Y SERVICIOS" (EL PURPURA DE LA IMAGEN) -->
 @if (mostrarModalGestionServicios()) {
   <div class="modal-keypad-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(4px);">
-    <div class="modal-keypad-content" style="background: #fff; border-radius: 16px; width: 98%; max-width: 1500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); border: 3px solid #581c87; padding: 0;">
+    <div class="modal-keypad-content modal-taller-servicios" style="background: #fff; border-radius: 16px; width: 98%; max-width: 1200px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); border: 3px solid #581c87; padding: 0;">
       
       <!-- Cabecera del Gestor de Servicios -->
-      <div style="background: #581c87; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="margin: 0; font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">🛠️ GESTIÓN de TALLER y SERVICIOS</h3>
+      <div style="background: #581c87; color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">🛠️ GESTIÓN de TALLER y SERVICIOS</h3>
         <button type="button" (click)="cerrarModalServicios()" style="background: rgba(255,255,255,0.15); border: none; font-size: 1.1rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
       </div>
 
-      <div style="padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 16px;">
         
         <!-- Bloque 1: Datos del Cliente e Importación automática de entrega -->
-          <div style="background: #f8fafc; border-radius: 10px; border: 1px solid #cbd5e1; padding: 16px;">
-            <h4 style="margin: 0 0 12px 0; font-size: 1rem; color: #1e293b; font-weight: 700; display: flex; align-items: center; gap: 6px;">👤 DATOS DEL CLIENTE Y ENTREGA</h4>
-            <div style="display: grid; grid-template-columns: 1fr 0.5fr 0.9fr; gap: 40px; align-items: end;">
-              <div style="position: relative;">
-                <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Nombre Cliente:</label>
-                <div style="display: flex; gap: 6px;">
+          <div class="cliente-entrega-block">
+            <h4 class="cliente-entrega-title">👤 DATOS DEL CLIENTE Y ENTREGA</h4>
+            <div class="cliente-entrega-grid">
+              <div class="cliente-entrega-field cliente-field">
+                <label>Nombre Cliente:</label>
+                <div class="cliente-input-wrapper">
                   @if (clienteSeleccionado()) {
-                    <input type="text" [disabled]="true" [value]="clienteSeleccionado()?.nombre || 'Cliente General'" style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #e2e8f0; font-weight: 600;" />
-                    <button type="button" (click)="deseleccionarCliente()" style="padding: 8px 10px; border: 1px solid #ef4444; border-radius: 6px; background: #fff; color: #ef4444; cursor: pointer; font-size: 0.75rem; white-space: nowrap;">✕</button>
+                    <input type="text" [disabled]="true" [value]="clienteSeleccionado()?.nombre || 'Cliente General'" />
+                    <button type="button" class="btn-deseleccionar" (click)="deseleccionarCliente()">✕</button>
                   } @else {
-                    <input type="text" [value]="busquedaCliente()" (input)="buscarClientes($any($event.target).value)" (click)="abrirTeclado('CLIENTE')" placeholder="Buscar por nombre o tel..." style="flex: 1; padding: 8px 12px; border: 1px solid #581c87; border-radius: 6px; font-weight: 500;" />
+                    <input type="text" [value]="busquedaCliente()" (input)="buscarClientes($any($event.target).value)" (click)="abrirTeclado('CLIENTE')" placeholder="Buscar..." />
                   }
                 </div>
                 @if (clientesEncontrados().length > 0 && !clienteSeleccionado()) {
-                  <ul style="position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; margin: 2px 0 0 0; padding: 0; list-style: none; max-height: 150px; overflow-y: auto;">
+                  <ul class="cliente-dropdown">
                     @for (cliente of clientesEncontrados(); track cliente.id) {
-                      <li (click)="seleccionarCliente(cliente)" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; display: flex; justify-content: space-between;">
-                        <span style="font-weight: 600;">{{ cliente.nombre }}</span>
-                        <span style="color: #64748b;">📱 {{ cliente.telefono }}</span>
+                      <li (click)="seleccionarCliente(cliente)">
+                        <span class="drop-nombre">{{ cliente.nombre }}</span>
+                        <span class="drop-telefono">📱 {{ cliente.telefono }}</span>
                       </li>
                     }
                   </ul>
                 }
               </div>
-              <div>
-                <label style="font-size: 0.8rem; font-weight: 500; color: #475569; display: block; margin-bottom: 4px;">Teléfono:</label>
-                <input type="text" [disabled]="true" [value]="clienteSeleccionado()?.telefono || 'No indicado'" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #e2e8f0; font-weight: 600;" />
+              <div class="cliente-entrega-field telefono-field">
+                <label>Teléfono:</label>
+                <input type="text" [disabled]="true" [value]="clienteSeleccionado()?.telefono || 'No indicado'" />
               </div>
-              <div>
-                <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">📅 Fecha Entrega:</label>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                  <input type="date" [(ngModel)]="fechaPrevistaEntrega" (change)="onFechaRecogidaChange($event)" [disabled]="sinFechaRecogida()" style="flex: 1; padding: 8px 12px; border: 1px solid #581c87; border-radius: 6px; font-weight: 600; box-sizing: border-box;" />
-                  <button type="button" (click)="toggleSinFechaRecogida()" [style.background]="sinFechaRecogida() ? '#581c87' : '#fff'" [style.color]="sinFechaRecogida() ? '#fff' : '#581c87'" [style.borderColor]="'#581c87'" style="padding: 10px 16px; border: 2px solid; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700; white-space: nowrap; transition: all 0.15s; user-select: none; min-height: 42px;">
+              <div class="cliente-entrega-field fecha-field">
+                <label>📅 Fecha Entrega:</label>
+                <div class="fecha-input-group">
+                  <input type="date" [(ngModel)]="fechaPrevistaEntrega" (change)="onFechaRecogidaChange($event)" [disabled]="sinFechaRecogida()" />
+                  <button type="button" class="btn-sin-fecha" (click)="toggleSinFechaRecogida()" [class.active]="sinFechaRecogida()">
                     {{ sinFechaRecogida() ? '✓ Sin fecha' : '☐ Sin fecha' }}
                   </button>
                 </div>
@@ -530,7 +530,7 @@
           </div>
 
         <!-- Bloque 2: Tabla de trabajos e items traídos del Carrito -->
-        <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow-y: auto; max-height: 320px;">
+        <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow-y: auto; max-height: 240px;">
           <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
             <thead>
               <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
@@ -619,86 +619,64 @@
         </div>
 
         <!-- Bloque 3: Notas Generales, Trabajo Manual y Controles de Cobro/Anticipo -->
-        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
-          
-          <!-- LADO IZQUIERDO: Control de Notas Generales y Trabajo Manual -->
-          <div style="display: flex; flex-direction: column; gap: 14px;">
-            <button type="button" 
-                    (click)="agregarTrabajoManualSinProducto()" 
-                    style="background: #4b5563; color: #fff; padding: 10px 16px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.85rem; align-self: flex-start; display: flex; align-items: center; gap: 6px;">
+        <div class="seccion-inferior">
+
+          <div class="seccion-inferior-izquierda">
+            <button type="button" class="btn-trabajo-manual" (click)="agregarTrabajoManualSinProducto()">
               ➕ Añadir Trabajo Manual (Sin Producto)
             </button>
 
-            <!-- Caja de Texto del Rectángulo de Notas Generales para OrdenDTO -->
-            <div>
-              <label style="font-size: 0.85rem; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">📝 NOTAS GENERALES DE LA ORDEN (notasGenerales):</label>
-              <textarea 
+            <div class="bloque-notas-generales">
+              <label>📝 NOTAS GENERALES DE LA ORDEN (notasGenerales):</label>
+              <textarea
                 [(ngModel)]="notasGenerales"
                 (click)="abrirTeclado('NOTAS_GENERALES')"
-                placeholder="Añade aquí observaciones generales del encargo que no sean del arreglo técnico..." 
-                rows="3"
-                style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; resize: none; box-sizing: border-box; background: #fafafa; font-family: inherit;">
-              </textarea>
+                placeholder="Añade aquí observaciones generales del encargo que no sean del arreglo técnico..."
+                rows="2"></textarea>
             </div>
           </div>
 
-          <!-- LADO DERECHO: Elección de Anticipos, Métodos de Pago e Importes -->
-          <div style="background: #faf5ff; border-radius: 12px; border: 1px solid #e9d5ff; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              
-              <!-- Selector Dinámico de Método de Pago para el Anticipo (Usa los mismos métodos que la tienda) -->
-              <div>
-                <label style="font-size: 0.8rem; font-weight: 700; color: #6b21a8; display: block; margin-bottom: 6px;">💳 Método de Pago del Anticipo/Cobro:</label>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px;">
-                  @for (metodo of opcionesMetodosPago; track metodo) {
-                    <button type="button" 
-                            (click)="metodoPagoAnticipo.set(metodo)"
-                            [style.background]="metodoPagoAnticipo() === metodo ? '#6b21a8' : '#fff'"
-                            [style.color]="metodoPagoAnticipo() === metodo ? '#fff' : '#6b21a8'"
-                            [style.border-color]="metodoPagoAnticipo() === metodo ? '#6b21a8' : '#d8b4fe'"
-                            style="padding: 10px 6px; border: 1px solid; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 50px;">
-                      <span style="font-size: 1.1rem;">{{ obtenerIconoPago(metodo) }}</span>
-                      <span>{{ metodo }}</span>
-                    </button>
-                  }
-                </div>
-              </div>
-
-              <!-- Input numérico del Importe del Anticipo -->
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <label style="font-size: 0.8rem; font-weight: 700; color: #475569;">💰 Importe de Anticipo (€):</label>
-                  <span style="font-size: 0.75rem; color: #6b21a8; font-weight: bold;">Máximo: {{ totalTicket() | currency:'EUR' }}</span>
-                </div>
-                <input type="number" 
-                       [(ngModel)]="importeAnticipo" 
-                       (click)="abrirTeclado('CANTIDAD_ANTICIPO')"
-                       style="width: 100%; padding: 10px; border: 1px solid #d8b4fe; border-radius: 8px; font-size: 1.2rem; font-weight: 700; text-align: right; box-sizing: border-box;" />
+          <div class="seccion-inferior-derecha">
+            <div class="bloque-metodo-pago">
+              <label>💳 Método de Pago del Anticipo/Cobro:</label>
+              <div class="pago-botones-grid">
+                @for (metodo of opcionesMetodosPago; track metodo) {
+                  <button type="button" class="pago-boton"
+                          [class.active]="metodoPagoAnticipo() === metodo"
+                          (click)="metodoPagoAnticipo.set(metodo)">
+                    <span class="pago-icono">{{ obtenerIconoPago(metodo) }}</span>
+                    <span>{{ metodo }}</span>
+                  </button>
+                }
               </div>
             </div>
 
-            <!-- Desglose de Totales y Botonera del Gestor -->
-            <div style="border-top: 1px solid #e9d5ff; padding-top: 12px; margin-top: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-top: 8px;">
-                <span style="font-weight: 700; color: #581c87;">Total Presupuesto:</span>
-                <span style="font-size: 1.6rem; font-weight: 900; color: #3b0764;">{{ totalTicket() | currency:'EUR' }}</span>
+            <div class="bloque-importe">
+              <div class="importe-header">
+                <label>💰 Importe de Anticipo (€):</label>
+                <span class="importe-maximo">Máximo: {{ totalTicket() | currency:'EUR' }}</span>
               </div>
+              <input type="number" class="input-importe"
+                     [(ngModel)]="importeAnticipo"
+                     (click)="abrirTeclado('CANTIDAD_ANTICIPO')" />
+            </div>
 
-              <div style="display: flex; gap: 8px;">
-                <button type="button" 
-                        (click)="confirmarTallerYServicios()" 
-                        style="flex: 1.4; background: #16a34a; color: #fff; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <div class="bloque-totales">
+              <div class="total-row">
+                <span>Total Presupuesto:</span>
+                <span class="total-valor">{{ totalTicket() | currency:'EUR' }}</span>
+              </div>
+              <div class="botones-accion">
+                <button type="button" class="btn-confirmar" (click)="confirmarTallerYServicios()">
                   ✔️ Confirmar y Generar Tickets
                 </button>
-                <button type="button" 
-                        (click)="cerrarModalServicios()" 
-                        style="flex: 1; background: #bb1414; color: #fff; padding: 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem;">
+                <button type="button" class="btn-cancelar" (click)="cerrarModalServicios()">
                   Cancelar
                 </button>
               </div>
             </div>
-
           </div>
+
         </div>
 
       </div>

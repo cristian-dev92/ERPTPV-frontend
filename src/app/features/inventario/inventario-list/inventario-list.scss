@@ -93,7 +93,8 @@ $danger: #ef4444;
   width: 100%;
 
   .input-buscar-wrapper {
-    flex: 2;
+    flex: 1.2;
+    max-width: 420px;
     
     .search-input {
       width: 100%;
@@ -142,13 +143,20 @@ $danger: #ef4444;
 // =========================================================================
 // 3. LA TABLA DEL INVENTARIO ZAPATERO
 // =========================================================================
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
 .zapatero-table {
   width: 100%;
+  table-layout: auto;
   margin: 0 auto 20px auto; 
   border-collapse: collapse;
   background: white;
   border-radius: 10px;
-  overflow-x: auto;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   border: 1px solid #e2e8f0;
   font-size: 0.95rem;
@@ -158,13 +166,14 @@ $danger: #ef4444;
     border-bottom: 2px solid #edf2f7;
     
     th {
-      padding: 1rem;
+      padding: 0.75rem 0.5rem;
       color: #475569;
       font-weight: 700;
       text-transform: uppercase;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       text-align: center;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
   }
 
@@ -176,22 +185,24 @@ $danger: #ef4444;
     }
 
     td {
-      padding: 1rem;
+      padding: 0.6rem 0.4rem;
+      font-size: 0.82rem;
       color: #0f172a;
       vertical-align: middle;
       text-align: center;
 
       &.td-nombre {
-        text-align: center;
-        font-size: 1rem;
-        white-space: nowrap;
+        text-align: left;
+        font-size: 0.95rem;
+        min-width: 280px;
+        width: auto;
 
         strong {
           vertical-align: middle;
         }
 
         .nota-interna-badge {
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           background: #f1f5f9;
           color: #475569;
           padding: 2px 6px;
@@ -206,40 +217,43 @@ $danger: #ef4444;
       &.txt-barcode {
         color: #0f172a;
         letter-spacing: 0.5px;
+        font-size: 0.78rem;
       }
 
       &.txt-precio {
         font-weight: 700;
         color: #0f172a;
+        font-size: 0.85rem;
+        white-space: nowrap;
       }
 
       &.txt-familia {
         color: #0f172a;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 400;
       }
 
       &.txt-subfamilia {
         color: #0f172a;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 400;
       }
 
       &.txt-referencia {
         color: #0f172a;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 400;
       }
 
       &.txt-proveedor {
         color: #0f172a;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 400;
       }
 
       &.txt-stock-minimo {
         color: #0f172a;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 400;
       }
     }
@@ -518,6 +532,59 @@ $danger: #ef4444;
 // =========================================================================
 // 📱 7. MEDIAS QUERIES RESPONSIVAS (TABLET / MÓVIL)
 // =========================================================================
+
+@media (max-width: 1100px) {
+  .zapatero-table {
+    thead th {
+      padding: 6px 4px !important;
+      font-size: 0.7rem;
+    }
+
+    tbody td {
+      padding: 6px 4px !important;
+      font-size: 0.78rem;
+
+      &.td-nombre {
+        font-size: 0.88rem;
+        min-width: 140px;
+      }
+
+      &.txt-referencia {
+        max-width: 65px;
+      }
+
+      &.txt-subfamilia,
+      &.txt-barcode,
+      &.txt-proveedor {
+        max-width: 75px;
+      }
+
+      &.txt-precio {
+        max-width: 55px;
+        font-size: 0.8rem;
+      }
+
+      &.txt-stock-minimo,
+      .stock-container {
+        max-width: 55px;
+      }
+
+      .acciones-wrapper {
+        gap: 3px;
+
+        button {
+          padding: 4px 5px;
+          font-size: 0.7rem;
+        }
+
+        .btn-edit,
+        .btn-delete {
+          padding: 4px 5px;
+        }
+      }
+    }
+  }
+}
 @media (max-width: 768px) {
   .inventario-container {
     padding: 1rem;
@@ -552,10 +619,50 @@ $danger: #ef4444;
   }
 
   .zapatero-table {
-    width: 100%;
-    margin-bottom: 20px;
+    min-width: auto;
     
-    th:nth-child(3), td:nth-child(3) { display: none; } // Oculta código barras en móviles pequeños
+    thead th {
+      padding: 0.3rem 0.2rem;
+      font-size: 0.6rem;
+    }
+
+    tbody td {
+      padding: 0.3rem 0.2rem;
+      font-size: 0.7rem;
+
+      &.td-nombre {
+        font-size: 0.78rem;
+        min-width: 120px;
+      }
+
+      &.txt-precio {
+        font-size: 0.75rem;
+      }
+
+      .acciones-wrapper {
+        gap: 2px;
+
+        button {
+          padding: 3px 4px;
+          font-size: 0.65rem;
+          white-space: nowrap;
+        }
+
+        .btn-edit,
+        .btn-delete {
+          padding: 3px 4px;
+        }
+      }
+    }
+
+    th:nth-child(3), td:nth-child(3) { display: none; }
+    th:nth-child(9), td:nth-child(9) { display: none; }
+  }
+
+  .table-responsive {
+    margin: 0 -1rem;
+    padding: 0 1rem;
+    width: calc(100% + 2rem);
   }
 
   .tpv-teclado-virtual {
@@ -565,6 +672,114 @@ $danger: #ef4444;
       button { height: 42px; font-size: 1rem; }
       &.fila-dinamica button { height: 38px; }
       &.fila-especial button { height: 42px; font-size: 0.7rem; padding: 0 2px; }
+    }
+  }
+}
+
+// =========================================================================
+// 📱 MÓVIL: CONVERTIR TABLA EN TARJETAS (Responsive Cards)
+// =========================================================================
+@media (max-width: 600px) {
+  .table-responsive {
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  .zapatero-table {
+    thead {
+      display: none;
+    }
+
+    tbody tr {
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    tbody td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px dashed #edf2f7;
+      font-size: 0.85rem;
+      min-width: 0;
+      max-width: none;
+      width: 100%;
+      box-sizing: border-box;
+
+      &::before {
+        content: attr(data-label) ":";
+        font-weight: 600;
+        color: #64748b;
+        font-size: 0.78rem;
+        flex-shrink: 0;
+        margin-right: 8px;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &.td-nombre {
+        font-size: 1rem;
+        font-weight: bold;
+        order: -1;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 8px;
+        margin-bottom: 4px;
+
+        &::before {
+          display: none;
+        }
+
+        .nota-interna-badge {
+          font-size: 0.7rem;
+          margin-left: 6px;
+        }
+      }
+
+      &.txt-precio {
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      &[data-label="Acciones"] {
+        order: 1;
+        border-top: 2px solid #e2e8f0;
+        padding-top: 8px;
+        margin-top: 4px;
+
+        &::before {
+          display: none;
+        }
+
+        .acciones-wrapper {
+          width: 100%;
+          display: flex;
+          gap: 8px;
+
+          button {
+            flex: 1;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            text-align: center;
+          }
+        }
+      }
+
+      .stock-container {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
     }
   }
 }
@@ -596,15 +811,27 @@ $danger: #ef4444;
   }
 
   .zapatero-table {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     thead th {
-      padding: 0.5rem;
-      font-size: 0.65rem;
+      padding: 0.4rem 0.25rem;
+      font-size: 0.6rem;
     }
     tbody td {
-      padding: 0.5rem;
+      padding: 0.4rem 0.25rem;
+      font-size: 0.72rem;
+
+      &.td-nombre {
+        font-size: 0.82rem;
+        min-width: 180px;
+      }
     }
     th:nth-child(4), td:nth-child(4) { display: none; } // Oculta columna subfamilia en móviles muy pequeños
+  }
+
+  .table-responsive {
+    margin: 0 -0.5rem;
+    padding: 0 0.5rem;
+    width: calc(100% + 1rem);
   }
 
   .paginacion-footer {
@@ -822,6 +1049,13 @@ $danger: #ef4444;
       font-size: 0.85rem;
     }
     .info-paginas { font-size: 0.85rem; }
+  }
+}
+
+// Tablet: safe area inferior para la paginación
+@media (min-width: 601px) and (max-width: 1024px) {
+  .paginacion-footer {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 20px));
   }
 }
 
