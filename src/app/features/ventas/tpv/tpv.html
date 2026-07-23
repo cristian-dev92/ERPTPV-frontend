@@ -40,7 +40,7 @@
       </select>
 
       <!-- Fila de Familias Principales -->
-      <div class="fila-familias" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; width: 100%;">
+      <div class="fila-familias">
         <button type="button" 
                 class="btn-categoria" 
                 [class.active]="familiaSeleccionada() === null" 
@@ -59,14 +59,13 @@
 
       <!-- Fila de Subfamilias Dinámicas (Solo se muestra si la familia activa tiene subfamilias) -->
       @if (familiaSeleccionada() && familiaSeleccionada()?.subfamilias?.length) {
-        <div class="fila-subfamilias" style="display: flex; gap: 6px; overflow-x: auto; padding: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; border-radius: 8px; width: 100%;">
+        <div class="fila-subfamilias">
           
           <!-- Botón comodín de "Ver Todo" estilizado como el resto -->
           <button type="button" 
                   class="btn-subcategoria" 
                   [class.active]="subfamiliaSeleccionada() === null" 
-                  (click)="seleccionarSubfamilia(null)"
-                  style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; transition: all 0.2s; flex-shrink: 0;">
+                  (click)="seleccionarSubfamilia(null)">
             📁 Todo
           </button>
 
@@ -74,8 +73,7 @@
             <button type="button" 
                     class="btn-subcategoria" 
                     [class.active]="subfamiliaSeleccionada()?.id === sub.id" 
-                    (click)="seleccionarSubfamilia(sub)"
-                    style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; transition: all 0.2s; flex-shrink: 0;">
+                    (click)="seleccionarSubfamilia(sub)">
               {{ sub.nombre }}
             </button>
           }
@@ -95,7 +93,7 @@
 
     <!-- Rejilla de artículos unificada en cuadraditos -->
     <div class="articulos-grid">
-      @for (articulo of articulosFiltrados(); track articulo.id) {
+      @for (articulo of articulosPaginados(); track articulo.id) {
         <button 
           type="button" 
           class="articulo-card"
@@ -124,12 +122,30 @@
             </span>
           }
         </button>
-      } @empty {
+        } @empty {
         <div class="no-results">
           📭 No hay artículos en esta categoría que coincidan con la búsqueda.
         </div>
       }
     </div>
+
+    <!-- Paginador de artículos -->
+    @if (articulosFiltrados().length > itemsPorPaginaArticulo()) {
+      <div class="articulos-paginator">
+        <div class="paginator-size-selector">
+          <span class="paginator-label">Ver</span>
+          <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 25" (click)="cambiarTamanoPaginaArticulo(25)">25</button>
+          <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 50" (click)="cambiarTamanoPaginaArticulo(50)">50</button>
+          <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 75" (click)="cambiarTamanoPaginaArticulo(75)">75</button>
+          <button class="btn-size" [class.active]="itemsPorPaginaArticulo() === 100" (click)="cambiarTamanoPaginaArticulo(100)">100</button>
+        </div>
+        <div class="paginator-nav">
+          <button class="btn-paginar-articulos" [disabled]="paginaArticulo() === 0" (click)="paginaArticuloAnterior()">◀️ Anterior</button>
+          <span class="info-paginas-articulos">Pág. {{ paginaArticulo() + 1 }}/{{ totalPaginasArticulos() }}</span>
+          <button class="btn-paginar-articulos" [disabled]="paginaArticulo() >= totalPaginasArticulos() - 1" (click)="paginaArticuloSiguiente()">Siguiente ▶️</button>
+        </div>
+      </div>
+    }
   </div>
 
   <!--SECCION CARRITO (TICKET ACTUAL)-->
@@ -371,15 +387,15 @@
     <div class="modal-keypad-content unificado-linea-content" style="max-width: 750px; width: 95%; max-height: 90vh; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); margin: auto; display: flex; flex-direction: column; overflow: hidden;">
       
       <div class="modal-header-linea" style="margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; flex-shrink: 0;">
-        <h3 style="margin: 0; font-size: 1.1rem; color: #0b2286;">⚙️ Edición de precio, descuento y notas</h3>
+        <h3 style="margin: 0; font-size: 1.1rem; color: #0b2286;">⚙️ Edición de precio y descuento</h3>
         <p class="nombre-articulo-editar" style="margin: 4px 0 0 0; color: #000000; font-size: 1.4rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
           {{ itemActivo.articulo.nombre || 'Producto' }}
         </p>
       </div>
 
-      <div class="cuerpo-edicion-linea-grid" style="flex: 1; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; overflow: hidden;">
+      <div style="flex: 1;">
         
-        <div class="seccion-teclado-valores" style="display: flex; flex-direction: column; gap: 12px; justify-content: center;">
+        <div class="seccion-teclado-valores" style="max-width: 380px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; justify-content: center;">
           
           <div class="tabs-valores-input" style="display: flex; gap: 8px;">
             <div class="campo-edicion-box" [class.activo]="modoCampoEdicionActivo() === 'PRECIO'" (click)="modoCampoEdicionActivo.set('PRECIO')" 
@@ -409,35 +425,6 @@
           </div>
         </div>
 
-        <div class="seccion-bloques-notas" style="display: flex; flex-direction: column; gap: 14px; justify-content: center;">
-          
-          <!-- NOTAS DE TALLER: Para trabajotallerDTO (notasMostrador, visible en el ticket de 80mm) -->
-          <div class="seccion-notas-taller-linea" style="display: flex; flex-direction: column; gap: 4px;">
-            <label for="notaTallerLinea" style="font-weight: 600; color: #334155; font-size: 0.9rem; display: flex; align-items: center; gap: 4px;">📋 Notas de Taller (Salen en Ticket 80mm):</label>
-            <textarea 
-              id="notaTallerLinea"
-              style="width: 100%; height: 95px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.4; background: #fafafa; font-family: inherit;"
-              [value]="notaLineaEnConstruccion()"
-              (click)="abrirTeclado('NOTAS_REPARACION')"
-              (input)="notaLineaEnConstruccion.set($any($event.target).value)">
-            </textarea>
-          </div> 
-
-          <!-- DESCRIPCIÓN DEL BULTO: Para trabajosalidaDTO (descripcionBulto, NO sale en el ticket de 80mm) -->
-          <div class="observaciones-ticket-row" style="display: flex; flex-direction: column; gap: 4px;">
-            <label for="descripcionBultoTaller" style="font-size: 0.9rem; font-weight: 600; color: #334155; display: flex; align-items: center; gap: 4px;">
-              🥾 Descripción Física del Bulto:
-            </label>
-            <textarea 
-              id="descripcionBultoTaller"
-              style="width: 100%; height: 95px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; resize: none; box-sizing: border-box; line-height: 1.4; background: #f8fafc; font-family: inherit;"
-              [value]="descripcionBultoEnConstruccion() ? descripcionBultoEnConstruccion() : ''"
-              (click)="abrirTeclado('DESCRIPCION_BULTO')"
-              (input)="descripcionBultoEnConstruccion.set($any($event.target).value)">
-            </textarea>
-          </div>
-
-        </div>
       </div> 
 
       <div class="acciones-keypad" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; flex-shrink: 0; display: flex; gap: 10px; justify-content: flex-end;">

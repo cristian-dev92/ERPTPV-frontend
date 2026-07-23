@@ -328,7 +328,7 @@ export class ProveedoresComponent extends ComponentePaginado implements OnInit {
 
     this.proveedorService.eliminarProveedor(id).subscribe({
       next: () => {
-        this.uiService.mostrarToast(`📦 Proveedor eliminado con éxito`, 'success');
+        this.uiService.mostrarToast(`👥 Proveedor eliminado con éxito`, 'success');
         this.proveedores.update(list => list.filter(p => p.id !== id));
         this.cerrarModalBorrar();
       },

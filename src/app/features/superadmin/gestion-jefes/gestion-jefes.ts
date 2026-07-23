@@ -48,7 +48,7 @@ export class GestionJefesComponent implements OnInit {
   // --- FLUJO: MODIFICACIÓN DE EMAIL ---
   abrirModalEmail(jefe: JefeAdminDTO): void {
     this.jefeSeleccionado.set(jefe);
-    this.nuevoEmailInput.set(jefe.emailAdmin); // Precargamos el email actual
+    this.nuevoEmailInput.set(jefe.email); // Precargamos el email actual
     this.mostrarModalEmail.set(true);
   }
 
@@ -63,7 +63,7 @@ export class GestionJefesComponent implements OnInit {
     const nuevoEmail = this.nuevoEmailInput().trim();
 
     if (!jefe || !nuevoEmail) return;
-    if (nuevoEmail === jefe.emailAdmin) {
+    if (nuevoEmail === jefe.email) {
       this.uiService.mostrarToast('El email es idéntico al actual', 'warning');
       return;
     }

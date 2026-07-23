@@ -14,8 +14,8 @@
       type="text" 
       class="search-input" 
       placeholder="🔍 Buscar por nombre, teléfono, DNI o ciudad..."
-      [ngModel]="filtroBusqueda()"
-      (ngModelChange)="filtroBusqueda.set($event)"
+      [value]="filtroBusqueda()"
+      (input)="filtroBusqueda.set($any($event.target).value)"
       (focus)="abrirTeclado('BUSQUEDA', filtroBusqueda())">
   </div>
   }
@@ -151,7 +151,7 @@
       </div>
 
       <div class="form-group">
-        <label>Dirección Postal</label>
+        <label>Dirección</label>
         <input type="text" [(ngModel)]="nuevoCliente().direccion" (focus)="abrirTeclado('DIRECCION', nuevoCliente().direccion)">
       </div>
 

@@ -20,19 +20,19 @@ export interface NuevaEmpresaRequest {
 
 export interface EmpresaEstadoDTO {
   id: number;
-  nombre: string;
+  nombreComercial: string;
   nif: string;
   activa: boolean;
-  verifactuOk: boolean; // Semáforo fiscal
-  integracionVerifactuOk: boolean; // Estado Real Hacienda
+  verifactuOk: boolean;
+  integracionVerifactuOk: boolean;
 }
 
 export interface JefeAdminDTO {
-  usuarioId: number;
-  nombreAdmin: string;
-  emailAdmin: string;
+  id: number;
+  nombre: string;
+  email: string;
   empresaId: number;
-  nombreEmpresa: string;
+  empresaNombre: string;
 }
 
 export interface ResetPasswordResponse {

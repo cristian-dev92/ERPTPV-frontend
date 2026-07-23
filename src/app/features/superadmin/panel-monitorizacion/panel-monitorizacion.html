@@ -49,7 +49,7 @@
           @for (emp of empresasSistemas(); track emp.id) {
             <tr>
               <td><strong>#{{ emp.id }}</strong></td>
-              <td>{{ emp.nombre }}</td>
+              <td>{{ emp.nombreComercial }}</td>
               <td><code>{{ emp.nif }}</code></td>
               <td>
                 <span class="dot-status" [class.dot-on]="emp.activa" [class.dot-off]="!emp.activa"></span>

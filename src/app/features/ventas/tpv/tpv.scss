@@ -30,36 +30,29 @@ $border-color: #cbd5e1;
     gap: 8px;
     width: 100%;
 
-    // Fila horizontal con scroll suave para las familias principales
+    // Fila de familias principales en rejilla de 5 columnas
     .fila-familias {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      white-space: nowrap;
-      padding-bottom: 6px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
       width: 100%;
-      
-      // Ocultar la barra de scroll clásica en navegadores para que quede más estético
-      &::-webkit-scrollbar {
-        height: 5px;
-      }
-      &::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-      }
     }
 
     // Botones de Familias Principales
     .btn-categoria {
-      flex: 0 0 auto; // Evita que los botones se encojan
-      padding: 10px 18px;
+      padding: 8px 10px;
       border: 2px solid #e2e8f0;
       background-color: #ffffff;
       border-radius: 8px;
       font-weight: 600;
+      font-size: 0.85rem;
       color: #4a5568;
       cursor: pointer;
       transition: all 0.2s ease;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
 
       &:hover {
         background-color: #f7fafc;
@@ -73,17 +66,17 @@ $border-color: #cbd5e1;
       }
     }
 
-    // Fila de subfamilias (segundo nivel)
+    // Fila de subfamilias (segundo nivel) en rejilla de 5 columnas
     .fila-subfamilias {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      white-space: nowrap;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
       padding: 6px;
       border: 1px solid #e2e8f0;
       background-color: #f8fafc;
       border-radius: 8px;
       width: 100%;
+      box-sizing: border-box;
 
       &::-webkit-scrollbar {
         height: 4px;
@@ -94,8 +87,7 @@ $border-color: #cbd5e1;
       }
 
       .btn-subcategoria {
-        flex: 0 0 auto;
-        padding: 5px 14px;
+        padding: 5px 8px;
         font-size: 0.8rem;
         font-weight: 500;
         border-radius: 20px;
@@ -104,6 +96,10 @@ $border-color: #cbd5e1;
         color: #475569;
         cursor: pointer;
         transition: all 0.2s;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
 
         &:hover {
           background: #f1f5f9;
@@ -142,8 +138,8 @@ $border-color: #cbd5e1;
 
   .articulos-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
     overflow-y: auto;
     max-height: calc(100vh - 270px); 
     padding-right: 5px;
@@ -153,14 +149,16 @@ $border-color: #cbd5e1;
       flex-direction: column;
       justify-content: space-between;
       align-items: flex-start;
-      padding: 15px;
+      padding: 10px;
       background-color: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 10px;
       cursor: pointer;
       position: relative;
       text-align: left;
-      min-height: 100px;
+      white-space: normal;
+      min-height: 110px;
+      max-width: 160px;
       width: 100%;
       box-sizing: border-box;
       transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -194,14 +192,18 @@ $border-color: #cbd5e1;
 
         .nombre {
           font-weight: 600;
-          font-size: 1rem;
+          font-size: 0.95rem;
           color: #1e293b;
+          line-height: 1.2;
           word-break: break-word;
+          overflow-wrap: break-word;
+          white-space: normal;
+          hyphens: auto;
         }
 
         .precio {
           font-weight: 700;
-          font-size: 0.85rem;
+          font-size: 0.8rem;
           color: #0f172a;
         }
 
@@ -211,6 +213,8 @@ $border-color: #cbd5e1;
           align-items: center;
           flex-wrap: wrap;
           gap: 6px;
+          margin-top: auto;
+          padding-top: 4px;
 
           .precio-original-tachado {
             text-decoration: line-through;
@@ -266,6 +270,89 @@ $border-color: #cbd5e1;
     border-radius: 8px;
     border: 1px dashed #cbd5e1;
   }
+ }
+
+ // --- PAGINADOR DE ARTÍCULOS ---
+ .articulos-paginator {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 0.75rem 0.5rem;
+   background-color: #f8fafc;
+   border-top: 1px solid #e2e8f0;
+   border-radius: 0 0 12px 12px;
+   gap: 10px;
+
+   .paginator-size-selector {
+     display: flex;
+     align-items: center;
+     gap: 4px;
+
+     .paginator-label {
+       font-size: 0.85rem;
+       color: #64748b;
+       margin-right: 4px;
+     }
+
+     .btn-size {
+       background-color: white;
+       color: #475569;
+       border: 1px solid #cbd5e1;
+       padding: 0.35rem 0.75rem;
+       border-radius: 6px;
+       font-weight: 600;
+       font-size: 0.8rem;
+       cursor: pointer;
+       transition: all 0.15s ease-in-out;
+
+       &:hover {
+         background-color: #f1f5f9;
+         border-color: #94a3b8;
+       }
+
+       &.active {
+         background-color: #2563eb;
+         color: white;
+         border-color: #2563eb;
+       }
+     }
+   }
+
+   .paginator-nav {
+     display: flex;
+     align-items: center;
+     gap: 8px;
+   }
+
+   .info-paginas-articulos {
+     font-size: 0.85rem;
+     color: #475569;
+     font-weight: 600;
+   }
+
+   .btn-paginar-articulos {
+     background-color: white;
+     color: #475569;
+     border: 1px solid #cbd5e1;
+     padding: 0.4rem 0.85rem;
+     border-radius: 8px;
+     font-weight: 600;
+     font-size: 0.8rem;
+     cursor: pointer;
+     transition: all 0.15s ease-in-out;
+
+     &:hover:not(:disabled) {
+       background-color: #f1f5f9;
+       border-color: #94a3b8;
+       color: #1e293b;
+     }
+
+     &:disabled {
+       opacity: 0.4;
+       cursor: not-allowed;
+       background-color: #f1f5f9;
+     }
+   }
  }
 }
 
@@ -3170,6 +3257,17 @@ app-clientes {
 
   .articulos-grid {
     gap: 6px;
+  }
+
+  .articulos-paginator {
+    flex-direction: column;
+    gap: 8px;
+    padding: 0.5rem;
+
+    .paginator-nav {
+      width: 100%;
+      justify-content: space-between;
+    }
   }
 
   .panel-historial-wrapper {

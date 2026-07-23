@@ -178,17 +178,27 @@
         <h3>📁 Configuración de Categorías</h3>
         <button type="button" class="close-tactil" (click)="cerrarModalConfigurarFamilias()">✕</button>
       </div>
-      
+
+      <!-- BUSCADOR DE FAMILIAS -->
+      <div class="family-search-wrap">
+        <input type="text"
+               placeholder="🔍 Buscar categoría..."
+               [value]="busquedaFamilia()"
+               (input)="busquedaFamilia.set($any($event.target).value); familiaPaginaActual.set(0)">
+      </div>
+
       <!-- LISTADO DE FAMILIAS EXISTENTES -->
       <div class="family-list-section">
         <h4 class="family-list-title">
           Categorías existentes
-          @if (todasLasFamilias().length > 0) {
-            <span class="family-count">({{ todasLasFamilias().length }} categorías)</span>
+          @if (familiasPadreFiltradas().length > 0) {
+            <span class="family-count">
+              ({{ familiasPadreFiltradas().length }} categoría{{ familiasPadreFiltradas().length !== 1 ? 's' : '' }})
+            </span>
           }
         </h4>
-        @if (todasLasFamilias().length === 0) {
-          <p class="family-list-empty">No hay categorías creadas todavía.</p>
+        @if (familiasPadreFiltradas().length === 0) {
+          <p class="family-list-empty">No hay categorías que coincidan con la búsqueda.</p>
         } @else {
           <div class="family-list">
             @for (fam of familiasPadrePaginadas(); track fam.id) {
@@ -225,10 +235,10 @@
               Pág. {{ familiaPaginaActual() + 1 }} de {{ familiaTotalPaginas() }}
               &nbsp;|&nbsp; Ver:
               <select [value]="familiaItemsPorPagina()" (change)="familiaCambiarTamanoPagina(+$any($event.target).value)" class="size-select-family">
+                <option value="5">5</option>
                 <option value="10">10</option>
+                <option value="15">15</option>
                 <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
               </select>
             </span>
             <button class="btn-paginar-family" [disabled]="familiaPaginaActual() >= familiaTotalPaginas() - 1" (click)="familiaPaginaSiguiente()">

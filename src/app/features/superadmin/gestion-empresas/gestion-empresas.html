@@ -34,7 +34,7 @@
           @for (emp of empresas(); track emp.id) {
             <tr>
               <td><strong>#{{ emp.id }}</strong></td>
-              <td>{{ emp.nombre }}</td>
+              <td>{{ emp.nombreComercial }}</td>
               <td><code>{{ emp.nif }}</code></td>
               
               <td>
@@ -64,7 +64,7 @@
       <div class="modal-sheet-sa text-center">
         <div class="modal-header-sa text-danger">⚠️ ¿Confirmar cambio de estado crítico?</div>
         <div class="modal-body-sa">
-          <p>Vas a modificar el estado de la empresa <strong>"{{ empresaSeleccionadaPanic()?.nombre }}"</strong>.</p>
+          <p>Vas a modificar el estado de la empresa <strong>"{{ empresaSeleccionadaPanic()?.nombreComercial }}"</strong>.</p>
           @if (empresaSeleccionadaPanic()?.activa) {
             <p class="advertencia-sub">Esto suspenderá el acceso a todos los terminales TPV y paneles de gestión de este inquilino inmediatamente.</p>
           } @else {
@@ -87,8 +87,7 @@
         <div class="modal-header-sa">🏢 Crear Nuevo Inquilino SaaS</div>
         <form (ngSubmit)="ejecutarAlta()" #altaForm="ngForm" class="sa-form">
           <div class="form-grid">
-            <div>
-              <h3>Datos de la Empresa</h3>
+            <div class="field-row">
               <div class="field">
                 <label>Nombre Comercial</label>
                 <input type="text" [(ngModel)]="nuevaEmpresa.nombreComercial" name="nombreComercial" required />
@@ -97,18 +96,28 @@
                 <label>NIF / CIF</label>
                 <input type="text" [(ngModel)]="nuevaEmpresa.nif" name="nif" required />
               </div>
+            </div>
+            <div class="field-row">
               <div class="field">
-                <label>Dirección</label>
-                <input type="text" [(ngModel)]="nuevaEmpresa.direccion" name="direccion" required />
+                <label>Teléfono de Contacto</label>
+                <input type="text" [(ngModel)]="nuevaEmpresa.telefono" name="telefono" required />
               </div>
               <div class="field">
                 <label>Ciudad</label>
                 <input type="text" [(ngModel)]="nuevaEmpresa.ciudad" name="ciudad" required />
               </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Dirección</label>
+                <input type="text" [(ngModel)]="nuevaEmpresa.direccion" name="direccion" required />
+              </div>
               <div class="field">
                 <label>Código Postal</label>
                 <input type="text" [(ngModel)]="nuevaEmpresa.codigoPostal" name="codigoPostal" required />
               </div>
+            </div>
+            <div class="field-row">
               <div class="field">
                 <label>Nombre Completo</label>
                 <input type="text" [(ngModel)]="nuevaEmpresa.nombreAdmin" name="nombreAdmin" required />
@@ -117,14 +126,10 @@
                 <label>Email Corporativo</label>
                 <input type="email" [(ngModel)]="nuevaEmpresa.emailAdmin" name="emailAdmin" required />
               </div>
-              <div class="field">
-                <label>Contraseña Inicial</label>
-                <input type="password" [(ngModel)]="nuevaEmpresa.passwordAdmin" name="passwordAdmin" required />
-              </div>
-              <div class="field">
-                <label>Teléfono de Contacto</label>
-                <input type="text" [(ngModel)]="nuevaEmpresa.telefono" name="telefono" required />
-              </div>
+            </div>
+            <div class="field">
+              <label>Contraseña Inicial</label>
+              <input type="password" [(ngModel)]="nuevaEmpresa.passwordAdmin" name="passwordAdmin" required />
             </div>
           </div>
 

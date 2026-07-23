@@ -102,11 +102,13 @@ $border-sa: #cbd5e1;
 // Formulario de Alta
 .sa-form {
   .form-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem;
-    h3 { margin: 0 0 12px 0; font-size: 1rem; color: #475569; border-bottom: 2px solid #f1f5f9; padding-bottom: 4px; }
+    display: flex; flex-direction: column; gap: 0.5rem; padding: 1.5rem;
+  }
+  .field-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
   }
   .field {
-    display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;
+    display: flex; flex-direction: column; gap: 4px;
     label { font-size: 0.8rem; font-weight: 700; color: #475569; }
     input { height: 40px; border: 1px solid $border-sa; border-radius: 6px; padding: 0 10px; outline: none; font-size: 0.9rem; &:focus { border-color: $blue-sa; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); } }
   }
@@ -118,7 +120,7 @@ $border-sa: #cbd5e1;
   transition: opacity 0.2s;
   &:hover { opacity: 0.9; }
   &.success { background: $green-sa; color: white; }
-  &.cancel { background: #e2e8f0; color: #475569; }
+  &.cancel { background: #be1a15; color: #fdfdfd; }
 }
 
 // Animaciones críticas

@@ -28,12 +28,12 @@
           </tr>
         </thead>
         <tbody>
-          @for (jefe of jefes(); track jefe.usuarioId) {
+          @for (jefe of jefes(); track jefe.id) {
             <tr>
               <td><strong>#{{ jefe.empresaId }}</strong></td>
-              <td>{{ jefe.nombreEmpresa }}</td>
-              <td>{{ jefe.nombreAdmin }}</td>
-              <td><code>{{ jefe.emailAdmin }}</code></td>
+              <td>{{ jefe.empresaNombre }}</td>
+              <td>{{ jefe.nombre }}</td>
+              <td><code>{{ jefe.email }}</code></td>
               <td>
                 <div class="action-bundle">
                   <button type="button" class="btn-action-tool type-email" (click)="abrirModalEmail(jefe)" title="Modificar Email de Entrada">
@@ -60,7 +60,7 @@
       <div class="modal-sheet-sa">
         <div class="modal-header-sa">📧 Cambiar Email de Autenticación</div>
         <div class="modal-body-sa">
-          <p>Vas a modificar el correo electrónico de acceso para el administrador de <strong>"{{ jefeSeleccionado()?.nombreEmpresa }}"</strong>.</p>
+          <p>Vas a modificar el correo electrónico de acceso para el administrador de <strong>"{{ jefeSeleccionado()?.empresaNombre }}"</strong>.</p>
           
           <div class="sa-form" style="padding: 1rem 0 0 0;">
             <div class="field">

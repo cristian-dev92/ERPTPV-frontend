@@ -11,7 +11,7 @@
       />
     </div>
 
-    <div class="form-group full-width">
+    <div class="form-group">
       <label for="codigoBarras">Código de Barras <span class="txt-mutado">(Escáner o Manual)</span></label>
       <input type="text" id="codigoBarras" [value]="codigoBarras()" placeholder="Haz clic aquí antes de usar el escáner"
         (click)="abrirTecladoGeneralForm('CODIGO_BARRAS')"
@@ -19,7 +19,7 @@
       />
     </div>
 
-    <div class="form-group full-width">
+    <div class="form-group">
       <label for="codigoReferencia">Código de Referencia <span class="txt-mutado">(Autogenerado, puedes cambiarlo)</span></label>
       <input type="text" id="codigoReferencia" [value]="codigoReferencia()" placeholder="Ej: ART-001 o código de barras del fabricante"
         (click)="abrirTecladoGeneralForm('CODIGO_REFERENCIA')"
@@ -112,8 +112,8 @@
       </select>
     </div>
 
-    <div class="form-group full-width info-base-imponible">
-      <label>Precio Base (Sin IVA - Calculado para gestión)</label>
+    <div class="form-group info-base-imponible">
+      <label>Precio Base (Sin IVA)</label>
       <div class="display-solo-lectura">
         <span>{{ precioBaseVisual() }} €</span>
         <small class="txt-mutado">Limpio estimado para el negocio</small>

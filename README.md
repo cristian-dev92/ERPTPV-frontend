@@ -1,59 +1,106 @@
-# ERPTPVFrontend
+# 👞 VeriFactu ERP/TPV Multi-Tenant (v2.0)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.8.
+Sistema de Gestión de Punto de Venta (TPV) y ERP multi-inquilino orientado a comercios locales y talleres de reparación/calzado, diseñado con arquitectura moderna en Angular y preparado para el cumplimiento de la normativa tributaria española (**VeriFactu**).
 
-## Development server
+---
 
-To start a local development server, run:
+## 📸 Vista General de la Aplicación (v2.0)
 
-```bash
+| TPV & Mostrador (V2) | Generador de Servicios & Taller |
+| :---: | :---: |
+| ![TPV Dashboard](.github/assets/v2-tpv1.png) | ![Generador Servicio](.github/assets/v2-servicio1.png) |
+
+---
+
+## 🔄 Evolución de la Interfaz (V1 vs. V2)
+
+### 1. Punto de Venta (TPV) & Layout General
+| Versión 1.0 | Versión 2.0 |
+| :---: | :---: |
+| ![TPV V1](.github/assets/v1-tpv.png) | ![TPV V2](.github/assets/v2-tpv1.png) |
+| *Menú lateral rígido y selección fija producto/servicio.* | *Cabecera por pestañas, familias dinámicas y espacio optimizado.* |
+
+### 2. Flujo de Taller & Servicios
+| Versión 1.0 (Formulario Aislado) | Versión 2.0 (Generador All-In-One) |
+| :---: | :---: |
+| ![Servicios V1](.github/assets/v1-servicio.png) | ![Servicios V2](.github/assets/v2-servicio1.png) |
+| *Proceso en varios pasos independientes.* | *Venta, taller, cliente, fecha y cobro en una sola vista.* |
+
+### 3. Contenido del ticket
+| Versión 1.0 (Ticket antiguo) | Versión 2.0 (Nuevo ticket) |
+| :---: | :---: |
+| ![Tickets V1](.github/assets/v1-tickets.png) | ![Tickets V2](.github/assets/v2-tickets2.png) |
+| *Proceso en varios pasos independientes.* | *Venta, taller, cliente, fecha y cobro en una sola vista.* |
+
+
+### 4. Inventario & Trazabilidad
+| Versión 1.0 (Lista Plana) | Versión 2.0 (Familias y Códigos) |
+| :---: | :---: |
+| ![Inventario V1](.github/assets/v1-inventario.png) | ![Inventario V2](.github/assets/v2-inventario2.png) |
+| *División básica entre producto y servicio.* | *Estructura jerárquica con referencia y lector de código de barras.* |
+
+---
+
+## 🚀 Detalles de la Evolución (V1 vs. V2)
+
+### 📌 Versión 1.0 — MVP & Estructura Base
+* **Gestión de Ventas & Taller:** Punto de venta básico diferenciado entre productos y servicios. Registro de órdenes con estados de trazabilidad y emisión de tickets térmicos (80mm).
+* **Navegación & Layout:** Menú lateral desplegable a la izquierda y barra inferior desplegable a ancho completo.
+* **Carrito & Caja:** Selección manual de cobro (efectivo/tarjeta, sin soporte para Bizum) e indicadores de operaciones integrados en la vista general.
+* **Inventario & Contactos:** Organización simple por tipo de ítem y tablas básicas de proveedores/clientes.
+* **Preparación VeriFactu:** Arquitectura backend inicial para el encadenamiento y firma de registros de facturación.
+
+---
+
+### 🌟 Versión 2.0 — Rediseño de UX, Flujo Unificado & Escalabilidad (Versión Actual)
+
+La V2 supone una reestructuración completa basada en las necesidades reales de un entorno de mostrador/taller, optimizando tiempos de cobro y adaptando la interfaz a pantallas táctiles, tablets y teléfonos móviles.
+
+#### 🖨️ TPV, Carrito & Generador de Servicios "All-in-One"
+* **Flujo Unificado de Cobro:** Integración del nuevo **Generador de Servicios**, que permite asociar en una sola pantalla artículos de venta directa, trabajos de taller, asignación de cliente, fecha de recogida y método de pago.
+* **Devoluciones & Abonos Rectificativas (`DEV-`):** Módulo de abonos parciales con selección inteligente de líneas (diferenciando artículos de tienda vs. servicios de taller) para mantener la trazabilidad de los tickets originales.
+* **Generación Individual de Tickets:** Generación de tickets con identificador único por servicio para un control exhaustivo en la recogida.
+* **Modificación Rápida en Carrito:** Edición directa en el carrito de precios y descuentos aplicados a artículos físicos.
+
+#### 📂 Categorización Avanzada & Buscadores
+* **Familias y Subfamilias:** Reorganización del inventario y del TPV eliminando la división rígida de producto/servicio en favor de una estructura jerárquica por familias.
+* **Trazabilidad de Inventario:** Incorporación de **código de referencia** y **código de barras** para agilizar lecturas.
+* **Búsqueda Optimizada:** Buscadores con autocompletado y filtrado desde el primer carácter introducido.
+
+#### 🎨 Rediseño de Layout & Responsive
+* **Nuevo Navigation Layout:** Transición del menú lateral V1 a una cabecera superior moderna con pestañas de acceso rápido.
+* **Diseño Multidispositivo:** Interfaz 100% *responsive* adaptada para ordenadores de mostrador, tablets y teléfonos móviles.
+* **Paginación Global:** Implementación de paginación eficiente en TPV, Tickets, Inventario, Clientes y Proveedores.
+
+#### 📊 Caja & Datos
+* **Nuevos Métodos de Pago:** Integración de cobros mediante **Bizum**.
+* **Importación/Exportación de Datos:** Soporte completo para carga y descarga de información en formatos **CSV y Excel** desde el panel de Configuración.
+* **Previsualización & Reimpresión:** Sistema dinámico de previsualización de tickets térmicos en PDF mediante iFrames sanitizados y soporte para reimpresión directa.
+
+---
+
+## 🛠️ Guía de Desarrollo & Comandos (Angular CLI)
+
+Este proyecto fue generado con [Angular CLI](https://github.com/angular/angular-cli).
+
+### Servidor de Desarrollo
+
+Para iniciar el servidor local de desarrollo, ejecuta:
+
+``bash
 ng serve
-```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Navega a http://localhost:4200/. La aplicación se recargará automáticamente si cambias algún archivo fuente.
 
-## Code scaffolding
+Compilación (Build)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Para compilar el proyecto para producción:
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
 ng build
-```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Los archivos resultantes se guardarán en el directorio dist/.
 
-## Running unit tests
+Pruebas Unitarias
+Para ejecutar las pruebas unitarias con el ejecutor Vitest:
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
 ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

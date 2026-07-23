@@ -235,6 +235,38 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     return ['@', ',', '.', '_', '/', '%', '&', '"', '(', ')', '¡', '!', '¿', '?'];
   }
 
+  // === PAGINACIÓN DE ARTÍCULOS (independiente del historial) ===
+  paginaArticulo = signal<number>(0);
+  itemsPorPaginaArticulo = signal<number>(50);
+
+  totalPaginasArticulos = computed(() => {
+    const total = this.articulosFiltrados().length;
+    const paginas = Math.ceil(total / this.itemsPorPaginaArticulo());
+    return paginas > 0 ? paginas : 1;
+  });
+
+  articulosPaginados = computed(() => {
+    const inicio = this.paginaArticulo() * this.itemsPorPaginaArticulo();
+    return this.articulosFiltrados().slice(inicio, inicio + this.itemsPorPaginaArticulo());
+  });
+
+  paginaArticuloSiguiente(): void {
+    if (this.paginaArticulo() < this.totalPaginasArticulos() - 1) {
+      this.paginaArticulo.update(p => p + 1);
+    }
+  }
+
+  paginaArticuloAnterior(): void {
+    if (this.paginaArticulo() > 0) {
+      this.paginaArticulo.update(p => p - 1);
+    }
+  }
+
+  cambiarTamanoPaginaArticulo(nuevoTamano: number): void {
+    this.itemsPorPaginaArticulo.set(nuevoTamano);
+    this.paginaArticulo.set(0);
+  }
+
   // === SIGNALS COMPUTED ===
   subtotalTicket = computed(() => {
     return this.carrito().reduce((acc, item) => acc + (item.precioEditado * item.cantidad), 0);
@@ -312,6 +344,13 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
       if (this.paginaActual() >= Math.ceil(total / this.itemsPorPagina()) && total > 0) {
         this.paginaActual.set(Math.ceil(total / this.itemsPorPagina()) - 1);
       }
+    });
+    // Reiniciar página de artículos cuando cambia el filtro
+    effect(() => {
+      this.busquedaArticulo();
+      this.familiaSeleccionada();
+      this.subfamiliaSeleccionada();
+      this.paginaArticulo.set(0);
     });
   }
 

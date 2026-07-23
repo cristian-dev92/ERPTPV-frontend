@@ -50,12 +50,24 @@ export class InventarioListComponent extends ComponentePaginado implements OnIni
 
   // Paginación específica para el listado de familias en el modal
   familiaPaginaActual = signal<number>(0);
-  familiaItemsPorPagina = signal<number>(10);
-  familiaTotalElementos = computed(() => this.familiasPadre().length);
+  familiaItemsPorPagina = signal<number>(5);
+  busquedaFamilia = signal<string>('');
+
+  familiasPadreFiltradas = computed(() => {
+    const busqueda = this.busquedaFamilia().toLowerCase().trim();
+    if (!busqueda) return this.familiasPadre();
+    return this.familiasPadre().filter(fam => {
+      if (fam.nombre.toLowerCase().startsWith(busqueda)) return true;
+      if (fam.subfamilias?.some(sub => sub.nombre.toLowerCase().startsWith(busqueda))) return true;
+      return false;
+    });
+  });
+
+  familiaTotalElementos = computed(() => this.familiasPadreFiltradas().length);
   familiaTotalPaginas = computed(() => Math.max(1, Math.ceil(this.familiaTotalElementos() / this.familiaItemsPorPagina())));
   familiasPadrePaginadas = computed(() => {
     const inicio = this.familiaPaginaActual() * this.familiaItemsPorPagina();
-    return this.familiasPadre().slice(inicio, inicio + this.familiaItemsPorPagina());
+    return this.familiasPadreFiltradas().slice(inicio, inicio + this.familiaItemsPorPagina());
   });
 
   // Listas de caracteres fijas para el renderizado consistente del teclado
