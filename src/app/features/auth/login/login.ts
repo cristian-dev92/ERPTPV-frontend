@@ -22,7 +22,7 @@ export class LoginComponent {
   errorMessage = signal<string | null>(null);
 
   // Estado reactivo del teclado guardado en el dispositivo
-  tecladoNativoForzado = signal<boolean>(false);
+  tecladoNativoForzado = signal<boolean>(true);
 
   // ⌨️ Signals del Teclado Virtual Integrado
   mostrarTecladoGeneral = signal<boolean>(false);
@@ -41,7 +41,7 @@ export class LoginComponent {
 
   ngOnInit(): void {
     // Leemos la persistencia del navegador nada más arrancar la pantalla
-    this.tecladoNativoForzado.set(localStorage.getItem('FORZAR_TECLADO_NATIVO') === 'true');
+    this.tecladoNativoForzado.set(localStorage.getItem('FORZAR_TECLADO_NATIVO') !== 'false');
   }
 
   /**
@@ -49,11 +49,7 @@ export class LoginComponent {
    */
   cambiarModoTeclado(forzarNativo: boolean): void {
     this.tecladoNativoForzado.set(forzarNativo);
-    if (forzarNativo) {
-      localStorage.setItem('FORZAR_TECLADO_NATIVO', 'true');
-    } else {
-      localStorage.removeItem('FORZAR_TECLADO_NATIVO');
-    }
+    localStorage.setItem('FORZAR_TECLADO_NATIVO', forzarNativo ? 'true' : 'false');
   }
 
   // ⌨️ Métodos del Teclado Táctil

@@ -14,6 +14,10 @@ $border-color: #cbd5e1;
   height: calc(100vh - 120px); // Ajusta según tu header
   padding: 10px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  @media (min-width: 1200px) {
+    position: relative; // ancóraje para .panel-historial-wrapper absolute
+  }
 }
 
 // === INTERPOLACIÓN DEL NUEVO PANEL DE CATÁLOGO TÁCTIL (IZQUIERDA) ===
@@ -1665,9 +1669,31 @@ app-clientes {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-@media (min-width: 1400px) {
+@media (min-width: 1600px) {
   .catalogo-container .articulos-grid {
     grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+@media (max-width: 1599px) {
+  .articulo-card {
+    min-height: 120px;
+
+    .info-producto {
+      .nombre {
+        font-size: 0.85rem;
+      }
+    }
+
+    .contenedor-precios-catalogo {
+      gap: 4px;
+
+      .precio,
+      .precio-rebajado-vivo {
+        overflow-wrap: break-word;
+        word-break: break-all;
+      }
+    }
   }
 }
 
@@ -1880,24 +1906,33 @@ app-clientes {
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: margin-left 0.25s ease-in-out, width 0.25s ease-in-out, box-shadow 0.25s ease; 
+  transition: box-shadow 0.25s ease;
   z-index: 10;
 
-  // SÓLO PARA PC / MONITORES TÁCTILES GRANDES
-  @media (min-width: 1200px) {
-    grid-column: 1 / -1; 
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  // EFECTO SUPERPUESTO HACIA LA IZQUIERDA CUANDO SE ABRE
+  // Estado colapsado: en flujo normal (position: relative)
+  // Expandido en ≥1200px: absolute + right:0, crece hacia la izquierda
   &.historial-expandido {
-    @media (min-width: 1024px) {
-      position: absolute !important; /* Se independiza de los overflows del carrito */
-      right: 0 !important;           /* Se alinea con el borde derecho del mostrador */
-      width: 1500px !important;       /* Le damos un ancho generoso fijo para ver todas las columnas */
-      box-shadow: -10px 10px 30px rgba(15, 23, 42, 0.3) !important; 
-      z-index: 999999 !important;    /* Prioridad absoluta en la pantalla */
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
+    z-index: 20;
+
+    // Pantallas grandes: expansión horizontal hacia la izquierda
+    @media (min-width: 1200px) {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      z-index: 9999;
+      opacity: 1;
+      box-shadow: -10px 10px 30px rgba(15, 23, 42, 0.3);
+
+      .historial-body {
+        overflow-x: hidden;
+      }
+
+      .tabla-historial {
+        min-width: auto;
+        width: 100%;
+        white-space: nowrap;
+      }
     }
   }
 
@@ -1952,9 +1987,10 @@ app-clientes {
 
   .historial-body {
     width: 100%;
-    max-height: 260px;
+    max-height: 320px;
     overflow-y: auto;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 
     &::-webkit-scrollbar {
       width: 16px !important; 
@@ -1973,16 +2009,11 @@ app-clientes {
   
   .tabla-historial {
     width: 100%;
-    height: 220px;
-    max-height: 220px;
-    white-space: nowrap;
+    min-width: 900px;
     border-collapse: collapse;
     text-align: left;
     font-size: 1rem;
     color: #475569;
-    overflow-y: scroll !important;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
 
     thead {
       background-color: #f1f5f9;
