@@ -1,9 +1,14 @@
 .login-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  gap: 16px;
+  min-height: 100vh;
   width: 100%;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
   background-color: #f0f2f5; 
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
@@ -141,6 +146,139 @@
       }
     }
   }
+
+  // =========================================================================
+  // 🚀 SECCIÓN DEMO RÁPIDA (ACCESO RÁPIDO PARA EVALUADORES)
+  // =========================================================================
+  .demo-section {
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    padding: 1.5rem 2.5rem 2rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-top: 4px solid #9b59b6;
+    box-sizing: border-box;
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 1.25rem;
+
+      .demo-titulo {
+        display: block;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #2c3e50;
+      }
+
+      .demo-subtitulo {
+        display: block;
+        font-size: 0.8rem;
+        color: #7f8c8d;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .demo-perfiles {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      .demo-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: #fafbfc;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+
+        &:hover:not(:disabled) {
+          background-color: #f0f2f5;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        &:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        &:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
+        &.demo-superadmin {
+          border-left: 4px solid #7c3aed;
+        }
+
+        &.demo-admin {
+          border-left: 4px solid #3498db;
+        }
+
+        .demo-icono {
+          font-size: 1.5rem;
+          width: 32px;
+          text-align: center;
+          flex-shrink: 0;
+        }
+
+        .demo-texto {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+
+          .demo-etiqueta {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #2c3e50;
+          }
+
+          .demo-descripcion {
+            font-size: 0.78rem;
+            color: #7f8c8d;
+            overflow-wrap: break-word;
+          }
+        }
+
+        .demo-spinner {
+          margin-left: auto;
+          width: 18px;
+          height: 18px;
+          flex-shrink: 0;
+          border: 2px solid #e2e8f0;
+          border-top-color: #7c3aed;
+          border-radius: 50%;
+          animation: demo-spin 0.7s linear infinite;
+        }
+
+        .demo-cargando-texto {
+          margin-left: auto;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #7c3aed;
+        }
+      }
+    }
+  }
+
+  // Responsive: compactar la tarjeta en pantallas pequeñas
+  @media (max-width: 480px) {
+    form,
+    .demo-section {
+      padding: 1.25rem 1.5rem;
+    }
+  }
+}
+
+@keyframes demo-spin {
+  to { transform: rotate(360deg); }
 }
 
 // =========================================================================

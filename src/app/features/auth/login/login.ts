@@ -4,6 +4,37 @@ import { AuthService } from '../../../core/services/auth.service';
 import { Router } from '@angular/router';
 import { UiService } from '../../../core/services/ui.service';
 import { isMobileOrTablet } from '../../../core/utils/device-utils';
+import { LoginRequest } from '../../../core/models/auth.model';
+
+/** Perfil de acceso rápido para la demo del Login */
+interface DemoPerfil {
+  clave: string;
+  etiqueta: string;
+  icono: string;
+  descripcion: string;
+  email: string;
+  password: string;
+}
+
+/** Credenciales de demostración (deben existir en el backend / BD) */
+const PERFILES_DEMO: DemoPerfil[] = [
+  {
+    clave: 'superadmin',
+    etiqueta: 'SuperAdmin',
+    icono: '🛡️',
+    descripcion: 'Gestión global multi-tenant y plataforma',
+    email: 'superadmin@erp.com',
+    password: 'Master1234!'
+  },
+  {
+    clave: 'admin',
+    etiqueta: 'Admin / Dueño',
+    icono: '💼',
+    descripcion: 'Gestión completa del comercio, inventario y configuración',
+    email: 'admin@empresaprueba.com',
+    password: '123456'
+  }
+];
 
 @Component({
   selector: 'app-login',
@@ -17,6 +48,12 @@ export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private uiService = inject(UiService);
+
+  // Perfiles de demo expuestos al template
+  perfilesDemo = PERFILES_DEMO;
+
+  // Perfil demo en proceso de login (null = ninguno cargando)
+  perfilDemoCargando = signal<string | null>(null);
 
   // Signal para gestionar mensajes de error de forma reactiva (Angular 21 style)
   errorMessage = signal<string | null>(null);
@@ -113,30 +150,46 @@ export class LoginComponent {
    */
   onSubmit(): void {
     if (this.loginForm.valid) {
-      const credentials = this.loginForm.getRawValue();
-      
-      this.authService.login(credentials).subscribe({
-        next: () => {
-        this.uiService.mostrarToast(`¡Bienvenido de nuevo, ${this.authService.usuarioNombre()}!`, 'success');
-        // Desviamos según el rol
-        const rol = this.authService.getRolActual();
-
-          if (rol === 'ROLE_SUPER_ADMIN') {
-            this.router.navigate(['/superadmin']);
-          } else if (rol === 'ROLE_ADMIN') {
-            this.router.navigate(['/ventas']);
-          } else if (rol === 'ROLE_EMPLEADO' || rol === 'EMPLEADO') {
-          this.router.navigate(['/ventas']);
-          }
-        },
-        error: (err: any) => {
-          // Extraemos el mensaje del backend si existe, si no, ponemos el de por defecto
-          const mensajeError = err.error?.mensaje || 'Credenciales incorrectas o error de servidor';
-          // (Ajusta el método según cómo se llame en tu servicio: mostrarError, error, toast...)
-          this.uiService.mostrarToast(mensajeError, 'error');
-        }
-      });
-     }
+      this.ejecutarLogin(this.loginForm.getRawValue());
     }
-  
+  }
+
+  /**
+   * Acceso rápido demo: rellena el formulario con las credenciales del perfil
+   * y ejecuta el login directamente.
+   */
+  loginDemo(perfil: DemoPerfil): void {
+    if (this.perfilDemoCargando()) return;
+
+    this.loginForm.controls.email.setValue(perfil.email);
+    this.loginForm.controls.password.setValue(perfil.password);
+    this.perfilDemoCargando.set(perfil.clave);
+    this.ejecutarLogin({ email: perfil.email, password: perfil.password });
+  }
+
+  /**
+   * Lógica común de login: llama a AuthService, muestra el toast de bienvenida
+   * y redirige según el rol obtenido del token.
+   */
+  private ejecutarLogin(credentials: LoginRequest): void {
+    this.authService.login(credentials).subscribe({
+      next: () => {
+        this.uiService.mostrarToast(`¡Bienvenido de nuevo, ${this.authService.usuarioNombre()}!`, 'success');
+        this.router.navigate([this.rutaPorRol(this.authService.getRolActual())]);
+      },
+      error: (err: any) => {
+        const mensajeError = err.error?.mensaje || 'Credenciales incorrectas o error de servidor';
+        this.uiService.mostrarToast(mensajeError, 'error');
+      },
+      complete: () => this.perfilDemoCargando.set(null)
+    });
+  }
+
+  /** Devuelve la ruta inicial según el rol del usuario */
+  private rutaPorRol(rol: string | null): string {
+    if (rol === 'ROLE_SUPER_ADMIN') return '/superadmin';
+    if (rol === 'ROLE_ADMIN' || rol === 'ROLE_EMPLEADO' || rol === 'EMPLEADO') return '/ventas';
+    return '/ventas';
+  }
+
 }

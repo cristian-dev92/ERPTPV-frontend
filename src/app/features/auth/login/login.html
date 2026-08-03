@@ -60,6 +60,37 @@
     </button>
   </form>
 
+  <section class="demo-section" aria-label="Acceso rápido para demo">
+    <div class="demo-header">
+      <span class="demo-titulo">🚀 Probar Demo Rápida</span>
+      <span class="demo-subtitulo">Entra al instante sin escribir credenciales</span>
+    </div>
+
+    <div class="demo-perfiles">
+      @for (perfil of perfilesDemo; track perfil.clave) {
+        <button 
+          type="button"
+          class="demo-btn"
+          [class.demo-superadmin]="perfil.clave === 'superadmin'"
+          [class.demo-admin]="perfil.clave === 'admin'"
+          [attr.title]="perfil.descripcion"
+          [disabled]="perfilDemoCargando() !== null"
+          (click)="loginDemo(perfil)">
+          @if (perfilDemoCargando() === perfil.clave) {
+            <span class="demo-spinner" aria-hidden="true"></span>
+            <span class="demo-cargando-texto">Cargando demo...</span>
+          } @else {
+            <span class="demo-icono" aria-hidden="true">{{ perfil.icono }}</span>
+            <span class="demo-texto">
+              <span class="demo-etiqueta">{{ perfil.etiqueta }}</span>
+              <span class="demo-descripcion">{{ perfil.descripcion }}</span>
+            </span>
+          }
+        </button>
+      }
+    </div>
+  </section>
+
   @if (mostrarTecladoGeneral()) {
     <div class="modal-teclado-general-container">
       
