@@ -19,7 +19,7 @@ import { Articulo } from '../../../core/models/articulo.model';
 import { ClientesComponent } from '../../clientes/clientes';
 import { NuevaOrdenDTO, OrdenDTO, DevolucionRequest, MetodoPago, LineaVentaDirectaDTO, TrabajoTallerDTO } from '../../../core/models/orden.model';
 import { HttpClient } from '@angular/common/http';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { PdfViewerModule } from 'ng2-pdf-viewer';
 
 export interface FamiliaDTO {
   id: number;
@@ -69,7 +69,7 @@ export interface Cliente {
 @Component({
   selector: 'app-tpv',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule, ClientesComponent, NgClass, DecimalPipe],
+  imports: [CurrencyPipe, DatePipe, FormsModule, ClientesComponent, NgClass, DecimalPipe, PdfViewerModule],
   templateUrl: './tpv.html',
   styleUrl: './tpv.scss'
 })
@@ -86,7 +86,6 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   private http: HttpClient = inject(HttpClient);
   private bufferCodigoBarras: string = '';
   private ultimaPulsacion: number = 0;
-  private sanitizer = inject(DomSanitizer);
   public Math = Math;
   @ViewChild(ClientesComponent) clientesComponent!: ClientesComponent;
 
@@ -157,13 +156,12 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   numeroTicketActual = signal<string>('TKT-PROVISIONAL');
   horaTicketActual = signal<string>('');
   idOperacionProcesada = signal<number | null>(null);
-  ticketIframeUrl = signal<string | null>(null);
   datosFacturaAeat = signal<InfoVerifaktu | null>(null);
 
   // Estados de PDF e Impresión
   cargandoPDF = signal<boolean>(false);
-  urlSeguraPdf = signal<SafeResourceUrl>(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank'));
-  private rawBlobUrl: string | null = null; // Para liberar memoria
+  pdfCargado = signal<boolean>(false);
+  urlPdfPreview = signal<string | null>(null);
 
   // Modales y Flujos Especiales
   mostrarModalCliente = signal<boolean>(false);
@@ -1022,15 +1020,11 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     peticionPdf$.subscribe({
       next: (blob: Blob) => {
         // Liberamos memoria de URLs de blobs anteriores del navegador
-        if (this.rawBlobUrl) {
-          URL.revokeObjectURL(this.rawBlobUrl);
-        }
+        this.limpiarMemoriaBlobUrl();
 
-        // Creamos la nueva URL temporal para el binario del PDF
-        this.rawBlobUrl = URL.createObjectURL(blob);
-        
-        // Sanitizamos para el [src] del iframe del HTML
-        this.urlSeguraPdf.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.rawBlobUrl));
+        // Preparamos el estado de renderizado del visor
+        this.pdfCargado.set(false);
+        this.urlPdfPreview.set(URL.createObjectURL(blob));
         this.cargandoPDF.set(false);
         this.uiService.mostrarToast('📄 Ticket generado. Listo para revisión o impresión.', 'success');
       },
@@ -1050,11 +1044,12 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
   }
 
   private limpiarMemoriaBlobUrl(): void {
-    const actual = this.ticketIframeUrl();
+    const actual = this.urlPdfPreview();
     if (actual) {
       URL.revokeObjectURL(actual);
-      this.ticketIframeUrl.set(null);
+      this.urlPdfPreview.set(null);
     }
+    this.pdfCargado.set(false);
   }
 
   // Método que se conecta a tu servicio de órdenes para rellenar la barra inferior con los tickets de hoy o del turno
@@ -1092,8 +1087,8 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
     this.ordenService.getFacturaPdf(ticket.id).subscribe({
       next: (blob: Blob) => {
         this.limpiarMemoriaBlobUrl(); // Limpieza del puntero previo antes de reservar el nuevo
-        this.rawBlobUrl = URL.createObjectURL(blob);
-        this.urlSeguraPdf.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.rawBlobUrl));
+        this.pdfCargado.set(false);
+        this.urlPdfPreview.set(URL.createObjectURL(blob));
         this.cargandoPDF.set(false);
         this.uiService.mostrarToast('📄 Factura A4 generada. Lista para revisión.', 'success');
       },
@@ -1117,8 +1112,7 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
 
   cerrarReciboAeat(): void {
     this.isTicketVisible.set(false);
-    this.limpiarMemoriaBlobUrl(); 
-    this.urlSeguraPdf.set(this.sanitizer.bypassSecurityTrustResourceUrl('about:blank'));
+    this.limpiarMemoriaBlobUrl();
     this.datosFacturaAeat.set(null);
     this.idOperacionProcesada.set(null);
     this.idOrdenPendienteAnticipo.set(null);
@@ -1127,13 +1121,34 @@ export class TpvComponent extends ComponentePaginado implements OnInit {
 
   /* MANDA EL TICKET DIRECTAMENTE A LA IMPRESORA SIN SALIR DEL TPV */
   imprimirIframeTicket(): void {
-    const iframe = document.getElementById('iframeTicketPdf') as HTMLIFrameElement;
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    } else {
+    const url = this.urlPdfPreview();
+    if (!url) {
       this.uiService.mostrarToast('No se pudo conectar con el visor de impresión.', 'error');
+      return;
     }
+    // ng2-pdf-viewer no expone print(); usamos un iframe oculto con la misma URL blob
+    let iframe = document.getElementById('iframeTicketPreview') as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'iframeTicketPreview';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+    iframe.onload = () => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    };
+    iframe.src = url;
+  }
+
+  /* Estado del visor: primera página renderizada en canvas */
+  onPdfCargado(): void {
+    this.pdfCargado.set(true);
+  }
+
+  onErrorPdf(): void {
+    this.cargandoPDF.set(false);
+    this.uiService.mostrarToast('No se pudo renderizar la vista previa del PDF.', 'error');
   }
 
   // === HISTORIAL / ACCIONES DE NUEVOS ENDPOINTS ===

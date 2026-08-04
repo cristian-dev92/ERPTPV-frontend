@@ -863,10 +863,25 @@
           <div class="loading-pdf-stream">
             ⏳ Generando vista de impresión...
           </div>
-        }
-        @if (!cargandoPDF() && urlSeguraPdf()) {
-          <iframe id="iframeTicketPdf" [src]="urlSeguraPdf()" class="iframe-preview-pdf"></iframe>
-        } @else if (!cargandoPDF() && !urlSeguraPdf()) {
+        } @else if (urlPdfPreview()) {
+          <div class="pdf-viewer-wrapper">
+            @if (!pdfCargado()) {
+              <div class="pdf-render-overlay">
+                ⏳ Renderizando PDF...
+              </div>
+            }
+            <pdf-viewer
+              [src]="urlPdfPreview() ?? undefined"
+              [render-text]="true"
+              [original-size]="false"
+              [show-all]="true"
+              [fit-to-page]="true"
+              [autoresize]="true"
+              (page-rendered)="onPdfCargado()"
+              (error)="onErrorPdf()">
+            </pdf-viewer>
+          </div>
+        } @else {
           <div class="error-carga-pdf">
             ❌ No se pudo cargar la vista previa del ticket.
           </div>
