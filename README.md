@@ -4,6 +4,12 @@ Sistema de Gestión de Punto de Venta (TPV) y ERP multi-inquilino orientado a co
 
 ---
 
+## 🌐 Demo Pública
+
+🔗 Demo: [https://erp.javier-moreno.dev/login]
+
+---
+
 ## 📸 Vista General de la Aplicación (v2.0)
 
 | TPV & Mostrador (V2) | Generador de Servicios & Taller |
